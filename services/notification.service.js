@@ -12,10 +12,6 @@ Notifications.setNotificationHandler({
   }),
 });
 
-/**
- * Đăng ký nhận push notification
- * @returns {Promise<string|null>} Expo Push Token hoặc null nếu thất bại
- */
 export async function registerForPushNotificationsAsync() {
   let token = null;
 
@@ -68,27 +64,14 @@ export async function registerForPushNotificationsAsync() {
   return token;
 }
 
-/**
- * Lắng nghe notification khi app đang mở
- * @param {Function} callback - Hàm xử lý khi nhận notification
- * @returns {Subscription} Subscription để unsubscribe
- */
 export function addNotificationReceivedListener(callback) {
   return Notifications.addNotificationReceivedListener(callback);
 }
 
-/**
- * Lắng nghe khi user tap vào notification
- * @param {Function} callback - Hàm xử lý khi tap notification
- * @returns {Subscription} Subscription để unsubscribe
- */
 export function addNotificationResponseReceivedListener(callback) {
   return Notifications.addNotificationResponseReceivedListener(callback);
 }
 
-/**
- * Gửi local notification (test)
- */
 export async function sendLocalNotification(title, body, data = {}) {
   await Notifications.scheduleNotificationAsync({
     content: {

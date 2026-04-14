@@ -11,12 +11,14 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Keyboard,
 } from "react-native";
 import { Colors } from "../constants/color";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../queries/auth.query";
 import { useIdentity } from "../queries/identity.query";
+import { TouchableWithoutFeedback } from "react-native";
 
 const registerBackground = require("../assets/background.png");
 
@@ -71,84 +73,89 @@ const RegisterScreen = ({ navigation }) => {
       style={styles.background}
       resizeMode="cover"
     >
-      <View style={styles.overlay}>
-        <KeyboardAvoidingView
-          style={styles.keyboardView}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <View style={styles.overlay}>
+          <KeyboardAvoidingView
+            style={styles.keyboardView}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
           >
-            <View style={styles.container}>
-              <Text style={styles.title}>Đăng ký</Text>
+            <ScrollView
+              style={styles.scrollView}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.container}>
+                <Text style={styles.title}>Đăng ký</Text>
 
-              <TextInput
-                style={styles.input}
-                placeholder="Số điện thoại"
-                placeholderTextColor={"#000000"}
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-                keyboardType="phone-pad"
-                autoCapitalize="none"
-              />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Số điện thoại"
+                  placeholderTextColor={"#000000"}
+                  value={phoneNumber}
+                  onChangeText={setPhoneNumber}
+                  keyboardType="phone-pad"
+                  autoCapitalize="none"
+                />
 
-              <TextInput
-                style={styles.input}
-                placeholder="Tên đầy đủ"
-                placeholderTextColor={"#000000"}
-                value={name}
-                onChangeText={setName}
-                keyboardType="default"
-                autoCapitalize="none"
-              />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Tên đầy đủ"
+                  placeholderTextColor={"#000000"}
+                  value={name}
+                  onChangeText={setName}
+                  keyboardType="default"
+                  autoCapitalize="none"
+                />
 
-              <TextInput
-                style={styles.input}
-                placeholder="Email"
-                placeholderTextColor={"#000000"}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email"
+                  placeholderTextColor={"#000000"}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
 
-              <TextInput
-                style={styles.input}
-                placeholder="Mật khẩu"
-                placeholderTextColor={"#000000"}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-              />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Mật khẩu"
+                  placeholderTextColor={"#000000"}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                />
 
-              <TextInput
-                style={styles.input}
-                placeholder="Xác nhận mật khẩu"
-                placeholderTextColor={"#000000"}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry
-              />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Xác nhận mật khẩu"
+                  placeholderTextColor={"#000000"}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry
+                />
 
-              <TouchableOpacity style={styles.button} onPress={handleRegister}>
-                <Text style={styles.buttonText}>Đăng ký</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={handleRegister}
+                >
+                  <Text style={styles.buttonText}>Đăng ký</Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.linkButton}
-                onPress={() => navigation.navigate("Login")}
-              >
-                <Text style={styles.linkText}>
-                  Đã có tài khoản?{" "}
-                  <Text style={styles.linkHighlight}>Đăng nhập</Text>
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </View>
+                <TouchableOpacity
+                  style={styles.linkButton}
+                  onPress={() => navigation.navigate("Login")}
+                >
+                  <Text style={styles.linkText}>
+                    Đã có tài khoản?{" "}
+                    <Text style={styles.linkHighlight}>Đăng nhập</Text>
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </View>
+      </TouchableWithoutFeedback>
     </ImageBackground>
   );
 };

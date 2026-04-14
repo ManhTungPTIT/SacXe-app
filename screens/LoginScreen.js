@@ -8,6 +8,8 @@ import {
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from "react-native";
 import { Colors } from "../constants/color";
 import { useAuth } from "../queries/auth.query";
@@ -53,49 +55,51 @@ const LoginScreen = ({ navigation }) => {
       style={styles.background}
       resizeMode="cover"
     >
-      <View style={styles.overlay}>
-        <KeyboardAvoidingView
-          style={styles.keyboardWrap}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
-          <View style={styles.container}>
-            <Text style={styles.title}>Đăng nhập</Text>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <View style={styles.overlay}>
+          <KeyboardAvoidingView
+            style={styles.keyboardWrap}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+          >
+            <View style={styles.container}>
+              <Text style={styles.title}>Đăng nhập</Text>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Email hoặc số điện thoại"
-              placeholderTextColor="#7A8087"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
+              <TextInput
+                style={styles.input}
+                placeholder="Email hoặc số điện thoại"
+                placeholderTextColor="#7A8087"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
 
-            <TextInput
-              style={styles.input}
-              placeholder="Mật khẩu"
-              placeholderTextColor="#7A8087"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
+              <TextInput
+                style={styles.input}
+                placeholder="Mật khẩu"
+                placeholderTextColor="#7A8087"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+              />
 
-            <TouchableOpacity style={styles.button} onPress={handleLogin}>
-              <Text style={styles.buttonText}>Đăng nhập</Text>
-            </TouchableOpacity>
+              <TouchableOpacity style={styles.button} onPress={handleLogin}>
+                <Text style={styles.buttonText}>Đăng nhập</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.linkButton}
-              onPress={() => navigation.navigate("Register")}
-            >
-              <Text style={styles.linkText}>
-                Chưa có tài khoản?{" "}
-                <Text style={styles.linkHighlight}>Đăng ký</Text>
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </View>
+              <TouchableOpacity
+                style={styles.linkButton}
+                onPress={() => navigation.navigate("Register")}
+              >
+                <Text style={styles.linkText}>
+                  Chưa có tài khoản?{" "}
+                  <Text style={styles.linkHighlight}>Đăng ký</Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+      </TouchableWithoutFeedback>
     </ImageBackground>
   );
 };

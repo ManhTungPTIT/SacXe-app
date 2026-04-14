@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -251,7 +252,10 @@ const ProfileComponent = ({
     >
       <TouchableWithoutFeedback onPress={handleCloseProfileModal}>
         <View style={styles.overlay}>
-          <TouchableWithoutFeedback onPress={() => {}}>
+          <TouchableWithoutFeedback
+            onPress={Keyboard.dismiss}
+            accessible={false}
+          >
             <KeyboardAvoidingView
               style={styles.modalCard}
               behavior={Platform.OS === "ios" ? "padding" : undefined}
