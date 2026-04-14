@@ -5,7 +5,7 @@ import {
   addNotificationResponseReceivedListener,
 } from "../services/notification.service";
 
-export const useNotifications = () => {
+export const useNotifications = (enabled = false) => {
   // Expo Push Token - cần gửi lên backend để server biết gửi notification cho ai
   const [expoPushToken, setExpoPushToken] = useState(null);
 
@@ -17,6 +17,12 @@ export const useNotifications = () => {
   const responseListener = useRef();
 
   useEffect(() => {
+    if (!enabled) {
+      setExpoPushToken(null);
+      setNotification(null);
+      return;
+    }
+
     // 1. Đăng ký nhận push notification và lấy token
     registerForPushNotificationsAsync().then((token) => {
       if (token) {
@@ -33,10 +39,7 @@ export const useNotifications = () => {
 
     // 3. Lắng nghe khi user tap vào notification
     responseListener.current = addNotificationResponseReceivedListener(
-      (response) => {
-        // Lấy data từ notification
-        const data = response.notification.request.content.data;
-      },
+      () => {},
     );
 
     // Cleanup khi unmount
@@ -48,7 +51,7 @@ export const useNotifications = () => {
         responseListener.current.remove();
       }
     };
-  }, []);
+  }, [enabled]);
 
   return {
     expoPushToken,
