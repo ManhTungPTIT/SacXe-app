@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Enovo",
-    "slug": "app",
+    "slug": "enovo-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/logo_white_background_500.png",
@@ -14,18 +14,13 @@
     },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "vn.ai.slink.enovo",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription":
-          "Ứng dụng sử dụng vị trí của bạn để hiển thị các thiết bị sạc gần đó và hỗ trợ chức năng bản đồ.",
-
-        "NSCameraUsageDescription":
-          "Ứng dụng sử dụng camera để quét mã QR khi tương tác với thiết bị sạc.",
-
-        "NSPhotoLibraryUsageDescription":
-          "Ứng dụng cần truy cập thư viện ảnh để bạn chọn và tải lên hình ảnh, bao gồm ảnh giấy phép lái xe hoặc giấy tờ tùy thân khi cập nhật thông tin tài khoản.",
-
-        "NSUserNotificationUsageDescription":
-          "Ứng dụng gửi thông báo về trạng thái thanh toán, thông báo trạng thái sạc xe và cảnh báo tài khoản."
+        "NSLocationWhenInUseUsageDescription": "Ứng dụng sử dụng vị trí của bạn để hiển thị các thiết bị sạc gần đó và hỗ trợ chức năng bản đồ.",
+        "NSCameraUsageDescription": "Ứng dụng sử dụng camera để quét mã QR khi tương tác với thiết bị sạc.",
+        "NSPhotoLibraryUsageDescription": "Ứng dụng cần truy cập thư viện ảnh để bạn chọn và tải lên hình ảnh, bao gồm ảnh giấy phép lái xe hoặc giấy tờ tùy thân khi cập nhật thông tin tài khoản.",
+        "NSUserNotificationUsageDescription": "Ứng dụng gửi thông báo về trạng thái thanh toán, thông báo trạng thái sạc xe và cảnh báo tài khoản.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -34,7 +29,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.lvkien16.app"
+      "package": "vn.ai.slink.enovo"
     },
     "web": {
       "favicon": "./assets/logo_white_background_500.png"
@@ -54,9 +49,8 @@
     },
     "extra": {
       "eas": {
-        "projectId": "00cbfd19-4f5d-4ffa-a0e0-940aed587052"
+        "projectId": "6a2034ed-4060-490d-a2f2-5b6774baa3b8"
       }
-    },
-    "owner": "lvkien16"
+    }
   }
 }
