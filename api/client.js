@@ -1,12 +1,13 @@
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 import { useAuthStore } from "../stores/auth.store";
+import Constants from "expo-constants";
 
 const ACCESS_TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
 
 export const api = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_API_URL,
+  baseURL: Constants.expoConfig?.extra?.apiUrl,
   withCredentials: true,
 });
 // Request interceptor: thêm access token vào header
@@ -68,7 +69,7 @@ api.interceptors.response.use(
 
         // Gọi API refresh token
         const response = await axios.post(
-          `${process.env.EXPO_PUBLIC_API_URL}/api/auth/refresh`,
+          `${Constants.expoConfig?.extra?.apiUrl}/api/auth/refresh`,
           { refreshToken },
         );
 

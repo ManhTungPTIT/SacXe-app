@@ -18,6 +18,7 @@ import { useEChargeDeviceQuery } from "../queries/eChargeDevice.query";
 import { useHistory } from "../queries/history.query";
 import { Colors } from "../constants/color";
 import normalizeAddress from "../utils/removeAccents";
+import Constants from "expo-constants";
 
 const HomeScreen = ({ navigation }) => {
   const [location, setLocation] = useState(null);
@@ -87,9 +88,9 @@ const HomeScreen = ({ navigation }) => {
   const openNavigation = (lat, lng) => {
     let url = "";
     if (Platform.OS === "ios") {
-      url = `${process.env.EXPO_PUBLIC_API_APPLE_MAP_URL.replace("{lat}", lat).replace("{lng}", lng)}`;
+      url = `${Constants.expoConfig?.extra?.apiAppleMapUrl.replace("{lat}", lat).replace("{lng}", lng)}`;
     } else {
-      url = `${process.env.EXPO_PUBLIC_API_GOOGLE_MAP_URL.replace("{lat}", lat).replace("{lng}", lng)}`;
+      url = `${Constants.expoConfig?.extra?.apiGoogleMapUrl.replace("{lat}", lat).replace("{lng}", lng)}`;
     }
 
     Linking.openURL(url);
