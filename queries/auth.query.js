@@ -13,7 +13,7 @@ export const useAuth = {
     const { mutate, ...rest } = useMutation({
       mutationFn: (data) => authApi.login(data),
       onSuccess: (data) => {
-        queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+        queryClient.invalidateQueries({ queryKey: ["ME"] });
       },
       onError: (error) => {
         console.error("Login error:", error);
@@ -58,6 +58,17 @@ export const useAuth = {
       mutationFn: () => authApi.logout(),
       onSettled: async () => {
         await logout();
+      },
+    });
+  },
+  useDeleteAccount: () => {
+    const queryClient = useQueryClient();
+    const logout = useAuthStore((state) => state.logout);
+    return useMutation({
+      mutationFn: (password) => authApi.deleteAccount(password),
+      onSuccess: async () => {
+        await logout();
+        queryClient.removeQueries({ queryKey: ["ME"] });
       },
     });
   },

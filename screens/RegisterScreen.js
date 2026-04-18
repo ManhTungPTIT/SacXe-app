@@ -12,10 +12,11 @@ import {
   Platform,
   ActivityIndicator,
   Keyboard,
+  Alert,
 } from "react-native";
 import { Colors } from "../constants/color";
 import * as ImagePicker from "expo-image-picker";
-import { Ionicons } from "@expo/vector-icons";
+import Entypo from "@expo/vector-icons/Entypo";
 import { useAuth } from "../queries/auth.query";
 import { useIdentity } from "../queries/identity.query";
 import { TouchableWithoutFeedback } from "react-native";
@@ -28,16 +29,19 @@ const RegisterScreen = ({ navigation }) => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] =
+    useState(false);
 
   const registerMutation = useAuth.useRegister();
 
   const handleRegister = () => {
     if (password !== confirmPassword) {
-      alert("Mật khẩu và xác nhận mật khẩu không khớp.");
+      Alert.alert("Thông báo", "Mật khẩu và xác nhận mật khẩu không khớp.");
       return;
     }
     if (!name || !email || !password || !phoneNumber) {
-      alert("Vui lòng điền đầy đủ thông tin bắt buộc.");
+      Alert.alert("Thông báo", "Vui lòng điền đầy đủ thông tin bắt buộc.");
       return;
     }
     registerMutation.mutate(
@@ -58,7 +62,8 @@ const RegisterScreen = ({ navigation }) => {
         onError: (error) => {
           console.error("Registration error:", JSON.stringify(error));
           console.error("Server response:", error.response?.data);
-          alert(
+          Alert.alert(
+            "Thông báo",
             error.response?.data?.message ||
               "Đăng ký thất bại. Vui lòng thử lại.",
           );
@@ -90,7 +95,7 @@ const RegisterScreen = ({ navigation }) => {
                 <TextInput
                   style={styles.input}
                   placeholder="Số điện thoại"
-                  placeholderTextColor={"#000000"}
+                  placeholderTextColor={"#7A8087"}
                   value={phoneNumber}
                   onChangeText={setPhoneNumber}
                   keyboardType="phone-pad"
@@ -100,7 +105,7 @@ const RegisterScreen = ({ navigation }) => {
                 <TextInput
                   style={styles.input}
                   placeholder="Tên đầy đủ"
-                  placeholderTextColor={"#000000"}
+                  placeholderTextColor={"#7A8087"}
                   value={name}
                   onChangeText={setName}
                   keyboardType="default"
@@ -110,30 +115,59 @@ const RegisterScreen = ({ navigation }) => {
                 <TextInput
                   style={styles.input}
                   placeholder="Email"
-                  placeholderTextColor={"#000000"}
+                  placeholderTextColor={"#7A8087"}
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
 
-                <TextInput
-                  style={styles.input}
-                  placeholder="Mật khẩu"
-                  placeholderTextColor={"#000000"}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                />
+                <View style={styles.passwordField}>
+                  <TextInput
+                    style={[styles.input, styles.passwordInput]}
+                    placeholder="Mật khẩu"
+                    keyboardType="password"
+                    placeholderTextColor="#7A8087"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!isPasswordVisible}
+                  />
+                  <TouchableOpacity
+                    style={styles.passwordToggle}
+                    onPress={() => setIsPasswordVisible((prev) => !prev)}
+                    activeOpacity={0.7}
+                  >
+                    <Entypo
+                      name={isPasswordVisible ? "eye" : "eye-with-line"}
+                      size={20}
+                      color={Colors.primary}
+                      style={styles.passwordToggleIcon}
+                    />
+                  </TouchableOpacity>
+                </View>
 
-                <TextInput
-                  style={styles.input}
-                  placeholder="Xác nhận mật khẩu"
-                  placeholderTextColor={"#000000"}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureTextEntry
-                />
+                <View style={styles.passwordField}>
+                  <TextInput
+                    style={[styles.input, styles.passwordInput]}
+                    placeholder="Xác nhận mật khẩu"
+                    placeholderTextColor="#7A8087"
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry={!isConfirmPasswordVisible}
+                  />
+                  <TouchableOpacity
+                    style={styles.passwordToggle}
+                    onPress={() => setIsConfirmPasswordVisible((prev) => !prev)}
+                    activeOpacity={0.7}
+                  >
+                    <Entypo
+                      name={isConfirmPasswordVisible ? "eye" : "eye-with-line"}
+                      size={20}
+                      color={Colors.primary}
+                      style={styles.passwordToggleIcon}
+                    />
+                  </TouchableOpacity>
+                </View>
 
                 <TouchableOpacity
                   style={styles.button}
@@ -209,6 +243,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 16,
     color: "#1D1D1F",
+  },
+  passwordField: {
+    position: "relative",
+  },
+  passwordInput: {
+    paddingRight: 72,
+  },
+  passwordToggle: {
+    position: "absolute",
+    right: 10,
+    top: 11,
+  },
+  passwordToggleIcon: {
+    opacity: 0.95,
   },
   button: {
     backgroundColor: Colors.primary,

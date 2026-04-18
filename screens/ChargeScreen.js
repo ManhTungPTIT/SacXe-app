@@ -66,7 +66,7 @@ const ChargeScreen = ({ route, navigation }) => {
   useEffect(() => {
     if (isScanned && deviceCode && !isDeviceLoading) {
       if (!eChargeDevices || isDeviceError) {
-        alert("Mã QR không hợp lệ. Vui lòng thử lại.");
+        Alert.alert("Thông báo", "Mã QR không hợp lệ. Vui lòng thử lại.");
         setIsScanned(false);
         setdeviceCode(null);
       }
@@ -98,7 +98,7 @@ const ChargeScreen = ({ route, navigation }) => {
 
   const handleStopCharging = () => {
     Alert.alert(
-      "Xác nhận dừng sạc",
+      "Thông báo",
       "Bạn có chắc chắn muốn dừng sạc không?",
       [
         {
@@ -144,6 +144,7 @@ const ChargeScreen = ({ route, navigation }) => {
                 setdeviceCode={setdeviceCode}
                 setPowerId={setPowerId}
                 deviceId={deviceId}
+                onScanQrPress={() => navigation.navigate("ScanQR")}
                 onChargeStarted={() => navigation.navigate("Charge")}
               />
             )}

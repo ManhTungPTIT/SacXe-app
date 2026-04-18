@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { ActivityIndicator, View, StyleSheet } from "react-native";
+import { ActivityIndicator, View, StyleSheet, Alert } from "react-native";
 import { useAuthStore } from "../stores/auth.store";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -70,24 +70,120 @@ const RootNavigator = () => {
   }, [isAuthenticated, userId, latestHistory]);
 
   useEffect(() => {
-    const handleTransactionUpdate = (data) => {
-      alert(data.message);
+    const upsertTransactionHistory = (status, transaction) => {
+      queryClient.setQueryData(["TRANSACTION_HISTORY", status], (oldData) => {
+        const currentHistory = Array.isArray(oldData?.history)
+          ? oldData.history
+          : Array.isArray(oldData)
+            ? oldData
+            : [];
 
-      if (data.status === "completed" && data.amount) {
+        const nextHistory = [
+          transaction,
+          ...currentHistory.filter((item) => item?._id !== transaction._id),
+        ];
+
+        if (Array.isArray(oldData)) {
+          return nextHistory;
+        }
+
+        return {
+          ...(oldData || {}),
+          history: nextHistory,
+        };
+      });
+    };
+
+    const removeTransactionFromHistory = (status, transactionId) => {
+      queryClient.setQueryData(["TRANSACTION_HISTORY", status], (oldData) => {
+        const currentHistory = Array.isArray(oldData?.history)
+          ? oldData.history
+          : Array.isArray(oldData)
+            ? oldData
+            : [];
+
+        const nextHistory = currentHistory.filter(
+          (item) => item?._id !== transactionId,
+        );
+
+        if (Array.isArray(oldData)) {
+          return nextHistory;
+        }
+
+        return {
+          ...(oldData || {}),
+          history: nextHistory,
+        };
+      });
+    };
+
+    const handleTransactionUpdate = (data) => {
+      console.log("data", data);
+      Alert.alert("Thông báo", data?.message || "Giao dịch đã được cập nhật.");
+
+      const transaction = data?.transaction;
+      const transactionStatus = transaction?.status || data?.status;
+
+      if (transaction?._id && transactionStatus) {
+        upsertTransactionHistory(transactionStatus, transaction);
+
+        if (transactionStatus === "completed") {
+          removeTransactionFromHistory("pending", transaction._id);
+        }
+
+        queryClient.invalidateQueries({ queryKey: ["TRANSACTION_HISTORY"] });
+      }
+
+      const amount = Number(transaction?.amount ?? data?.amount ?? 0);
+      if (transactionStatus === "completed" && amount > 0) {
+        const currentMeData = queryClient.getQueryData(["ME"]);
+        const fallbackUser =
+          currentMeData?.user || useAuthStore.getState().user;
+
+        if (!fallbackUser) {
+          queryClient.invalidateQueries({ queryKey: ["ME"] });
+          return;
+        }
+
+        const currentBalance = Number(
+          fallbackUser.balance || fallbackUser?.ownerId?.balance || 0,
+        );
+        const nextBalance = currentBalance + amount;
+
         queryClient.setQueryData(["ME"], (oldData) => {
-          if (!oldData || !oldData.user || !oldData.user.ownerId)
-            return oldData;
+          const currentUser = oldData?.user || fallbackUser;
+
           return {
-            ...oldData,
+            ...(oldData || {}),
             user: {
-              ...oldData.user,
-              ownerId: {
-                ...oldData.user.ownerId,
-                balance: (oldData.user.ownerId.balance || 0) + data.amount,
-              },
+              ...currentUser,
+              balance: nextBalance,
+              ownerId: currentUser?.ownerId
+                ? {
+                    ...currentUser.ownerId,
+                    balance: nextBalance,
+                  }
+                : currentUser?.ownerId,
             },
           };
         });
+
+        useAuthStore.setState((state) => ({
+          user: state.user
+            ? {
+                ...state.user,
+                balance: nextBalance,
+                ownerId: state.user.ownerId
+                  ? {
+                      ...state.user.ownerId,
+                      balance: nextBalance,
+                    }
+                  : state.user.ownerId,
+              }
+            : state.user,
+        }));
+
+        queryClient.invalidateQueries({ queryKey: ["ME"] });
       }
     };
 
@@ -96,7 +192,7 @@ const RootNavigator = () => {
     return () => {
       socket.off("transaction_update", handleTransactionUpdate);
     };
-  }, [socket, queryClient]);
+  }, [queryClient]);
 
   // Hiển thị loading khi đang check token
   if (isLoading) {

@@ -31,8 +31,11 @@ const MapComponent = ({
   location,
   openNavigation,
   isSearching = false,
+  locationPermissionStatus = "pending",
+  isResolvingLocation = false,
+  onRequestLocationPermission,
+  onOpenLocationSettings,
 }) => {
-  console.log("eChargeDevices", eChargeDevices);
   const mapRef = useRef(null);
   const listDevices = Array.isArray(
     isSearching ? eChargeDevices?.allDevices : eChargeDevices?.nearbyDevices,
@@ -57,9 +60,45 @@ const MapComponent = ({
   };
 
   if (!location) {
+    const isPermissionBlocked = locationPermissionStatus === "blocked";
+    const isPermissionError = locationPermissionStatus === "error";
+
+    if (isResolvingLocation || locationPermissionStatus === "pending") {
+      return (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Đang lấy vị trí của bạn...</Text>
+        </View>
+      );
+    }
+
+    const title = isPermissionBlocked
+      ? "Quyền vị trí đang tắt"
+      : "Chưa có quyền vị trí";
+    const description = isPermissionBlocked
+      ? "Bạn đã tắt quyền vị trí cho ứng dụng. Hãy mở Cài đặt để bật lại quyền và xem trạm sạc gần bạn."
+      : isPermissionError
+        ? "Không lấy được vị trí hiện tại. Vui lòng kiểm tra GPS và thử lại."
+        : "Ứng dụng cần quyền vị trí để hiển thị trạm sạc gần bạn trên bản đồ.";
+    const primaryActionLabel = isPermissionBlocked
+      ? "Mở cài đặt"
+      : "Cấp quyền vị trí";
+    const primaryActionHandler = isPermissionBlocked
+      ? onOpenLocationSettings
+      : onRequestLocationPermission;
+
     return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Đang lấy vị trí của bạn...</Text>
+      <View style={styles.permissionContainer}>
+        <MaterialIcons name="location-off" size={46} color={Colors.primary} />
+        <Text style={styles.permissionTitle}>{title}</Text>
+        <Text style={styles.permissionDescription}>{description}</Text>
+        <TouchableOpacity
+          style={styles.permissionPrimaryButton}
+          onPress={primaryActionHandler}
+        >
+          <Text style={styles.permissionPrimaryButtonText}>
+            {primaryActionLabel}
+          </Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -236,6 +275,45 @@ const styles = StyleSheet.create({
   loadingText: {
     color: "#6b7280",
     fontSize: 14,
+  },
+  permissionContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+    backgroundColor: "#fff",
+  },
+  permissionTitle: {
+    marginTop: 12,
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#1E1E1E",
+  },
+  permissionDescription: {
+    marginTop: 10,
+    color: "#666",
+    textAlign: "center",
+    lineHeight: 22,
+  },
+  permissionPrimaryButton: {
+    marginTop: 20,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  permissionPrimaryButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+  },
+  permissionSecondaryButton: {
+    marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  permissionSecondaryButtonText: {
+    color: Colors.primary,
+    fontWeight: "600",
   },
   markerIcon: {
     width: 30,

@@ -69,7 +69,7 @@ const FeedbackScreen = () => {
       const result = await requestPermission();
       if (!result.granted) {
         Alert.alert(
-          "Cần quền camera",
+          "Thông báo",
           "Bạn cần cấp quyền camera để quét mã thiết bị.",
         );
         return;
@@ -92,7 +92,7 @@ const FeedbackScreen = () => {
 
     const scannedCode = normalizeScannedCode(data);
     if (!scannedCode) {
-      Alert.alert("Mã không hợp lệ", "Vui lòng quét lại mã thiết bị.");
+      Alert.alert("Thông báo", "Vui lòng quét lại mã thiết bị.");
       return;
     }
 
@@ -105,7 +105,7 @@ const FeedbackScreen = () => {
     const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
     if (!cameraPermission.granted) {
       Alert.alert(
-        "Cần quền camera",
+        "Thông báo",
         "Bạn cần cấp quyền camera để chup ảnh đính kèm.",
       );
       return;
@@ -134,7 +134,7 @@ const FeedbackScreen = () => {
   const handleSubmit = async () => {
     if (!canSubmit) {
       Alert.alert(
-        "Thiếu thông tin",
+        "Thông báo",
         "Vui lòng quét mã thiết bị và nhập nội dung phản ánh.",
       );
       return;
@@ -157,7 +157,7 @@ const FeedbackScreen = () => {
           setDeviceCode("");
           setIsSubmitting(false);
           Alert.alert(
-            "Gửi phản ánh thành công",
+            "Thông báo",
             "Cảm ơn bạn đã gửi phản ánh. Chúng tôi sẽ xem xét và xử lý trong thời gian sớm nhất.",
           );
         },
@@ -165,7 +165,7 @@ const FeedbackScreen = () => {
           console.error("Error submitting feedback:", error);
           setIsSubmitting(false);
           Alert.alert(
-            "Gửi phản ánh thất bại",
+            "Thông báo",
             error?.response?.data?.message ||
               "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
           );

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -22,6 +22,9 @@ import Constants from "expo-constants";
 
 const HomeScreen = ({ navigation }) => {
   const [location, setLocation] = useState(null);
+  const [locationPermissionStatus, setLocationPermissionStatus] =
+    useState("pending");
+  const [isResolvingLocation, setIsResolvingLocation] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [searchAddress, setSearchAddress] = useState("");
 
@@ -72,18 +75,43 @@ const HomeScreen = ({ navigation }) => {
     };
   }, [nearbyDevices, searchAddress]);
 
-  useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
+  const requestLocationPermission = useCallback(async () => {
+    setIsResolvingLocation(true);
 
-      if (status !== "granted") {
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync();
+
+      if (!permission.granted) {
+        setLocation(null);
+        setLocationPermissionStatus(
+          permission.canAskAgain ? "denied" : "blocked",
+        );
         return;
       }
 
       const currentLocation = await Location.getCurrentPositionAsync({});
       setLocation(currentLocation.coords);
-    })();
+      setLocationPermissionStatus("granted");
+    } catch (error) {
+      setLocation(null);
+      setLocationPermissionStatus("error");
+    } finally {
+      setIsResolvingLocation(false);
+    }
   }, []);
+
+  useEffect(() => {
+    requestLocationPermission();
+  }, [requestLocationPermission]);
+
+  const openLocationSettings = useCallback(async () => {
+    try {
+      await Linking.openSettings();
+    } catch (error) {
+      // Fallback to re-request permission if settings screen cannot be opened.
+      requestLocationPermission();
+    }
+  }, [requestLocationPermission]);
 
   const openNavigation = (lat, lng) => {
     let url = "";
@@ -135,6 +163,10 @@ const HomeScreen = ({ navigation }) => {
                 location={location}
                 openNavigation={openNavigation}
                 isSearching={Boolean(searchAddress.trim())}
+                locationPermissionStatus={locationPermissionStatus}
+                isResolvingLocation={isResolvingLocation}
+                onRequestLocationPermission={requestLocationPermission}
+                onOpenLocationSettings={openLocationSettings}
               />
             </View>
           </View>

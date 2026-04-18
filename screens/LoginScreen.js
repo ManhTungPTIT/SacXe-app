@@ -10,23 +10,26 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  Alert,
 } from "react-native";
 import { Colors } from "../constants/color";
 import { useAuth } from "../queries/auth.query";
 import { useAuthStore } from "../stores/auth.store";
+import Entypo from "@expo/vector-icons/Entypo";
 
 const loginBackground = require("../assets/background.png");
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   const loginMutation = useAuth.useLogin();
   const login = useAuthStore((state) => state.login);
 
   const handleLogin = () => {
     if (!email || !password) {
-      alert("Vui lòng nhập đầy đủ email và mật khẩu.");
+      Alert.alert("Thông báo", "Vui lòng nhập đầy đủ email và mật khẩu.");
       return;
     }
     loginMutation.mutate(
@@ -36,7 +39,9 @@ const LoginScreen = ({ navigation }) => {
       },
       {
         onError: (error) => {
-          alert(
+          console.error("Login error:", error);
+          Alert.alert(
+            "Thông báo",
             error.response?.data?.message ||
               "Đăng nhập thất bại. Vui lòng thử lại.",
           );
@@ -74,14 +79,28 @@ const LoginScreen = ({ navigation }) => {
                 autoCapitalize="none"
               />
 
-              <TextInput
-                style={styles.input}
-                placeholder="Mật khẩu"
-                placeholderTextColor="#7A8087"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-              />
+              <View style={styles.passwordField}>
+                <TextInput
+                  style={[styles.input, styles.passwordInput]}
+                  placeholder="Mật khẩu"
+                  placeholderTextColor="#7A8087"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!isPasswordVisible}
+                />
+                <TouchableOpacity
+                  style={styles.passwordToggle}
+                  onPress={() => setIsPasswordVisible((prev) => !prev)}
+                  activeOpacity={0.7}
+                >
+                  <Entypo
+                    name={isPasswordVisible ? "eye" : "eye-with-line"}
+                    size={20}
+                    color={Colors.primary}
+                    style={styles.passwordToggleIcon}
+                  />
+                </TouchableOpacity>
+              </View>
 
               <TouchableOpacity style={styles.button} onPress={handleLogin}>
                 <Text style={styles.buttonText}>Đăng nhập</Text>
@@ -146,6 +165,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 16,
     color: "#1D1D1F",
+  },
+  passwordField: {
+    position: "relative",
+  },
+  passwordInput: {
+    paddingRight: 72,
+  },
+  passwordToggle: {
+    position: "absolute",
+    right: 10,
+    top: 11,
+  },
+  passwordToggleIcon: {
+    opacity: 0.95,
   },
   button: {
     backgroundColor: Colors.primary,

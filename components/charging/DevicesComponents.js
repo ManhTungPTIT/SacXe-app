@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useChargeQuery } from "../../queries/charge.query";
 import { socket } from "../../services/socket.service";
 import { Colors } from "../../constants/color";
@@ -26,7 +33,8 @@ const DevicesComponents = ({
       { deviceId, powerId },
       {
         onError: (error) => {
-          alert(
+          Alert.alert(
+            "Thông báo",
             error.response?.data?.message ||
               "Đã xảy ra lỗi khi bắt đầu phiên sạc.",
           );

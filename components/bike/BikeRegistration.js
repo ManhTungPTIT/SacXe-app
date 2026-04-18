@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  Alert,
   StyleSheet,
   Text,
   View,
@@ -7,6 +8,12 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Linking,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
@@ -28,7 +35,46 @@ const BikeRegistration = () => {
     useIdentity.useExtractRegistrationInfo();
   const bikeRegistrationMutation = useBike.useRegister();
 
+  const openAppSettings = async () => {
+    try {
+      await Linking.openSettings();
+    } catch (error) {
+      Alert.alert(
+        "Thông báo",
+        "Không thể mở Cài đặt tự động. Vui lòng mở Cài đặt của thiết bị và cấp quyền cho ứng dụng.",
+      );
+    }
+  };
+
   const pickImage = async () => {
+    const mediaLibraryPermission =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!mediaLibraryPermission.granted) {
+      if (mediaLibraryPermission.canAskAgain === false) {
+        Alert.alert(
+          "Thông báo",
+          "Bạn đã từ chối quyền truy cập thư viện. Vui lòng mở Cài đặt để bật lại quyền này.",
+          [
+            {
+              text: "Mở cài đặt",
+              onPress: openAppSettings,
+            },
+            {
+              text: "Để sau",
+              style: "cancel",
+            },
+          ],
+        );
+      } else {
+        Alert.alert(
+          "Thông báo",
+          "Cần quyền truy cập thư viện để chọn ảnh đăng ký xe.",
+        );
+      }
+      return;
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -53,7 +99,7 @@ const BikeRegistration = () => {
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
-      alert("Cần quyền truy cập camera để chụp ảnh");
+      Alert.alert("Thông báo", "Cần quyền truy cập camera để chụp ảnh");
       return;
     }
 
@@ -89,7 +135,8 @@ const BikeRegistration = () => {
             setBikeOwnerName(registrationInfo.ownerName || "");
           },
           onError: (error) => {
-            alert(
+            Alert.alert(
+              "Thông báo",
               error.response?.data?.message ||
                 "Trích xuất thông tin đăng ký thất bại. Vui lòng thử lại.",
             );
@@ -112,13 +159,14 @@ const BikeRegistration = () => {
     bikeRegistrationMutation.mutate(data, {
       onError: (error) => {
         console.error("Error during bike registration:", error);
-        alert(
+        Alert.alert(
+          "Thông báo",
           error.response?.data?.message ||
             "Đăng ký xe thất bại. Vui lòng thử lại.",
         );
       },
       onSuccess: (data) => {
-        alert("Đăng ký xe thành công!");
+        Alert.alert("Thành công", "Đăng ký xe thành công!");
         // Reset form
         setType("");
         setLicensePlate("");
@@ -131,99 +179,114 @@ const BikeRegistration = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Đăng ký sạc xe</Text>
-
-      <Text style={styles.label}>Ảnh giấy đăng ký xe</Text>
-      <View style={styles.imageContainer}>
-        {isExtractingRegistrationInfo && (
-          <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="large" color={Colors.primary} />
-            <Text style={styles.loadingText}>Đang trích xuất thông tin...</Text>
-          </View>
-        )}
-        {registrationImage ? (
-          <TouchableOpacity
-            onPress={() => {
-              choosingType === "pickImage" ? pickImage() : takePhoto();
-            }}
-            disabled={isExtractingRegistrationInfo}
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <KeyboardAvoidingView
+          style={styles.keyboardView}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.container}
+            showsVerticalScrollIndicator={false}
           >
-            <Image
-              source={{ uri: registrationImage }}
-              style={[
-                styles.image,
-                isExtractingRegistrationInfo && styles.imageDisabled,
-              ]}
-            />
-          </TouchableOpacity>
-        ) : (
-          <View
-            style={[
-              styles.imageButtons,
-              isExtractingRegistrationInfo && styles.disabled,
-            ]}
-          >
-            <TouchableOpacity
-              style={styles.imageButton}
-              onPress={pickImage}
-              disabled={isExtractingRegistrationInfo}
-            >
-              <Ionicons
-                name="images-outline"
-                size={24}
-                color={Colors.primary}
-              />
-              <Text style={styles.imageButtonText}>Thư viện</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.imageButton}
-              onPress={takePhoto}
-              disabled={isExtractingRegistrationInfo}
-            >
-              <Ionicons
-                name="camera-outline"
-                size={24}
-                color={Colors.primary}
-              />
-              <Text style={styles.imageButtonText}>Chụp ảnh</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
+            <Text style={styles.title}>Đăng ký sạc xe</Text>
 
-      {/* Chỉ hiển thị các input khi đã trích xuất xong */}
-      {registrationImage && !isExtractingRegistrationInfo && (
-        <>
-          <Text style={styles.label}>Chủ xe</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Nhập tên chủ xe"
-            value={bikeOwnerName}
-            onChangeText={setBikeOwnerName}
-          />
+            <Text style={styles.label}>Ảnh giấy đăng ký xe</Text>
+            <View style={styles.imageContainer}>
+              {isExtractingRegistrationInfo && (
+                <View style={styles.loadingOverlay}>
+                  <ActivityIndicator size="large" color={Colors.primary} />
+                  <Text style={styles.loadingText}>
+                    Đang trích xuất thông tin...
+                  </Text>
+                </View>
+              )}
+              {registrationImage ? (
+                <TouchableOpacity
+                  onPress={() => {
+                    choosingType === "pickImage" ? pickImage() : takePhoto();
+                  }}
+                  disabled={isExtractingRegistrationInfo}
+                >
+                  <Image
+                    source={{ uri: registrationImage }}
+                    style={[
+                      styles.image,
+                      isExtractingRegistrationInfo && styles.imageDisabled,
+                    ]}
+                  />
+                </TouchableOpacity>
+              ) : (
+                <View
+                  style={[
+                    styles.imageButtons,
+                    isExtractingRegistrationInfo && styles.disabled,
+                  ]}
+                >
+                  <TouchableOpacity
+                    style={styles.imageButton}
+                    onPress={pickImage}
+                    disabled={isExtractingRegistrationInfo}
+                  >
+                    <Ionicons
+                      name="images-outline"
+                      size={24}
+                      color={Colors.primary}
+                    />
+                    <Text style={styles.imageButtonText}>Thư viện</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.imageButton}
+                    onPress={takePhoto}
+                    disabled={isExtractingRegistrationInfo}
+                  >
+                    <Ionicons
+                      name="camera-outline"
+                      size={24}
+                      color={Colors.primary}
+                    />
+                    <Text style={styles.imageButtonText}>Chụp ảnh</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
 
-          <Text style={styles.label}>Loại xe</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Nhập loại xe"
-            value={type}
-            onChangeText={setType}
-          />
+            {/* Chỉ hiển thị các input khi đã trích xuất xong */}
+            {registrationImage && !isExtractingRegistrationInfo && (
+              <>
+                <Text style={styles.label}>Chủ xe</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Nhập tên chủ xe"
+                  value={bikeOwnerName}
+                  onChangeText={setBikeOwnerName}
+                />
 
-          <Text style={styles.label}>Biển số xe</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Nhập biển số xe"
-            value={licensePlate}
-            onChangeText={setLicensePlate}
-            autoCapitalize="characters"
-          />
+                <Text style={styles.label}>Loại xe</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Nhập loại xe"
+                  value={type}
+                  onChangeText={setType}
+                />
 
-          <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-            <Text style={styles.buttonText}>Đăng ký</Text>
-          </TouchableOpacity>
-        </>
-      )}
+                <Text style={styles.label}>Biển số xe</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Nhập biển số xe"
+                  value={licensePlate}
+                  onChangeText={setLicensePlate}
+                  autoCapitalize="characters"
+                />
+
+                <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+                  <Text style={styles.buttonText}>Đăng ký</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </TouchableWithoutFeedback>
     </View>
   );
 };
@@ -232,6 +295,8 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     justifyContent: "center",
+    paddingVertical: 32,
+    paddingHorizontal: 24,
   },
   title: {
     fontSize: 28,
@@ -241,7 +306,7 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   label: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "500",
     color: "#333",
     marginBottom: 8,

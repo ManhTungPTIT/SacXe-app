@@ -1,11 +1,7 @@
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Colors } from "../../constants/color";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import AntDesign from "@expo/vector-icons/AntDesign";
-import { useRef, useState } from "react";
-import { CameraView, useCameraPermissions } from "expo-camera";
-import { useChargeQuery } from "../../queries/charge.query";
 import DevicesComponents from "../charging/DevicesComponents";
 
 const InitiateChargeComponent = ({
@@ -16,34 +12,9 @@ const InitiateChargeComponent = ({
   setIsScanned,
   setPowerId,
   deviceId,
+  onScanQrPress,
   onChargeStarted,
 }) => {
-  const [scanning, setScanning] = useState(false);
-  const [permission, requestPermission] = useCameraPermissions();
-  const scannedRef = useRef(false);
-  const initiateChargeMutation = useChargeQuery.useInitiate();
-
-  const handleOpenScanner = async () => {
-    if (!permission?.granted) {
-      const result = await requestPermission();
-      if (!result.granted) {
-        alert("Cần quyền truy cập camera để quét mã QR");
-        return;
-      }
-    }
-    scannedRef.current = false;
-    setScanning(true);
-  };
-
-  const handleBarcodeScanned = ({ data }) => {
-    if (scannedRef.current) return;
-    scannedRef.current = true;
-    setScanning(false);
-
-    setdeviceCode(data);
-    setIsScanned(true);
-  };
-
   return devices?.powerOutlets?.length > 0 ? (
     <DevicesComponents
       devices={devices.powerOutlets}
@@ -56,28 +27,6 @@ const InitiateChargeComponent = ({
     />
   ) : (
     <View style={styles.container}>
-      <Modal visible={scanning} animationType="slide">
-        <View style={styles.scannerContainer}>
-          <CameraView
-            style={styles.cameraView}
-            facing="back"
-            barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-            onBarcodeScanned={handleBarcodeScanned}
-          />
-          <TouchableOpacity
-            style={styles.closeScannerButton}
-            onPress={() => setScanning(false)}
-          >
-            <Ionicons name="close" size={24} color="#fff" />
-          </TouchableOpacity>
-          <View style={styles.scannerHintContainer}>
-            <Text style={styles.scannerHintText}>
-              Hướng camera vào mã QR để quét
-            </Text>
-          </View>
-        </View>
-      </Modal>
-
       <View style={styles.contentContainer}>
         <View style={styles.iconWrap}>
           <MaterialIcons
@@ -91,16 +40,8 @@ const InitiateChargeComponent = ({
           Vui lòng quét mã QR để bắt đầu phiên sạc
         </Text>
         <View>
-          <TouchableOpacity
-            style={styles.scanButton}
-            disabled={initiateChargeMutation.isPending}
-            onPress={handleOpenScanner}
-          >
-            <Text style={styles.scanButtonText}>
-              {initiateChargeMutation.isPending
-                ? "Đang xử lý..."
-                : "Quét mã QR để sạc"}
-            </Text>
+          <TouchableOpacity style={styles.scanButton} onPress={onScanQrPress}>
+            <Text style={styles.scanButtonText}>Quét mã QR để sạc</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -120,32 +61,6 @@ const styles = StyleSheet.create({
     width: "100%",
     marginVertical: 24,
     gap: 16,
-  },
-  scannerContainer: {
-    flex: 1,
-    backgroundColor: "#000",
-  },
-  cameraView: {
-    flex: 1,
-  },
-  closeScannerButton: {
-    position: "absolute",
-    top: 48,
-    left: 16,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    padding: 8,
-    borderRadius: 8,
-  },
-  scannerHintContainer: {
-    position: "absolute",
-    bottom: 48,
-    left: 0,
-    right: 0,
-    alignItems: "center",
-  },
-  scannerHintText: {
-    color: "#fff",
-    fontSize: 16,
   },
   contentContainer: {
     display: "flex",

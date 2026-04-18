@@ -2,16 +2,16 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Image,
-  Keyboard,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -70,6 +70,7 @@ const ProfileComponent = ({
   handleCloseProfileModal,
 }) => {
   const updateProfileMutation = useAuth.useUpdateProfile();
+  const deleteAccountMutation = useAuth.useDeleteAccount();
 
   const [profileForm, setProfileForm] = useState(() =>
     getInitialFormState(user),
@@ -80,12 +81,17 @@ const ProfileComponent = ({
   const [identityFiles, setIdentityFiles] = useState(() =>
     getEmptyIdentityFiles(),
   );
+  const [isDeletePasswordFormVisible, setIsDeletePasswordFormVisible] =
+    useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
 
   useEffect(() => {
     if (!profileModalVisible) return;
     setProfileForm(getInitialFormState(user));
     setIdentityImages(getInitialIdentityImages(user));
     setIdentityFiles(getEmptyIdentityFiles());
+    setIsDeletePasswordFormVisible(false);
+    setDeletePassword("");
   }, [profileModalVisible, user]);
 
   const handleChangeField = (field, value) => {
@@ -95,6 +101,17 @@ const ProfileComponent = ({
     }));
   };
 
+  const openAppSettings = async () => {
+    try {
+      await Linking.openSettings();
+    } catch (error) {
+      Alert.alert(
+        "Thông báo",
+        "Không thể mở Cài đặt tự động. Vui lòng mở Cài đặt của thiết bị và cấp quyền cho ứng dụng.",
+      );
+    }
+  };
+
   const handlePickIdentityImage = async (side, source) => {
     const isCameraSource = source === "camera";
     const permission = isCameraSource
@@ -102,12 +119,31 @@ const ProfileComponent = ({
       : await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (!permission.granted) {
-      Alert.alert(
-        "Thông báo",
-        isCameraSource
-          ? "Vui lòng cấp quyền camera để chụp ảnh CCCD."
-          : "Vui lòng cấp quyền truy cập thư viện để chọn ảnh CCCD.",
-      );
+      if (permission.canAskAgain === false) {
+        Alert.alert(
+          "Thông báo",
+          isCameraSource
+            ? "Bạn đã từ chối quyền camera. Vui lòng mở Cài đặt để bật lại quyền này."
+            : "Bạn đã từ chối quyền truy cập thư viện. Vui lòng mở Cài đặt để bật lại quyền này.",
+          [
+            {
+              text: "Mở cài đặt",
+              onPress: openAppSettings,
+            },
+            {
+              text: "Để sau",
+              style: "cancel",
+            },
+          ],
+        );
+      } else {
+        Alert.alert(
+          "Thông báo",
+          isCameraSource
+            ? "Vui lòng cấp quyền camera để chụp ảnh CCCD."
+            : "Vui lòng cấp quyền truy cập thư viện để chọn ảnh CCCD.",
+        );
+      }
       return;
     }
 
@@ -151,7 +187,7 @@ const ProfileComponent = ({
   };
 
   const handleSelectIdentityImageOption = (side) => {
-    Alert.alert("Chọn ảnh CCCD", "Bạn muốn chụp mới hay tải ảnh lên?", [
+    Alert.alert("Thông báo", "Bạn muốn chụp mới hay tải ảnh lên?", [
       {
         text: "Chụp ảnh",
         onPress: () => handlePickIdentityImage(side, "camera"),
@@ -179,7 +215,7 @@ const ProfileComponent = ({
     }));
   };
 
-  const handleSaveProfile = () => {
+  const submitProfileUpdate = () => {
     const fullName = profileForm.fullName.trim();
     const phoneNumber = profileForm.phoneNumber.trim();
     const placeOfResidence = profileForm.address.trim();
@@ -231,16 +267,98 @@ const ProfileComponent = ({
     updateProfileMutation.mutate(payload, {
       onSuccess: () => {
         handleCloseProfileModal();
-        Alert.alert("Thành công", "Cập nhật thông tin thành công.");
+        Alert.alert("Thông báo", "Cập nhật thông tin thành công.");
       },
       onError: (error) => {
         Alert.alert(
-          "Lỗi",
+          "Thông báo",
           error?.response?.data?.message ||
             "Không thể cập nhật thông tin. Vui lòng thử lại.",
         );
       },
     });
+  };
+
+  const handleSaveProfile = () => {
+    if (updateProfileMutation.isPending) {
+      return;
+    }
+
+    Alert.alert(
+      "Xác nhận",
+      "Bạn có chắc chắn muốn cập nhật thông tin cá nhân với những thay đổi hiện tại không?",
+      [
+        {
+          text: "Để sau",
+          style: "cancel",
+        },
+        {
+          text: "Xác nhận",
+          onPress: submitProfileUpdate,
+        },
+      ],
+    );
+  };
+
+  const handlePressDeleteAccount = () => {
+    if (deleteAccountMutation.isPending) {
+      return;
+    }
+
+    setIsDeletePasswordFormVisible(true);
+  };
+
+  const handleCancelDeleteAccount = () => {
+    if (deleteAccountMutation.isPending) {
+      return;
+    }
+
+    setDeletePassword("");
+    setIsDeletePasswordFormVisible(false);
+  };
+
+  const handleConfirmDeleteAccount = () => {
+    const password = deletePassword.trim();
+
+    if (!password) {
+      Alert.alert(
+        "Thông báo",
+        "Vui lòng nhập mật khẩu để xác nhận xóa tài khoản.",
+      );
+      return;
+    }
+
+    Alert.alert(
+      "Xác nhận",
+      "Bạn sẽ không thể khôi phục tài khoản cũ hoặc tạo tài khoản mới cùng với Email/Số điện thoại đã đăng ký này trong tương lai. Bạn có chắc chắn muốn xóa tài khoản không?",
+      [
+        {
+          text: "Hủy",
+          style: "cancel",
+        },
+        {
+          text: "Xóa tài khoản",
+          style: "destructive",
+          onPress: () => {
+            deleteAccountMutation.mutate(password, {
+              onSuccess: () => {
+                setDeletePassword("");
+                setIsDeletePasswordFormVisible(false);
+                handleCloseProfileModal();
+                Alert.alert("Thông báo", "Tài khoản đã được xóa thành công.");
+              },
+              onError: (error) => {
+                Alert.alert(
+                  "Thông báo",
+                  error?.response?.data?.message ||
+                    "Không thể xóa tài khoản. Vui lòng kiểm tra mật khẩu và thử lại.",
+                );
+              },
+            });
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -250,238 +368,282 @@ const ProfileComponent = ({
       transparent={true}
       onRequestClose={handleCloseProfileModal}
     >
-      <TouchableWithoutFeedback onPress={handleCloseProfileModal}>
-        <View style={styles.overlay}>
-          <TouchableWithoutFeedback
-            onPress={Keyboard.dismiss}
-            accessible={false}
-          >
-            <KeyboardAvoidingView
-              style={styles.modalCard}
-              behavior={Platform.OS === "ios" ? "padding" : undefined}
-            >
-              <View style={styles.headerRow}>
-                <View style={styles.headerLeft}>
-                  <View style={styles.headerIconWrap}>
-                    <Ionicons
-                      name="person-circle-outline"
-                      size={18}
-                      color="#FFFFFF"
-                    />
-                  </View>
-
-                  <View>
-                    <Text style={styles.title}>Thông tin cá nhân</Text>
-                    <Text style={styles.subtitle}>
-                      Cập nhật dữ liệu hiển thị trên tài khoản của bạn
-                    </Text>
-                  </View>
-                </View>
-
-                <TouchableOpacity
-                  onPress={handleCloseProfileModal}
-                  style={styles.closeButton}
-                >
-                  <Ionicons name="close" size={20} color="#4B5563" />
-                </TouchableOpacity>
+      <View style={styles.overlay}>
+        <Pressable
+          style={styles.overlayBackdrop}
+          onPress={handleCloseProfileModal}
+        />
+        <KeyboardAvoidingView
+          style={styles.modalCard}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View style={styles.headerRow}>
+            <View style={styles.headerLeft}>
+              <View style={styles.headerIconWrap}>
+                <Ionicons
+                  name="person-circle-outline"
+                  size={18}
+                  color="#FFFFFF"
+                />
               </View>
 
-              <ScrollView
-                style={styles.formScroll}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-              >
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Họ và tên</Text>
-                  <TextInput
-                    value={profileForm.fullName}
-                    onChangeText={(text) => handleChangeField("fullName", text)}
-                    style={styles.input}
-                    placeholder="Nhập họ và tên"
-                    placeholderTextColor="#9CA3AF"
-                  />
-                </View>
+              <View>
+                <Text style={styles.title}>Thông tin cá nhân</Text>
+                <Text style={styles.subtitle}>
+                  Cập nhật dữ liệu hiển thị trên tài khoản của bạn
+                </Text>
+              </View>
+            </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Số điện thoại</Text>
-                  <TextInput
-                    value={profileForm.phoneNumber}
-                    onChangeText={(text) =>
-                      handleChangeField("phoneNumber", text)
-                    }
-                    style={styles.input}
-                    placeholder="Nhập số điện thoại"
-                    placeholderTextColor="#9CA3AF"
-                    keyboardType="phone-pad"
-                  />
-                </View>
+            <TouchableOpacity
+              onPress={handleCloseProfileModal}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={20} color="#4B5563" />
+            </TouchableOpacity>
+          </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Email</Text>
-                  <TextInput
-                    value={profileForm.email}
-                    onChangeText={(text) => handleChangeField("email", text)}
-                    style={styles.input}
-                    placeholder="Nhập email"
-                    placeholderTextColor="#9CA3AF"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                  />
-                </View>
+          <ScrollView
+            style={styles.formScroll}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+          >
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Họ và tên</Text>
+              <TextInput
+                value={profileForm.fullName}
+                onChangeText={(text) => handleChangeField("fullName", text)}
+                style={styles.input}
+                placeholder="Nhập họ và tên"
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Nơi thường trú</Text>
-                  <TextInput
-                    value={profileForm.address}
-                    onChangeText={(text) => handleChangeField("address", text)}
-                    style={[styles.input, styles.inputMultiline]}
-                    placeholder="Nhập nơi thường trú"
-                    placeholderTextColor="#9CA3AF"
-                    multiline={true}
-                    textAlignVertical="top"
-                  />
-                </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Số điện thoại</Text>
+              <TextInput
+                value={profileForm.phoneNumber}
+                onChangeText={(text) => handleChangeField("phoneNumber", text)}
+                style={styles.input}
+                placeholder="Nhập số điện thoại"
+                placeholderTextColor="#9CA3AF"
+                keyboardType="phone-pad"
+              />
+            </View>
 
-                <View style={styles.imageSection}>
-                  <Text style={styles.imageSectionTitle}>Ảnh CCCD 2 mặt</Text>
-                  <Text style={styles.imageSectionHint}>
-                    Bạn có thể chụp mới hoặc tải ảnh mặt trước và mặt sau để
-                    hoàn thiện hồ sơ định danh.
-                  </Text>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Email</Text>
+              <TextInput
+                value={profileForm.email}
+                onChangeText={(text) => handleChangeField("email", text)}
+                style={styles.input}
+                placeholder="Nhập email"
+                placeholderTextColor="#9CA3AF"
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
 
-                  <View style={styles.imageItem}>
-                    <Text style={styles.imageLabel}>Mặt trước CCCD</Text>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Nơi thường trú</Text>
+              <TextInput
+                value={profileForm.address}
+                onChangeText={(text) => handleChangeField("address", text)}
+                style={[styles.input, styles.inputMultiline]}
+                placeholder="Nhập nơi thường trú"
+                placeholderTextColor="#9CA3AF"
+                multiline={true}
+                textAlignVertical="top"
+              />
+            </View>
+
+            <View style={styles.imageSection}>
+              <Text style={styles.imageSectionTitle}>Ảnh CCCD 2 mặt</Text>
+              <Text style={styles.imageSectionHint}>
+                Bạn có thể chụp mới hoặc tải ảnh mặt trước và mặt sau để hoàn
+                thiện hồ sơ định danh.
+              </Text>
+
+              <View style={styles.imageItem}>
+                <Text style={styles.imageLabel}>Mặt trước CCCD</Text>
+                <TouchableOpacity
+                  activeOpacity={0.88}
+                  style={styles.imageUploadBox}
+                  onPress={() => handleSelectIdentityImageOption("front")}
+                >
+                  {identityImages.front ? (
+                    <Image
+                      source={{ uri: identityImages.front }}
+                      style={styles.identityImagePreview}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={styles.imagePlaceholderWrap}>
+                      <Ionicons
+                        name="cloud-upload-outline"
+                        size={22}
+                        color="#4B5563"
+                      />
+                      <Text style={styles.imagePlaceholderText}>
+                        Chạm để chụp hoặc tải ảnh mặt trước
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                {identityImages.front ? (
+                  <View style={styles.imageActionsRow}>
                     <TouchableOpacity
-                      activeOpacity={0.88}
-                      style={styles.imageUploadBox}
+                      style={[styles.imageActionButton, styles.imageReselect]}
                       onPress={() => handleSelectIdentityImageOption("front")}
                     >
-                      {identityImages.front ? (
-                        <Image
-                          source={{ uri: identityImages.front }}
-                          style={styles.identityImagePreview}
-                          resizeMode="cover"
-                        />
-                      ) : (
-                        <View style={styles.imagePlaceholderWrap}>
-                          <Ionicons
-                            name="cloud-upload-outline"
-                            size={22}
-                            color="#4B5563"
-                          />
-                          <Text style={styles.imagePlaceholderText}>
-                            Chạm để chụp hoặc tải ảnh mặt trước
-                          </Text>
-                        </View>
-                      )}
+                      <Text style={styles.imageReselectText}>Chọn lại</Text>
                     </TouchableOpacity>
 
-                    {identityImages.front ? (
-                      <View style={styles.imageActionsRow}>
-                        <TouchableOpacity
-                          style={[
-                            styles.imageActionButton,
-                            styles.imageReselect,
-                          ]}
-                          onPress={() =>
-                            handleSelectIdentityImageOption("front")
-                          }
-                        >
-                          <Text style={styles.imageReselectText}>Chọn lại</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                          style={[styles.imageActionButton, styles.imageRemove]}
-                          onPress={() => handleRemoveIdentityImage("front")}
-                        >
-                          <Text style={styles.imageRemoveText}>Xóa ảnh</Text>
-                        </TouchableOpacity>
-                      </View>
-                    ) : null}
-                  </View>
-
-                  <View style={styles.imageItem}>
-                    <Text style={styles.imageLabel}>Mặt sau CCCD</Text>
                     <TouchableOpacity
-                      activeOpacity={0.88}
-                      style={styles.imageUploadBox}
+                      style={[styles.imageActionButton, styles.imageRemove]}
+                      onPress={() => handleRemoveIdentityImage("front")}
+                    >
+                      <Text style={styles.imageRemoveText}>Xóa ảnh</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
+              </View>
+
+              <View style={styles.imageItem}>
+                <Text style={styles.imageLabel}>Mặt sau CCCD</Text>
+                <TouchableOpacity
+                  activeOpacity={0.88}
+                  style={styles.imageUploadBox}
+                  onPress={() => handleSelectIdentityImageOption("back")}
+                >
+                  {identityImages.back ? (
+                    <Image
+                      source={{ uri: identityImages.back }}
+                      style={styles.identityImagePreview}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={styles.imagePlaceholderWrap}>
+                      <Ionicons
+                        name="cloud-upload-outline"
+                        size={22}
+                        color="#4B5563"
+                      />
+                      <Text style={styles.imagePlaceholderText}>
+                        Chạm để chụp hoặc tải ảnh mặt sau
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                {identityImages.back ? (
+                  <View style={styles.imageActionsRow}>
+                    <TouchableOpacity
+                      style={[styles.imageActionButton, styles.imageReselect]}
                       onPress={() => handleSelectIdentityImageOption("back")}
                     >
-                      {identityImages.back ? (
-                        <Image
-                          source={{ uri: identityImages.back }}
-                          style={styles.identityImagePreview}
-                          resizeMode="cover"
-                        />
-                      ) : (
-                        <View style={styles.imagePlaceholderWrap}>
-                          <Ionicons
-                            name="cloud-upload-outline"
-                            size={22}
-                            color="#4B5563"
-                          />
-                          <Text style={styles.imagePlaceholderText}>
-                            Chạm để chụp hoặc tải ảnh mặt sau
-                          </Text>
-                        </View>
-                      )}
+                      <Text style={styles.imageReselectText}>Chọn lại</Text>
                     </TouchableOpacity>
 
-                    {identityImages.back ? (
-                      <View style={styles.imageActionsRow}>
-                        <TouchableOpacity
-                          style={[
-                            styles.imageActionButton,
-                            styles.imageReselect,
-                          ]}
-                          onPress={() =>
-                            handleSelectIdentityImageOption("back")
-                          }
-                        >
-                          <Text style={styles.imageReselectText}>Chọn lại</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                          style={[styles.imageActionButton, styles.imageRemove]}
-                          onPress={() => handleRemoveIdentityImage("back")}
-                        >
-                          <Text style={styles.imageRemoveText}>Xóa ảnh</Text>
-                        </TouchableOpacity>
-                      </View>
-                    ) : null}
+                    <TouchableOpacity
+                      style={[styles.imageActionButton, styles.imageRemove]}
+                      onPress={() => handleRemoveIdentityImage("back")}
+                    >
+                      <Text style={styles.imageRemoveText}>Xóa ảnh</Text>
+                    </TouchableOpacity>
                   </View>
-                </View>
-              </ScrollView>
-
-              <View style={styles.footerActions}>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.cancelButton]}
-                  onPress={handleCloseProfileModal}
-                >
-                  <Text style={styles.cancelButtonText}>Hủy</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.actionButton,
-                    styles.saveButton,
-                    updateProfileMutation.isPending &&
-                      styles.saveButtonDisabled,
-                  ]}
-                  onPress={handleSaveProfile}
-                  disabled={updateProfileMutation.isPending}
-                >
-                  <Text style={styles.saveButtonText}>
-                    {updateProfileMutation.isPending
-                      ? "Đang cập nhật..."
-                      : "Lưu thông tin"}
-                  </Text>
-                </TouchableOpacity>
+                ) : null}
               </View>
-            </KeyboardAvoidingView>
-          </TouchableWithoutFeedback>
-        </View>
-      </TouchableWithoutFeedback>
+            </View>
+          </ScrollView>
+          <View style={styles.footerActions}>
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                styles.saveButton,
+                updateProfileMutation.isPending && styles.saveButtonDisabled,
+              ]}
+              onPress={handleSaveProfile}
+              disabled={updateProfileMutation.isPending}
+            >
+              <Text style={styles.saveButtonText}>
+                {updateProfileMutation.isPending
+                  ? "Đang cập nhật..."
+                  : "Lưu thông tin"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.deleteFooterActions}>
+            {!isDeletePasswordFormVisible ? (
+              <TouchableOpacity
+                style={[
+                  styles.deleteActionButton,
+                  styles.deleteButton,
+                  deleteAccountMutation.isPending &&
+                    styles.deleteButtonDisabled,
+                ]}
+                onPress={handlePressDeleteAccount}
+                disabled={deleteAccountMutation.isPending}
+              >
+                <Text style={styles.deleteAccountButtonText}>
+                  {deleteAccountMutation.isPending
+                    ? "Đang xóa tài khoản..."
+                    : "Xóa tài khoản"}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.deleteConfirmCard}>
+                <Text style={styles.deleteConfirmLabel}>
+                  Nhập mật khẩu để xác nhận xóa tài khoản.
+                </Text>
+                <TextInput
+                  value={deletePassword}
+                  onChangeText={setDeletePassword}
+                  style={styles.deletePasswordInput}
+                  placeholder="Nhập mật khẩu"
+                  placeholderTextColor="#9CA3AF"
+                  secureTextEntry={true}
+                  autoCapitalize="none"
+                  editable={!deleteAccountMutation.isPending}
+                />
+
+                <View style={styles.deleteConfirmActions}>
+                  <TouchableOpacity
+                    style={[
+                      styles.deleteConfirmAction,
+                      styles.deleteConfirmCancel,
+                    ]}
+                    onPress={handleCancelDeleteAccount}
+                    disabled={deleteAccountMutation.isPending}
+                  >
+                    <Text style={styles.deleteConfirmCancelText}>Hủy</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.deleteConfirmAction,
+                      styles.deleteConfirmSubmit,
+                      deleteAccountMutation.isPending &&
+                        styles.deleteButtonDisabled,
+                    ]}
+                    onPress={handleConfirmDeleteAccount}
+                    disabled={deleteAccountMutation.isPending}
+                  >
+                    <Text style={styles.deleteConfirmSubmitText}>
+                      {deleteAccountMutation.isPending
+                        ? "Đang xóa tài khoản..."
+                        : "Xóa tài khoản"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          </View>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 };
@@ -493,6 +655,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 16,
+  },
+  overlayBackdrop: {
+    ...StyleSheet.absoluteFillObject,
   },
   modalCard: {
     width: "100%",
@@ -705,6 +870,81 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
   },
+  deleteFooterActions: {
+    marginBottom: 14,
+  },
+  deleteActionButton: {
+    width: "100%",
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+  },
+  deleteButton: {
+    backgroundColor: "#DC2626",
+  },
+  deleteButtonDisabled: {
+    opacity: 0.7,
+  },
+  deleteAccountButtonText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  deleteConfirmCard: {
+    width: "100%",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+    borderRadius: 12,
+    backgroundColor: "#FEF2F2",
+    padding: 12,
+  },
+  deleteConfirmLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#991B1B",
+    marginBottom: 8,
+  },
+  deletePasswordInput: {
+    borderWidth: 1,
+    borderColor: "#FCA5A5",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    fontSize: 14,
+    color: "#111827",
+    backgroundColor: "#FFFFFF",
+  },
+  deleteConfirmActions: {
+    marginTop: 10,
+    flexDirection: "row",
+    gap: 8,
+  },
+  deleteConfirmAction: {
+    flex: 1,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+  },
+  deleteConfirmCancel: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+  },
+  deleteConfirmCancelText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#374151",
+  },
+  deleteConfirmSubmit: {
+    backgroundColor: "#DC2626",
+  },
+  deleteConfirmSubmitText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
   footerActions: {
     flexDirection: "row",
     marginTop: 14,
@@ -717,14 +957,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 12,
-  },
-  cancelButton: {
-    backgroundColor: "#EEF2F7",
-  },
-  cancelButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#334155",
   },
   saveButton: {
     backgroundColor: Colors.primary,

@@ -30,4 +30,9 @@ export const authApi = {
       isDeleteExpoPushToken: true, // Xóa token push khi logout
     });
   },
+  deleteAccount: (password) => {
+    return api.delete("/api/auth/delete-account", {
+      data: { password },
+    });
+  },
 };

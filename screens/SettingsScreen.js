@@ -54,6 +54,7 @@ const SETTINGS_ACTIONS = [
 ];
 
 const SettingsScreen = ({ navigation }) => {
+  const storeUser = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const logoutMutation = useAuth.useLogout();
   const { data: userData } = useAuth.useGetMe();
@@ -85,11 +86,15 @@ const SettingsScreen = ({ navigation }) => {
     notificationsModalVisible,
   );
 
-  const ownerName = userData?.user?.name || "Người dùng";
-  const ownerBalance = Number(userData?.user?.balance || 0);
+  const ownerName = userData?.user?.name || storeUser?.name || "Người dùng";
+  const ownerBalance = Number(
+    userData?.user?.balance ||
+      userData?.user?.ownerId?.balance ||
+      storeUser?.balance ||
+      storeUser?.ownerId?.balance ||
+      0,
+  );
   const ownerInitial = ownerName?.trim()?.charAt(0)?.toUpperCase() || "U";
-
-  console.log("userData", userData);
 
   useEffect(() => {
     if (!qrGenerated) return;
@@ -154,7 +159,7 @@ const SettingsScreen = ({ navigation }) => {
       },
       onError: (error) => {
         Alert.alert(
-          "Lỗi",
+          "Thông báo",
           error?.response?.data?.message || "Có lỗi xảy ra. Vui lòng thử lại.",
         );
         console.error("Error generating QR code:", error);
@@ -474,10 +479,11 @@ const styles = StyleSheet.create({
     borderColor: "#CDEAD4",
     paddingVertical: 11,
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: Colors.primary,
+    color: Colors.secondary,
   },
   historyButtonText: {
-    color: "#2B6A3B",
+    color: Colors.secondary,
     fontWeight: "600",
     fontSize: 13,
   },

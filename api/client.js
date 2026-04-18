@@ -26,6 +26,18 @@ api.interceptors.request.use(
 let isRefreshing = false;
 let failedQueue = [];
 
+const AUTH_ENDPOINTS_SKIP_REFRESH = [
+  "/api/auth/login",
+  "/api/auth/register",
+  "/api/auth/refresh",
+];
+
+const shouldSkipRefresh = (requestUrl = "") => {
+  return AUTH_ENDPOINTS_SKIP_REFRESH.some((endpoint) =>
+    requestUrl.includes(endpoint),
+  );
+};
+
 const processQueue = (error, token = null) => {
   failedQueue.forEach((prom) => {
     if (error) {
@@ -42,9 +54,15 @@ api.interceptors.response.use(
   (res) => res.data,
   async (error) => {
     const originalRequest = error.config;
+    const requestUrl = originalRequest?.url || "";
 
     // Nếu 401 và chưa retry
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !shouldSkipRefresh(requestUrl)
+    ) {
       // Nếu đang refresh thì đợi
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -64,7 +82,18 @@ api.interceptors.response.use(
         const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
 
         if (!refreshToken) {
-          throw new Error("No refresh token");
+          processQueue(error, null);
+
+          const authState = useAuthStore.getState();
+          if (
+            authState.isAuthenticated ||
+            authState.accessToken ||
+            authState.refreshToken
+          ) {
+            await authState.logout();
+          }
+
+          return Promise.reject(error);
         }
 
         // Gọi API refresh token
@@ -87,7 +116,16 @@ api.interceptors.response.use(
       } catch (refreshError) {
         // Refresh thất bại -> logout
         processQueue(refreshError, null);
-        await useAuthStore.getState().logout();
+
+        const authState = useAuthStore.getState();
+        if (
+          authState.isAuthenticated ||
+          authState.accessToken ||
+          authState.refreshToken
+        ) {
+          await authState.logout();
+        }
+
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

@@ -1,5 +1,12 @@
 import React, { useCallback, useRef } from "react";
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  Linking,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -43,32 +50,96 @@ const QrScanScreen = ({ navigation }) => {
   const scannedRef = useRef(false);
   const [permission, requestPermission] = useCameraPermissions();
 
-  const ensureCameraPermission = useCallback(async () => {
-    if (permission?.granted) {
-      return true;
-    }
-
-    const result = await requestPermission();
-    if (!result.granted) {
+  const openCameraSettings = useCallback(async () => {
+    try {
+      await Linking.openSettings();
+    } catch (error) {
       Alert.alert(
-        "Can quyen camera",
-        "Ban can cap quyen camera de quet ma QR bat dau sac.",
+        "Thông báo",
+        "Vui lòng vào phần Cài đặt của thiết bị để bật quyền camera cho ứng dụng.",
       );
-      return false;
+    }
+  }, []);
+
+  const ensureCameraPermission = useCallback(
+    async (options = {}) => {
+      const { showBlockedAlert = true } = options;
+
+      if (permission?.granted) {
+        return true;
+      }
+
+      if (permission && permission.canAskAgain === false) {
+        if (showBlockedAlert) {
+          Alert.alert(
+            "Thông báo",
+            "Bạn đã từ chối quyền camera. Vui lòng mở Cài đặt để bật lại quyền này.",
+            [
+              {
+                text: "Mở cài đặt",
+                onPress: openCameraSettings,
+              },
+              {
+                text: "Để sau",
+                style: "cancel",
+              },
+            ],
+          );
+        }
+        return false;
+      }
+
+      const result = await requestPermission();
+      if (!result.granted) {
+        if (result.canAskAgain === false) {
+          if (showBlockedAlert) {
+            Alert.alert(
+              "Thông báo",
+              "Bạn đã từ chối quyền camera. Vui lòng mở Cài đặt để bật lại quyền này.",
+              [
+                {
+                  text: "Mở cài đặt",
+                  onPress: openCameraSettings,
+                },
+                {
+                  text: "Để sau",
+                  style: "cancel",
+                },
+              ],
+            );
+          }
+        } else {
+          Alert.alert("Thông báo", "Bạn cần cấp quyền camera để quét mã QR.");
+        }
+        return false;
+      }
+
+      return true;
+    },
+    [openCameraSettings, permission, requestPermission],
+  );
+
+  const handlePermissionAction = useCallback(() => {
+    if (permission && permission.canAskAgain === false) {
+      openCameraSettings();
+      return;
     }
 
-    return true;
-  }, [permission?.granted, requestPermission]);
+    ensureCameraPermission();
+  }, [ensureCameraPermission, openCameraSettings, permission]);
 
   useFocusEffect(
     useCallback(() => {
       scannedRef.current = false;
-      ensureCameraPermission();
+
+      if (!permission?.granted) {
+        ensureCameraPermission({ showBlockedAlert: false });
+      }
 
       return () => {
         scannedRef.current = false;
       };
-    }, [ensureCameraPermission]),
+    }, [ensureCameraPermission, permission?.granted]),
   );
 
   const handleBarcodeScanned = useCallback(
@@ -79,7 +150,10 @@ const QrScanScreen = ({ navigation }) => {
 
       const scannedDeviceCode = normalizeScannedCode(data);
       if (!scannedDeviceCode) {
-        Alert.alert("Ma QR khong hop le", "Vui long thu quet lai ma QR.");
+        Alert.alert(
+          "Thông báo",
+          "Mã QR không hợp lệ. Vui lòng thử quét lại mã QR.",
+        );
         return;
       }
 
@@ -93,18 +167,26 @@ const QrScanScreen = ({ navigation }) => {
   );
 
   if (!permission?.granted) {
+    const isPermissionBlocked = permission && permission.canAskAgain === false;
+
     return (
       <View style={styles.permissionContainer}>
         <Ionicons name="camera" size={44} color={Colors.primary} />
-        <Text style={styles.permissionTitle}>Can cap quyen camera</Text>
+        <Text style={styles.permissionTitle}>
+          {isPermissionBlocked ? "Quyền camera đang tắt" : "Cần quyền camera"}
+        </Text>
         <Text style={styles.permissionDescription}>
-          Cho phep truy cap camera de quet ma QR va bat dau phien sac.
+          {isPermissionBlocked
+            ? "Ứng dụng không thể mở camera vì quyền đã bị tắt. Hãy mở Cài đặt để cấp lại quyền camera."
+            : "Cho phép truy cập camera để quét mã QR."}
         </Text>
         <TouchableOpacity
           style={styles.permissionButton}
-          onPress={ensureCameraPermission}
+          onPress={handlePermissionAction}
         >
-          <Text style={styles.permissionButtonText}>Cap quyen camera</Text>
+          <Text style={styles.permissionButtonText}>
+            {isPermissionBlocked ? "Mở cài đặt" : "Cấp quyền camera"}
+          </Text>
         </TouchableOpacity>
       </View>
     );
@@ -206,6 +288,15 @@ const styles = StyleSheet.create({
   permissionButtonText: {
     color: "#FFFFFF",
     fontWeight: "700",
+  },
+  permissionSecondaryButton: {
+    marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  permissionSecondaryButtonText: {
+    color: Colors.primary,
+    fontWeight: "600",
   },
 });
 
