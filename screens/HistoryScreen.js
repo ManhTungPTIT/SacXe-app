@@ -14,6 +14,7 @@ import {
   vietnamTime,
 } from "../utils/time";
 import { Colors } from "../constants/color";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const formatCurrency = (value) => {
   const price = Number(value) || 0;
@@ -38,7 +39,7 @@ const HistoryScreen = () => {
   const histories = historyData?.histories ?? [];
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -48,135 +49,153 @@ const HistoryScreen = () => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          <View style={styles.headerSection}>
-            <Text style={styles.title}>Lịch sử</Text>
-          </View>
-          <View style={styles.contentWrap}>
-            <View style={styles.monthlyCard}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>Thống kê tháng này</Text>
-                <View style={[styles.statusBadge, styles.statusDone]}>
-                  <Text style={[styles.statusText, styles.statusDoneText]}>
-                    Cập nhật
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Tổng số lần sạc</Text>
-                <Text style={styles.infoValue}>{monthlyStats?.count ?? 0}</Text>
-              </View>
-
-              <View style={styles.divider} />
-
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Tổng chi phí</Text>
-                <Text style={styles.infoValue}>
-                  {formatCurrency(monthlyStats?.totalAmount)}
-                </Text>
-              </View>
-
-              <View style={styles.divider} />
-
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Điện năng tiêu thụ</Text>
-                <Text style={styles.infoValue}>
-                  {formatEnergy(monthlyStats?.totalEnergy)}
-                </Text>
-              </View>
+          <View style={styles.container}>
+            <View style={styles.headerSection}>
+              <Text style={styles.title}>Lịch sử</Text>
             </View>
-
-            {isLoading ? (
-              <View style={[styles.monthlyCard, styles.emptyCard]}>
-                <Text style={styles.emptyTitle}>Đang tải lịch sử sạc...</Text>
-              </View>
-            ) : error ? (
-              <View style={[styles.monthlyCard, styles.emptyCard]}>
-                <Text style={styles.emptyTitle}>Không thể tải lịch sử</Text>
-                <Text style={styles.emptySubtitle}>
-                  Vui lòng thử lại sau vài giây.
-                </Text>
-              </View>
-            ) : histories.length > 0 ? (
-              histories.map((item, index) => (
-                <View
-                  key={item?._id ?? `${item?.createdAt}-${index}`}
-                  style={styles.sessionCard}
-                >
-                  <View style={styles.cardHeader}>
-                    <Text style={styles.cardTitle}>Phiên sạc #{index + 1}</Text>
-                    <View style={[styles.statusBadge, styles.statusDone]}>
-                      <Text style={[styles.statusText, styles.statusDoneText]}>
-                        Hoàn tất
-                      </Text>
-                    </View>
-                  </View>
-
-                  <Text style={styles.startTime}>
-                    Bắt đầu: {vietnamDate(item?.createdAt)} -
-                    {` ${vietnamTime(item?.createdAt)}`}
-                  </Text>
-
-                  <View style={styles.metricsRow}>
-                    <View style={[styles.metricCard, styles.metricCardSpacing]}>
-                      <Text style={styles.metricLabel}>Điện năng tiêu thụ</Text>
-                      <Text style={styles.metricValue}>
-                        {formatEnergy(item?.energy)}
-                      </Text>
-                    </View>
-
-                    <View style={styles.metricCard}>
-                      <Text style={styles.metricLabel}>Chi phí</Text>
-                      <Text style={styles.metricValue}>
-                        {formatCurrency(item?.price)}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.divider} />
-
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Tổng thời gian sạc</Text>
-                    <Text style={styles.infoValue}>
-                      {calculateChargingDurationFormatted(
-                        item?.createdAt,
-                        item?.updatedAt,
-                      )}
+            <View style={styles.contentWrap}>
+              <View style={styles.monthlyCard}>
+                <View style={styles.cardHeader}>
+                  <Text style={styles.cardTitle}>Thống kê tháng này</Text>
+                  <View style={[styles.statusBadge, styles.statusDone]}>
+                    <Text style={[styles.statusText, styles.statusDoneText]}>
+                      Cập nhật
                     </Text>
                   </View>
                 </View>
-              ))
-            ) : (
-              <View style={[styles.monthlyCard, styles.emptyCard]}>
-                <Text style={styles.emptyTitle}>Chưa có lịch sử nào</Text>
-                <Text style={styles.emptySubtitle}>
-                  Sau khi hoàn tất phiên sạc, thông tin sẽ hiển thị tại đây.
-                </Text>
+
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Tổng số lần sạc</Text>
+                  <Text style={styles.infoValue}>
+                    {monthlyStats?.count ?? 0}
+                  </Text>
+                </View>
+
+                <View style={styles.divider} />
+
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Tổng chi phí</Text>
+                  <Text style={styles.infoValue}>
+                    {formatCurrency(monthlyStats?.totalAmount)}
+                  </Text>
+                </View>
+
+                <View style={styles.divider} />
+
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Điện năng tiêu thụ</Text>
+                  <Text style={styles.infoValue}>
+                    {formatEnergy(monthlyStats?.totalEnergy)}
+                  </Text>
+                </View>
               </View>
-            )}
+
+              {isLoading ? (
+                <View style={[styles.monthlyCard, styles.emptyCard]}>
+                  <Text style={styles.emptyTitle}>Đang tải lịch sử sạc...</Text>
+                </View>
+              ) : error ? (
+                <View style={[styles.monthlyCard, styles.emptyCard]}>
+                  <Text style={styles.emptyTitle}>Không thể tải lịch sử</Text>
+                  <Text style={styles.emptySubtitle}>
+                    Vui lòng thử lại sau vài giây.
+                  </Text>
+                </View>
+              ) : histories.length > 0 ? (
+                histories.map((item, index) => (
+                  <View
+                    key={item?._id ?? `${item?.createdAt}-${index}`}
+                    style={styles.sessionCard}
+                  >
+                    <View style={styles.cardHeader}>
+                      <Text style={styles.cardTitle}>
+                        Phiên sạc #{index + 1}
+                      </Text>
+                      <View style={[styles.statusBadge, styles.statusDone]}>
+                        <Text
+                          style={[styles.statusText, styles.statusDoneText]}
+                        >
+                          Hoàn tất
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Text style={styles.startTime}>
+                      Bắt đầu: {vietnamDate(item?.createdAt)} -
+                      {` ${vietnamTime(item?.createdAt)}`}
+                    </Text>
+
+                    <View style={styles.metricsRow}>
+                      <View
+                        style={[styles.metricCard, styles.metricCardSpacing]}
+                      >
+                        <Text style={styles.metricLabel}>
+                          Điện năng tiêu thụ
+                        </Text>
+                        <Text style={styles.metricValue}>
+                          {formatEnergy(item?.energy)}
+                        </Text>
+                      </View>
+
+                      <View style={styles.metricCard}>
+                        <Text style={styles.metricLabel}>Chi phí</Text>
+                        <Text style={styles.metricValue}>
+                          {formatCurrency(item?.price)}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.divider} />
+
+                    <View style={styles.infoRow}>
+                      <Text style={styles.infoLabel}>Tổng thời gian sạc</Text>
+                      <Text style={styles.infoValue}>
+                        {calculateChargingDurationFormatted(
+                          item?.createdAt,
+                          item?.updatedAt,
+                        )}
+                      </Text>
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <View style={[styles.monthlyCard, styles.emptyCard]}>
+                  <Text style={styles.emptyTitle}>Chưa có lịch sử nào</Text>
+                  <Text style={styles.emptySubtitle}>
+                    Sau khi hoàn tất phiên sạc, thông tin sẽ hiển thị tại đây.
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: Colors.primary,
+  },
   keyboardView: {
     flex: 1,
   },
   scrollView: {
     flex: 1,
+    backgroundColor: Colors.primary,
   },
   scrollContent: {
     paddingBottom: 24,
   },
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.secondary,
   },
   headerSection: {
     backgroundColor: Colors.primary,
+    alignItems: "center",
     paddingVertical: 24,
     paddingHorizontal: 16,
   },
@@ -185,7 +204,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   title: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: "700",
     color: Colors.secondary,
   },

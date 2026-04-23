@@ -17,6 +17,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
 import { Colors } from "../constants/color";
 import { useFeedbackQuery } from "../queries/feedback.query";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const normalizeScannedCode = (rawData) => {
   const value = rawData?.trim();
@@ -175,165 +176,174 @@ const FeedbackScreen = () => {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.screen}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <ScrollView
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
         style={styles.screen}
-        contentContainerStyle={styles.contentContainer}
-        keyboardShouldPersistTaps="handled"
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <View style={styles.headerCard}>
-          <View style={styles.headerIconWrap}>
-            <Ionicons
-              name="chatbox-ellipses"
-              size={24}
-              color={Colors.primary}
-            />
-          </View>
-          <Text style={styles.headerTitle}>Phản ánh sự cố sạc</Text>
-          <Text style={styles.headerDescription}>
-            Quét mã thiết bị để xác định đúng tòa nhà, sau đó gửi mô tả và hình
-            ảnh để đội ngũ vận hành hỗ trợ nhanh hơn.
-          </Text>
-        </View>
-
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>1. Mã thiết bị</Text>
-
-          <View style={styles.deviceCodeBox}>
-            <Ionicons name="qr-code" size={20} color={Colors.primary} />
-            <Text style={styles.deviceCodeText} numberOfLines={2}>
-              {deviceCode || "Chưa quét mã thiết bị"}
-            </Text>
-          </View>
-
-          <TouchableOpacity style={styles.primaryButton} onPress={openScanner}>
-            <Ionicons name="scan" size={18} color="#FFFFFF" />
-            <Text style={styles.primaryButtonText}>
-              {deviceCode ? "Quét lại mã" : "Quét mã thiết bị"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>
-            2. Hình ảnh đính kèm (tùy chọn)
-          </Text>
-
-          {photoUri ? (
-            <Image source={{ uri: photoUri }} style={styles.previewImage} />
-          ) : (
-            <View style={styles.imagePlaceholder}>
+        <ScrollView
+          style={styles.screen}
+          contentContainerStyle={styles.contentContainer}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.headerCard}>
+            <View style={styles.headerIconWrap}>
               <Ionicons
-                name="image-outline"
-                size={26}
-                color={Colors.inactive}
+                name="chatbox-ellipses"
+                size={24}
+                color={Colors.primary}
               />
-              <Text style={styles.imagePlaceholderText}>
-                Chưa có ảnh đính kèm
+            </View>
+            <Text style={styles.headerTitle}>Phản ánh sự cố sạc</Text>
+            <Text style={styles.headerDescription}>
+              Quét mã thiết bị để xác định đúng tòa nhà, sau đó gửi mô tả và
+              hình ảnh để đội ngũ vận hành hỗ trợ nhanh hơn.
+            </Text>
+          </View>
+
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>1. Mã thiết bị</Text>
+
+            <View style={styles.deviceCodeBox}>
+              <Ionicons name="qr-code" size={20} color={Colors.primary} />
+              <Text style={styles.deviceCodeText} numberOfLines={2}>
+                {deviceCode || "Chưa quét mã thiết bị"}
               </Text>
             </View>
-          )}
 
-          <View style={styles.photoActionsRow}>
             <TouchableOpacity
-              style={styles.secondaryButton}
-              onPress={handleTakePhoto}
+              style={styles.primaryButton}
+              onPress={openScanner}
             >
-              <Ionicons name="camera" size={18} color={Colors.primary} />
-              <Text style={styles.secondaryButtonText}>Chụp ảnh</Text>
+              <Ionicons name="scan" size={18} color="#FFFFFF" />
+              <Text style={styles.primaryButtonText}>
+                {deviceCode ? "Quét lại mã" : "Quét mã thiết bị"}
+              </Text>
             </TouchableOpacity>
+          </View>
+
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>
+              2. Hình ảnh đính kèm (tùy chọn)
+            </Text>
 
             {photoUri ? (
+              <Image source={{ uri: photoUri }} style={styles.previewImage} />
+            ) : (
+              <View style={styles.imagePlaceholder}>
+                <Ionicons
+                  name="image-outline"
+                  size={26}
+                  color={Colors.inactive}
+                />
+                <Text style={styles.imagePlaceholderText}>
+                  Chưa có ảnh đính kèm
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.photoActionsRow}>
               <TouchableOpacity
-                style={styles.removeButton}
-                onPress={() => setPhotoUri("")}
+                style={styles.secondaryButton}
+                onPress={handleTakePhoto}
               >
-                <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
-                <Text style={styles.removeButtonText}>Bỏ ảnh</Text>
+                <Ionicons name="camera" size={18} color={Colors.primary} />
+                <Text style={styles.secondaryButtonText}>Chụp ảnh</Text>
               </TouchableOpacity>
-            ) : null}
+
+              {photoUri ? (
+                <TouchableOpacity
+                  style={styles.removeButton}
+                  onPress={() => setPhotoUri("")}
+                >
+                  <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
+                  <Text style={styles.removeButtonText}>Bỏ ảnh</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
           </View>
-        </View>
 
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>3. Nội dung phản ánh</Text>
-          <TextInput
-            value={message}
-            onChangeText={setMessage}
-            placeholder="Mô tả sự cố, ví dụ: ổ cắm sạc không vào điện, màn hình báo lỗi..."
-            placeholderTextColor="#9AA0A6"
-            style={styles.messageInput}
-            multiline
-            textAlignVertical="top"
-            maxLength={700}
-          />
-          <Text style={styles.charCount}>{message.length}/700</Text>
-        </View>
-
-        <TouchableOpacity
-          style={[
-            styles.submitButton,
-            (!canSubmit || isSubmitting) && styles.submitButtonDisabled,
-          ]}
-          disabled={!canSubmit || isSubmitting}
-          onPress={handleSubmit}
-        >
-          <Ionicons name="send" size={18} color="#FFFFFF" />
-          <Text style={styles.submitButtonText}>
-            {isSubmitting ? "Đang gửi..." : "Gửi phản ánh"}
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
-
-      <Modal
-        visible={isScannerVisible}
-        animationType="slide"
-        onRequestClose={closeScanner}
-      >
-        <View style={styles.scannerContainer}>
-          <CameraView
-            style={StyleSheet.absoluteFill}
-            facing="back"
-            barcodeScannerSettings={{
-              barcodeTypes: ["qr", "code128", "ean13"],
-            }}
-            onBarcodeScanned={handleBarcodeScanned}
-          />
-
-          <View style={styles.scannerOverlay} pointerEvents="none">
-            <View style={styles.scannerFrame} />
-            <Text style={styles.scannerGuideText}>
-              Đặt mã QR vào khung để quét. Hệ thống sẽ tự động nhận diện mã
-              thiết bị và đóng camera sau khi quét thành công.
-            </Text>
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>3. Nội dung phản ánh</Text>
+            <TextInput
+              value={message}
+              onChangeText={setMessage}
+              placeholder="Mô tả sự cố, ví dụ: ổ cắm sạc không vào điện, màn hình báo lỗi..."
+              placeholderTextColor="#9AA0A6"
+              style={styles.messageInput}
+              multiline
+              textAlignVertical="top"
+              maxLength={700}
+            />
+            <Text style={styles.charCount}>{message.length}/700</Text>
           </View>
 
           <TouchableOpacity
-            style={styles.closeScannerButton}
-            onPress={closeScanner}
+            style={[
+              styles.submitButton,
+              (!canSubmit || isSubmitting) && styles.submitButtonDisabled,
+            ]}
+            disabled={!canSubmit || isSubmitting}
+            onPress={handleSubmit}
           >
-            <Ionicons name="close" size={22} color="#FFFFFF" />
-            <Text style={styles.closeScannerText}>Đóng</Text>
+            <Ionicons name="send" size={18} color="#FFFFFF" />
+            <Text style={styles.submitButtonText}>
+              {isSubmitting ? "Đang gửi..." : "Gửi phản ánh"}
+            </Text>
           </TouchableOpacity>
-        </View>
-      </Modal>
-    </KeyboardAvoidingView>
+        </ScrollView>
+
+        <Modal
+          visible={isScannerVisible}
+          animationType="slide"
+          onRequestClose={closeScanner}
+        >
+          <View style={styles.scannerContainer}>
+            <CameraView
+              style={StyleSheet.absoluteFill}
+              facing="back"
+              barcodeScannerSettings={{
+                barcodeTypes: ["qr", "code128", "ean13"],
+              }}
+              onBarcodeScanned={handleBarcodeScanned}
+            />
+
+            <View style={styles.scannerOverlay} pointerEvents="none">
+              <View style={styles.scannerFrame} />
+              <Text style={styles.scannerGuideText}>
+                Đặt mã QR vào khung để quét. Hệ thống sẽ tự động nhận diện mã
+                thiết bị và đóng camera sau khi quét thành công.
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.closeScannerButton}
+              onPress={closeScanner}
+            >
+              <Ionicons name="close" size={22} color="#FFFFFF" />
+              <Text style={styles.closeScannerText}>Đóng</Text>
+            </TouchableOpacity>
+          </View>
+        </Modal>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
   screen: {
     flex: 1,
-    backgroundColor: "#F4F7F5",
+    backgroundColor: Colors.primary,
   },
   contentContainer: {
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 150,
     gap: 14,
+    backgroundColor: Colors.secondary,
   },
   headerCard: {
     backgroundColor: "#FFFFFF",

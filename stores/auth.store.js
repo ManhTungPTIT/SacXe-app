@@ -32,6 +32,7 @@ export const useAuthStore = create((set, get) => ({
   accessToken: null,
   refreshToken: null,
   isLoading: true,
+  notificationPermissionTriggered: false,
 
   // Đăng nhập: lưu tokens và user
   login: async (accessToken, refreshToken, user) => {
@@ -47,6 +48,7 @@ export const useAuthStore = create((set, get) => ({
         refreshToken,
         user,
         isLoading: false,
+        notificationPermissionTriggered: false,
       });
     } catch (error) {
       console.error("Error saving auth data:", error);
@@ -94,8 +96,13 @@ export const useAuthStore = create((set, get) => ({
         accessToken: null,
         refreshToken: null,
         user: null,
+        notificationPermissionTriggered: false,
       });
     }
+  },
+
+  triggerNotificationPermission: () => {
+    set({ notificationPermissionTriggered: true });
   },
 
   // Khởi tạo: check token khi mở app
@@ -115,11 +122,11 @@ export const useAuthStore = create((set, get) => ({
           isLoading: false,
         });
       } else {
-        set({ isLoading: false });
+        set({ isLoading: false, notificationPermissionTriggered: false });
       }
     } catch (error) {
       console.error("Error loading auth data:", error);
-      set({ isLoading: false });
+      set({ isLoading: false, notificationPermissionTriggered: false });
     }
   },
 }));

@@ -25,6 +25,9 @@ const DevicesComponents = ({
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [selectedPowerOutlet, setSelectedPowerOutlet] = useState(null);
   const user = useAuthStore((state) => state.user);
+  const triggerNotificationPermission = useAuthStore(
+    (state) => state.triggerNotificationPermission,
+  );
   const userId = user?._id;
 
   const handleInitiateCharge = (powerId) => {
@@ -52,6 +55,7 @@ const DevicesComponents = ({
   };
 
   const handleOpenConfirmModal = (device) => {
+    triggerNotificationPermission();
     setSelectedPowerOutlet(device);
     setConfirmModalVisible(true);
   };

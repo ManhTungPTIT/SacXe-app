@@ -15,6 +15,7 @@ import ChargingStatusComponent from "../components/charging/ChargingStatusCompon
 import { useChargeQuery } from "../queries/charge.query";
 import { useEChargeDeviceQuery } from "../queries/eChargeDevice.query";
 import { Colors } from "../constants/color";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const ChargeScreen = ({ route, navigation }) => {
   const [devices, setDevices] = useState([]);
@@ -115,69 +116,81 @@ const ChargeScreen = ({ route, navigation }) => {
   };
 
   return (
-    <View style={styles.page}>
-      {bike?.bike ? (
-        <KeyboardAvoidingView
-          style={styles.keyboardView}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.container}
+          showsVerticalScrollIndicator={false}
         >
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={styles.container}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.headerSection}>
-              <Text style={styles.screenTitle}>Phiên sạc của bạn</Text>
-            </View>
-
-            {bike?.bike?.isCharging ? (
+          <View style={styles.page}>
+            {bike?.bike ? (
               <>
-                <ChargingStatusComponent onStopCharging={handleStopCharging} />
+                <View style={styles.headerSection}>
+                  <Text style={styles.screenTitle}>Phiên sạc của bạn</Text>
+                </View>
+
+                {bike?.bike?.isCharging ? (
+                  <>
+                    <ChargingStatusComponent
+                      onStopCharging={handleStopCharging}
+                    />
+                  </>
+                ) : (
+                  <InitiateChargeComponent
+                    devices={eChargeDevices}
+                    setDevices={setDevices}
+                    isScanned={isScanned}
+                    setIsScanned={setIsScanned}
+                    deviceCode={deviceCode}
+                    setdeviceCode={setdeviceCode}
+                    setPowerId={setPowerId}
+                    deviceId={deviceId}
+                    onScanQrPress={() => navigation.navigate("ScanQR")}
+                    onChargeStarted={() => navigation.navigate("Charge")}
+                  />
+                )}
               </>
             ) : (
-              <InitiateChargeComponent
-                devices={eChargeDevices}
-                setDevices={setDevices}
-                isScanned={isScanned}
-                setIsScanned={setIsScanned}
-                deviceCode={deviceCode}
-                setdeviceCode={setdeviceCode}
-                setPowerId={setPowerId}
-                deviceId={deviceId}
-                onScanQrPress={() => navigation.navigate("ScanQR")}
-                onChargeStarted={() => navigation.navigate("Charge")}
-              />
+              <BikeRegistration />
             )}
-          </ScrollView>
-        </KeyboardAvoidingView>
-      ) : (
-        <BikeRegistration />
-      )}
-    </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: Colors.primary,
+  },
   page: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.secondary,
   },
   keyboardView: {
     flex: 1,
   },
   scrollView: {
     flex: 1,
+    backgroundColor: Colors.primary,
   },
   container: {
     flexGrow: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.secondary,
   },
   screenTitle: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: "700",
     color: Colors.secondary,
   },
   headerSection: {
+    alignItems: "center",
     backgroundColor: Colors.primary,
     paddingVertical: 24,
     paddingHorizontal: 16,
