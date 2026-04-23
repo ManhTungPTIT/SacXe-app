@@ -30,6 +30,7 @@ const BikeRegistration = () => {
   const [isExtractingRegistrationInfo, setIsExtractingRegistrationInfo] =
     useState(false);
   const [bikeOwnerName, setBikeOwnerName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const extractRegistrationInfoMutation =
     useIdentity.useExtractRegistrationInfo();
@@ -150,6 +151,7 @@ const BikeRegistration = () => {
   }, [registrationFile]);
 
   const handleSubmit = () => {
+    setIsSubmitting(true);
     const data = {
       type,
       licensePlate,
@@ -173,6 +175,9 @@ const BikeRegistration = () => {
         setBikeOwnerName("");
         setRegistrationImage(null);
         setRegistrationFile(null);
+      },
+      onSettled: () => {
+        setIsSubmitting(false);
       },
     });
   };
@@ -279,8 +284,14 @@ const BikeRegistration = () => {
                   autoCapitalize="characters"
                 />
 
-                <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-                  <Text style={styles.buttonText}>Đăng ký</Text>
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={handleSubmit}
+                  disabled={isSubmitting}
+                >
+                  <Text style={styles.buttonText}>
+                    {isSubmitting ? "Đang đăng ký..." : "Đăng ký"}
+                  </Text>
                 </TouchableOpacity>
               </>
             )}

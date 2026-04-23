@@ -187,10 +187,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
   },
   scrollContent: {
-    paddingBottom: 24,
+    paddingBottom: 0,
   },
   container: {
     flex: 1,
+    minHeight: "100%",
     backgroundColor: Colors.secondary,
   },
   headerSection: {

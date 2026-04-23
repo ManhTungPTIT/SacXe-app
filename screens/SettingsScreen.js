@@ -24,6 +24,7 @@ import { useNotificationQuery } from "../queries/notification.query";
 import AboutEnovoComponent from "../components/settings/AboutEnovoComponent";
 import MyBikeComponent from "../components/bike/MyBikeComponent";
 import ProfileComponent from "../components/settings/ProfileComponent";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const SETTINGS_ACTIONS = [
   {
@@ -197,193 +198,216 @@ const SettingsScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <KeyboardAvoidingView
+          style={styles.keyboardView}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-          <View style={styles.headerSection}>
-            <Text style={styles.title}>Cài đặt</Text>
-          </View>
-          <View>
-            <View style={styles.accountCard}>
-              <View style={styles.accountHeader}>
-                <View style={styles.avatarCircle}>
-                  <Text style={styles.avatarText}>{ownerInitial}</Text>
-                </View>
-
-                <View style={styles.accountMeta}>
-                  <Text style={styles.accountLabel}>Chủ tài khoản</Text>
-                  <Text style={styles.accountName} numberOfLines={1}>
-                    {ownerName}
-                  </Text>
-                </View>
-              </View>
-
-              <TouchableOpacity style={styles.balanceCard} activeOpacity={0.8}>
-                <Text style={styles.balanceLabel}>Số dư khả dụng</Text>
-                <Text style={styles.balanceValue}>
-                  {ownerBalance.toLocaleString("vi-VN")} VND
-                </Text>
-              </TouchableOpacity>
-
-              <View style={styles.accountActions}>
-                <TouchableOpacity
-                  style={styles.historyButton}
-                  onPress={() => setTransactionHistoryModalVisible(true)}
-                >
-                  <Text style={styles.historyButtonText}>
-                    Lịch sử giao dịch
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.topUpButton}
-                  onPress={handleOpenTopUpModal}
-                >
-                  <Text style={styles.topUpButtonText}>Nạp tiền</Text>
-                </TouchableOpacity>
-              </View>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.headerSection}>
+              <Text style={styles.title}>Cài đặt</Text>
             </View>
-            <View style={styles.settingsActionList}>
-              {SETTINGS_ACTIONS.map((item, index) => (
-                <TouchableOpacity
-                  key={item.key}
-                  style={[
-                    styles.settingsActionItem,
-                    index === SETTINGS_ACTIONS.length - 1 &&
-                      styles.settingsActionItemLast,
-                  ]}
-                  onPress={() => handlePressSettingsAction(item.key)}
-                >
-                  <View style={styles.settingsActionLeft}>
-                    <Ionicons
-                      name={item.icon}
-                      size={18}
-                      color={styles.settingsActionIcon.color}
-                    />
-                    <Text style={styles.settingsActionLabel}>{item.label}</Text>
+            <View>
+              <View style={styles.accountCard}>
+                <View style={styles.accountHeader}>
+                  <View style={styles.avatarCircle}>
+                    <Text style={styles.avatarText}>{ownerInitial}</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color="#7B7E82" />
+
+                  <View style={styles.accountMeta}>
+                    <Text style={styles.accountLabel}>Chủ tài khoản</Text>
+                    <Text style={styles.accountName} numberOfLines={1}>
+                      {ownerName}
+                    </Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.balanceCard}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.balanceLabel}>Số dư khả dụng</Text>
+                  <Text style={styles.balanceValue}>
+                    {ownerBalance.toLocaleString("vi-VN")} VND
+                  </Text>
                 </TouchableOpacity>
-              ))}
-            </View>
-          </View>
 
-          <TouchableOpacity
-            style={styles.logoutButton}
-            onPress={handleOpenLogoutConfirm}
-          >
-            <Text style={styles.logoutButtonText}>Đăng xuất</Text>
-          </TouchableOpacity>
+                <View style={styles.accountActions}>
+                  <TouchableOpacity
+                    style={styles.historyButton}
+                    onPress={() => setTransactionHistoryModalVisible(true)}
+                  >
+                    <Text style={styles.historyButtonText}>
+                      Lịch sử giao dịch
+                    </Text>
+                  </TouchableOpacity>
 
-          {/* Modal xác nhận đăng xuất */}
-          <Modal
-            visible={logoutConfirmVisible}
-            animationType="fade"
-            transparent={true}
-            onRequestClose={handleCloseLogoutConfirm}
-          >
-            <TouchableWithoutFeedback onPress={handleCloseLogoutConfirm}>
-              <View style={styles.modalOverlay}>
-                <TouchableWithoutFeedback>
-                  <View style={styles.confirmModalContent}>
-                    <Text style={styles.confirmModalTitle}>
-                      Xác nhận đăng xuất
-                    </Text>
-                    <Text style={styles.confirmModalMessage}>
-                      Bạn có chắc chắn muốn đăng xuất ở thời điểm này không?
-                    </Text>
-                    <View style={styles.modalButtons}>
-                      <TouchableOpacity
-                        style={[styles.modalButton, styles.cancelButton]}
-                        onPress={handleCloseLogoutConfirm}
-                      >
-                        <Text style={styles.cancelButtonText}>Hủy</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.modalButton, styles.confirmLogoutButton]}
-                        onPress={handleConfirmLogout}
-                      >
-                        <Text style={styles.confirmLogoutButtonText}>
-                          Đăng xuất
-                        </Text>
-                      </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.topUpButton}
+                    onPress={handleOpenTopUpModal}
+                  >
+                    <Text style={styles.topUpButtonText}>Nạp tiền</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              <View style={styles.settingsActionList}>
+                {SETTINGS_ACTIONS.map((item, index) => (
+                  <TouchableOpacity
+                    key={item.key}
+                    style={[
+                      styles.settingsActionItem,
+                      index === SETTINGS_ACTIONS.length - 1 &&
+                        styles.settingsActionItemLast,
+                    ]}
+                    onPress={() => handlePressSettingsAction(item.key)}
+                  >
+                    <View style={styles.settingsActionLeft}>
+                      <Ionicons
+                        name={item.icon}
+                        size={18}
+                        color={styles.settingsActionIcon.color}
+                      />
+                      <Text style={styles.settingsActionLabel}>
+                        {item.label}
+                      </Text>
                     </View>
-                  </View>
-                </TouchableWithoutFeedback>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={18}
+                      color="#7B7E82"
+                    />
+                  </TouchableOpacity>
+                ))}
               </View>
-            </TouchableWithoutFeedback>
-          </Modal>
+            </View>
 
-          {/* Modal nạp tiền */}
-          <TopUpComponent
-            topUpModalVisible={topUpModalVisible}
-            handleCloseTopUpModal={handleCloseTopUpModal}
-            selectedAmount={selectedAmount}
-            setSelectedAmount={setSelectedAmount}
-            customAmount={customAmount}
-            setCustomAmount={setCustomAmount}
-            handleConfirmTopUp={handleConfirmTopUp}
-            qrGenerated={qrGenerated}
-            setQrGenerated={setQrGenerated}
-            timeLeft={timeLeft}
-            setTimeLeft={setTimeLeft}
-          />
+            <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={handleOpenLogoutConfirm}
+            >
+              <Text style={styles.logoutButtonText}>Đăng xuất</Text>
+            </TouchableOpacity>
 
-          {/* Component lịch sử giao dịch */}
-          <TransactionHistoryComponent
-            history={transactionHistory?.history || []}
-            topUpModalTransactionHistoryVisible={transationHistoryModalVisible}
-            handleCloseTransactionHistoryModal={() =>
-              setTransactionHistoryModalVisible(false)
-            }
-          />
+            {/* Modal xác nhận đăng xuất */}
+            <Modal
+              visible={logoutConfirmVisible}
+              animationType="fade"
+              transparent={true}
+              onRequestClose={handleCloseLogoutConfirm}
+            >
+              <TouchableWithoutFeedback onPress={handleCloseLogoutConfirm}>
+                <View style={styles.modalOverlay}>
+                  <TouchableWithoutFeedback>
+                    <View style={styles.confirmModalContent}>
+                      <Text style={styles.confirmModalTitle}>
+                        Xác nhận đăng xuất
+                      </Text>
+                      <Text style={styles.confirmModalMessage}>
+                        Bạn có chắc chắn muốn đăng xuất ở thời điểm này không?
+                      </Text>
+                      <View style={styles.modalButtons}>
+                        <TouchableOpacity
+                          style={[styles.modalButton, styles.cancelButton]}
+                          onPress={handleCloseLogoutConfirm}
+                        >
+                          <Text style={styles.cancelButtonText}>Hủy</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[
+                            styles.modalButton,
+                            styles.confirmLogoutButton,
+                          ]}
+                          onPress={handleConfirmLogout}
+                        >
+                          <Text style={styles.confirmLogoutButtonText}>
+                            Đăng xuất
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </TouchableWithoutFeedback>
+                </View>
+              </TouchableWithoutFeedback>
+            </Modal>
 
-          {/* Component xe của tôi */}
-          <MyBikeComponent
-            bike={bike?.bike}
-            myBikeModalVisible={myBikeModalVisible}
-            handleCloseMyBikeModal={() => setMyBikeModalVisible(false)}
-          />
+            {/* Modal nạp tiền */}
+            <TopUpComponent
+              topUpModalVisible={topUpModalVisible}
+              handleCloseTopUpModal={handleCloseTopUpModal}
+              selectedAmount={selectedAmount}
+              setSelectedAmount={setSelectedAmount}
+              customAmount={customAmount}
+              setCustomAmount={setCustomAmount}
+              handleConfirmTopUp={handleConfirmTopUp}
+              qrGenerated={qrGenerated}
+              setQrGenerated={setQrGenerated}
+              timeLeft={timeLeft}
+              setTimeLeft={setTimeLeft}
+            />
 
-          <ProfileComponent
-            user={userData?.user}
-            profileModalVisible={profileModalVisible}
-            handleCloseProfileModal={() => setProfileModalVisible(false)}
-          />
+            {/* Component lịch sử giao dịch */}
+            <TransactionHistoryComponent
+              history={transactionHistory?.history || []}
+              topUpModalTransactionHistoryVisible={
+                transationHistoryModalVisible
+              }
+              handleCloseTransactionHistoryModal={() =>
+                setTransactionHistoryModalVisible(false)
+              }
+            />
 
-          {/* Component thông báo */}
-          <NotificationComponent
-            notifications={notifications}
-            notificationsModalVisible={notificationsModalVisible}
-            handleCloseNotificationsModal={() =>
-              setNotificationsModalVisible(false)
-            }
-          />
+            {/* Component xe của tôi */}
+            <MyBikeComponent
+              bike={bike?.bike}
+              myBikeModalVisible={myBikeModalVisible}
+              handleCloseMyBikeModal={() => setMyBikeModalVisible(false)}
+            />
 
-          <AboutEnovoComponent
-            aboutEnovoModalVisible={aboutEnovoModalVisible}
-            handleCloseAboutEnovoModal={() => setAboutEnovoModalVisible(false)}
-          />
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </View>
+            <ProfileComponent
+              user={userData?.user}
+              profileModalVisible={profileModalVisible}
+              handleCloseProfileModal={() => setProfileModalVisible(false)}
+            />
+
+            {/* Component thông báo */}
+            <NotificationComponent
+              notifications={notifications}
+              notificationsModalVisible={notificationsModalVisible}
+              handleCloseNotificationsModal={() =>
+                setNotificationsModalVisible(false)
+              }
+            />
+
+            <AboutEnovoComponent
+              aboutEnovoModalVisible={aboutEnovoModalVisible}
+              handleCloseAboutEnovoModal={() =>
+                setAboutEnovoModalVisible(false)
+              }
+            />
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: Colors.primary,
+  },
   keyboardView: {
     flex: 1,
   },
   scrollView: {
     flex: 1,
+    backgroundColor: Colors.primary,
   },
   scrollContent: {
     flexGrow: 1,
@@ -395,11 +419,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   title: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: "700",
     color: Colors.secondary,
   },
   headerSection: {
+    alignItems: "center",
     backgroundColor: Colors.primary,
     paddingVertical: 24,
     paddingHorizontal: 16,

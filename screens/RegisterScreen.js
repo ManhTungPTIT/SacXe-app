@@ -32,6 +32,7 @@ const RegisterScreen = ({ navigation }) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] =
     useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const registerMutation = useAuth.useRegister();
 
@@ -44,6 +45,7 @@ const RegisterScreen = ({ navigation }) => {
       Alert.alert("Thông báo", "Vui lòng điền đầy đủ thông tin bắt buộc.");
       return;
     }
+    setIsSubmitting(true);
     registerMutation.mutate(
       {
         name,
@@ -67,6 +69,9 @@ const RegisterScreen = ({ navigation }) => {
             error.response?.data?.message ||
               "Đăng ký thất bại. Vui lòng thử lại.",
           );
+        },
+        onSettled: () => {
+          setIsSubmitting(false);
         },
       },
     );
@@ -172,8 +177,11 @@ const RegisterScreen = ({ navigation }) => {
                 <TouchableOpacity
                   style={styles.button}
                   onPress={handleRegister}
+                  disabled={isSubmitting}
                 >
-                  <Text style={styles.buttonText}>Đăng ký</Text>
+                  <Text style={styles.buttonText}>
+                    {isSubmitting ? "Đang đăng ký..." : "Đăng ký"}
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity

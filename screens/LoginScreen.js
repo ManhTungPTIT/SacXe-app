@@ -23,6 +23,7 @@ const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loginMutation = useAuth.useLogin();
   const login = useAuthStore((state) => state.login);
@@ -32,6 +33,7 @@ const LoginScreen = ({ navigation }) => {
       Alert.alert("Thông báo", "Vui lòng nhập đầy đủ email và mật khẩu.");
       return;
     }
+    setIsSubmitting(true);
     loginMutation.mutate(
       {
         email,
@@ -49,6 +51,9 @@ const LoginScreen = ({ navigation }) => {
         onSuccess: async (data) => {
           // Lưu access token, refresh token và user vào SecureStore
           await login(data.accessToken, data.refreshToken, data.user);
+        },
+        onSettled: () => {
+          setIsSubmitting(false);
         },
       },
     );
@@ -102,8 +107,14 @@ const LoginScreen = ({ navigation }) => {
                 </TouchableOpacity>
               </View>
 
-              <TouchableOpacity style={styles.button} onPress={handleLogin}>
-                <Text style={styles.buttonText}>Đăng nhập</Text>
+              <TouchableOpacity
+                style={styles.button}
+                disabled={isSubmitting}
+                onPress={handleLogin}
+              >
+                <Text style={styles.buttonText}>
+                  {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity

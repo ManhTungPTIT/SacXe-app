@@ -19,6 +19,7 @@ import { useHistory } from "../queries/history.query";
 import { Colors } from "../constants/color";
 import normalizeAddress from "../utils/removeAccents";
 import Constants from "expo-constants";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const HomeScreen = ({ navigation }) => {
   const [location, setLocation] = useState(null);
@@ -125,70 +126,76 @@ const HomeScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.page}>
-      <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.container}
-          showsVerticalScrollIndicator={false}
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.page}>
+        <KeyboardAvoidingView
+          style={styles.keyboardView}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-          <View style={styles.mapSection}>
-            <View style={styles.mapHeaderSection}>
-              <View style={styles.searchInputWrap}>
-                <Ionicons name="search" size={18} color="#6A6F73" />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Tìm kiếm trạm sạc theo mã hoặc địa chỉ"
-                  placeholderTextColor="#6A6F73"
-                  value={searchKeyword}
-                  onChangeText={setSearchKeyword}
-                  returnKeyType="search"
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.container}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.mapSection}>
+              <View style={styles.mapHeaderSection}>
+                <View style={styles.searchInputWrap}>
+                  <Ionicons name="search" size={18} color="#6A6F73" />
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Tìm kiếm trạm sạc theo mã hoặc địa chỉ"
+                    placeholderTextColor="#6A6F73"
+                    value={searchKeyword}
+                    onChangeText={setSearchKeyword}
+                    returnKeyType="search"
+                  />
+                  {searchKeyword ? (
+                    <TouchableOpacity
+                      onPress={() => setSearchKeyword("")}
+                      style={styles.clearSearchButton}
+                    >
+                      <Ionicons name="close-circle" size={18} color="#7B7E82" />
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+              </View>
+              <View style={styles.mapContainer}>
+                <MapComponent
+                  eChargeDevices={filteredDevices}
+                  location={location}
+                  openNavigation={openNavigation}
+                  isSearching={Boolean(searchAddress.trim())}
+                  locationPermissionStatus={locationPermissionStatus}
+                  isResolvingLocation={isResolvingLocation}
+                  onRequestLocationPermission={requestLocationPermission}
+                  onOpenLocationSettings={openLocationSettings}
                 />
-                {searchKeyword ? (
-                  <TouchableOpacity
-                    onPress={() => setSearchKeyword("")}
-                    style={styles.clearSearchButton}
-                  >
-                    <Ionicons name="close-circle" size={18} color="#7B7E82" />
-                  </TouchableOpacity>
-                ) : null}
               </View>
             </View>
-            <View style={styles.mapContainer}>
-              <MapComponent
-                eChargeDevices={filteredDevices}
-                location={location}
-                openNavigation={openNavigation}
-                isSearching={Boolean(searchAddress.trim())}
-                locationPermissionStatus={locationPermissionStatus}
-                isResolvingLocation={isResolvingLocation}
-                onRequestLocationPermission={requestLocationPermission}
-                onOpenLocationSettings={openLocationSettings}
-              />
+
+            <View style={styles.quickActions}>
+              <TouchableOpacity
+                style={styles.scanButton}
+                onPress={() => navigation.navigate("ScanQR")}
+              >
+                <Ionicons name="qr-code" size={18} color="#FFFFFF" />
+                <Text style={styles.scanButtonText}>Quét mã để sạc</Text>
+              </TouchableOpacity>
             </View>
-          </View>
 
-          <View style={styles.quickActions}>
-            <TouchableOpacity
-              style={styles.scanButton}
-              onPress={() => navigation.navigate("ScanQR")}
-            >
-              <Ionicons name="qr-code" size={18} color="#FFFFFF" />
-              <Text style={styles.scanButtonText}>Quét mã để sạc</Text>
-            </TouchableOpacity>
-          </View>
-
-          <LatestHistory history={latestHistory} />
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </View>
+            <LatestHistory history={latestHistory} />
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: Colors.primary,
+  },
   page: {
     flex: 1,
     backgroundColor: "#FFFFFF",
@@ -198,6 +205,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    backgroundColor: Colors.primary,
   },
   container: {
     flexGrow: 1,

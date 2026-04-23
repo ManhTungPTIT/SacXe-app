@@ -11,6 +11,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../constants/color";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const normalizeScannedCode = (rawData) => {
   const value = rawData?.trim();
@@ -193,31 +194,37 @@ const QrScanScreen = ({ navigation }) => {
   }
 
   return (
-    <View style={styles.container}>
-      <CameraView
-        style={StyleSheet.absoluteFill}
-        facing="back"
-        barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-        onBarcodeScanned={handleBarcodeScanned}
-      />
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <CameraView
+          style={StyleSheet.absoluteFill}
+          facing="back"
+          barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+          onBarcodeScanned={handleBarcodeScanned}
+        />
 
-      <View style={styles.overlay} pointerEvents="none">
-        <View style={styles.scanFrame} />
-        <Text style={styles.guideText}>Đưa mã QR vào khung để quét</Text>
+        <View style={styles.overlay} pointerEvents="none">
+          <View style={styles.scanFrame} />
+          <Text style={styles.guideText}>Đưa mã QR vào khung để quét</Text>
+        </View>
+
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.navigate("Charge")}
+        >
+          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <Text style={styles.backText}>Quay lại</Text>
+        </TouchableOpacity>
       </View>
-
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => navigation.navigate("Charge")}
-      >
-        <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
-        <Text style={styles.backText}>Quay lại</Text>
-      </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: Colors.primary,
+  },
   container: {
     flex: 1,
     backgroundColor: "#000",
