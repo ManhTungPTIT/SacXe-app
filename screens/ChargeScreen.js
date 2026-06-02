@@ -22,7 +22,6 @@ const ChargeScreen = ({ route, navigation }) => {
   const [isScanned, setIsScanned] = useState(false);
   const [deviceCode, setdeviceCode] = useState(null);
   const [powerId, setPowerId] = useState(null);
-  const [deviceId, setDeviceId] = useState(null);
 
   const {
     data: bike,
@@ -38,11 +37,7 @@ const ChargeScreen = ({ route, navigation }) => {
     deviceCode,
   });
 
-  useEffect(() => {
-    if (eChargeDevices) {
-      setDeviceId(eChargeDevices?.eChargeDevices?._id);
-    }
-  }, [eChargeDevices]);
+  const deviceId = eChargeDevices?.eChargeDevices?._id || null;
 
   useEffect(() => {
     const scannedDeviceCode = route?.params?.scannedDeviceCode;
@@ -54,7 +49,6 @@ const ChargeScreen = ({ route, navigation }) => {
 
     setDevices([]);
     setPowerId(null);
-    setDeviceId(null);
     setdeviceCode(String(scannedDeviceCode));
     setIsScanned(true);
 
@@ -91,7 +85,6 @@ const ChargeScreen = ({ route, navigation }) => {
           setIsScanned(false);
           setdeviceCode(null);
           setPowerId(null);
-          setDeviceId(null);
         },
       },
     );
