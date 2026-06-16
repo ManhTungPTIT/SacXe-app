@@ -171,11 +171,12 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.secondary,
   },
   container: {
     flexGrow: 1,
     backgroundColor: Colors.secondary,
+    paddingHorizontal: 16,
   },
   screenTitle: {
     fontSize: 24,
@@ -187,6 +188,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     paddingVertical: 24,
     paddingHorizontal: 16,
+    borderRadius: 16,
   },
 });
 

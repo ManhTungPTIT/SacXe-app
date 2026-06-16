@@ -121,7 +121,6 @@ const LatestHistory = ({ history }) => {
 const styles = StyleSheet.create({
   wrapper: {
     marginVertical: 24,
-    paddingHorizontal: 16,
   },
   sectionTitle: {
     color: Colors.primary,
