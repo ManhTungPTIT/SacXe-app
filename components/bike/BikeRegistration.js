@@ -139,7 +139,7 @@ const BikeRegistration = () => {
             Alert.alert(
               "Thông báo",
               error.response?.data?.message ||
-                "Trích xuất thông tin đăng ký thất bại. Vui lòng thử lại.",
+              "Trích xuất thông tin đăng ký thất bại. Vui lòng thử lại.",
             );
           },
           onSettled: () => {
@@ -164,7 +164,7 @@ const BikeRegistration = () => {
         Alert.alert(
           "Thông báo",
           error.response?.data?.message ||
-            "Đăng ký xe thất bại. Vui lòng thử lại.",
+          "Đăng ký xe thất bại. Vui lòng thử lại.",
         );
       },
       onSuccess: (data) => {
@@ -307,6 +307,7 @@ const BikeRegistration = () => {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    marginHorizontal: -16,
   },
   keyboardView: {
     flex: 1,
@@ -317,6 +318,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingBottom: 32,
+    paddingHorizontal: 16,
   },
   headerSection: {
     backgroundColor: Colors.primary,
