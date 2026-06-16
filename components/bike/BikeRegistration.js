@@ -194,7 +194,9 @@ const BikeRegistration = () => {
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.title}>Đăng ký sạc xe</Text>
+            <View style={styles.headerSection}>
+              <Text style={styles.title}>Đăng ký sạc xe</Text>
+            </View>
 
             <Text style={styles.label}>Ảnh giấy đăng ký xe</Text>
             <View style={styles.imageContainer}>
@@ -314,15 +316,20 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: "center",
-    paddingVertical: 32,
+    paddingBottom: 32,
+  },
+  headerSection: {
+    backgroundColor: Colors.primary,
+    alignItems: "center",
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    marginHorizontal: -16,
+    marginBottom: 24,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 32,
-    color: "#333",
+    fontSize: 24,
+    fontWeight: "700",
+    color: Colors.secondary,
   },
   label: {
     fontSize: 16,
