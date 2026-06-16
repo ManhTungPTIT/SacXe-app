@@ -15,10 +15,8 @@ import {
   Alert,
 } from "react-native";
 import { Colors } from "../constants/color";
-import * as ImagePicker from "expo-image-picker";
 import Entypo from "@expo/vector-icons/Entypo";
 import { useAuth } from "../queries/auth.query";
-import { useIdentity } from "../queries/identity.query";
 import { TouchableWithoutFeedback } from "react-native";
 
 const registerBackground = require("../assets/background.png");
