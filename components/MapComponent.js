@@ -19,12 +19,15 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(lat1 * (Math.PI / 180)) *
-      Math.cos(lat2 * (Math.PI / 180)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return (R * c).toFixed(1); // Trả về dạng xy.z km
 };
+
+// Tạm thời tắt bản đồ để tránh văng app khi API key chưa được cấu hình hoặc hết hạn
+const IS_MAP_ENABLED = false;
 
 const MapComponent = ({
   eChargeDevices,
@@ -105,78 +108,89 @@ const MapComponent = ({
 
   return (
     <View style={styles.container}>
-      <MapView
-        ref={mapRef}
-        showsUserLocation={true}
-        style={styles.map}
-        initialRegion={{
-          latitude: location.latitude,
-          longitude: location.longitude,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
-        }}
-      >
-        {eChargeDevices?.allDevices?.map((device, index) => (
-          <Marker
-            key={index}
-            coordinate={{
-              latitude: Number(device.latitude),
-              longitude: Number(device.longitude),
-            }}
-          >
-            <Image
-              source={require("../assets/charge.png")}
-              style={[
-                styles.markerIcon,
-                Number(device.availableSlots) > 0
-                  ? styles.markerIconAvailable
-                  : styles.markerIconUnavailable,
-              ]}
-              resizeMode="contain"
-            />
-            <Callout
-              tooltip
-              onPress={() => openNavigation(device.latitude, device.longitude)}
+      {IS_MAP_ENABLED ? (
+        <MapView
+          ref={mapRef}
+          showsUserLocation={true}
+          style={styles.map}
+          initialRegion={{
+            latitude: location.latitude,
+            longitude: location.longitude,
+            latitudeDelta: 0.05,
+            longitudeDelta: 0.05,
+          }}
+        >
+          {eChargeDevices?.allDevices?.map((device, index) => (
+            <Marker
+              key={index}
+              coordinate={{
+                latitude: Number(device.latitude),
+                longitude: Number(device.longitude),
+              }}
             >
-              <View style={styles.calloutContainer}>
-                <Text style={styles.calloutTitle}>{device.deviceCode}</Text>
+              <Image
+                source={require("../assets/charge.png")}
+                style={[
+                  styles.markerIcon,
+                  Number(device.availableSlots) > 0
+                    ? styles.markerIconAvailable
+                    : styles.markerIconUnavailable,
+                ]}
+                resizeMode="contain"
+              />
+              <Callout
+                tooltip
+                onPress={() => openNavigation(device.latitude, device.longitude)}
+              >
+                <View style={styles.calloutContainer}>
+                  <Text style={styles.calloutTitle}>{device.deviceCode}</Text>
 
-                <Text style={styles.calloutText}>
-                  📍 Khoảng cách:{" "}
-                  {calculateDistance(
-                    location.latitude,
-                    location.longitude,
-                    Number(device.latitude),
-                    Number(device.longitude),
-                  )}{" "}
-                  km
-                </Text>
-
-                {device.address && (
-                  <Text style={styles.calloutText} numberOfLines={2}>
-                    🏠 Địa chỉ: {device.address}
+                  <Text style={styles.calloutText}>
+                    📍 Khoảng cách:{" "}
+                    {calculateDistance(
+                      location.latitude,
+                      location.longitude,
+                      Number(device.latitude),
+                      Number(device.longitude),
+                    )}{" "}
+                    km
                   </Text>
-                )}
 
-                <Text style={styles.calloutHint}>Bấm để chỉ đường</Text>
-              </View>
-            </Callout>
-          </Marker>
-        ))}
-      </MapView>
+                  {device.address && (
+                    <Text style={styles.calloutText} numberOfLines={2}>
+                      🏠 Địa chỉ: {device.address}
+                    </Text>
+                  )}
+
+                  <Text style={styles.calloutHint}>Bấm để chỉ đường</Text>
+                </View>
+              </Callout>
+            </Marker>
+          ))}
+        </MapView>
+      ) : (
+        <View style={styles.mapFallback}>
+          <MaterialIcons name="map" size={48} color="#9CA3AF" />
+          <Text style={styles.mapFallbackText}>
+            Bản đồ tạm thời không khả dụng
+          </Text>
+        </View>
+      )}
 
       {/* Nút quay về vị trí của tôi */}
-      <TouchableOpacity
-        style={[
-          styles.myLocationButton,
-          listDevices.length > 0
-            ? styles.myLocationButtonWithList
-            : styles.myLocationButtonWithoutList,
-        ]}
-        onPress={goToMyLocation}
-      >
-        <MaterialIcons name="my-location" size={24} color="#007BFF" />
-      </TouchableOpacity>
+      {IS_MAP_ENABLED && (
+        <TouchableOpacity
+          style={[
+            styles.myLocationButton,
+            listDevices.length > 0
+              ? styles.myLocationButtonWithList
+              : styles.myLocationButtonWithoutList,
+          ]}
+          onPress={goToMyLocation}
+        >
+          <MaterialIcons name="my-location" size={24} color="#007BFF" />
+        </TouchableOpacity>
+      )}
 
       {/* Hiển thị danh sách thiết bị gần đây */}
       {listDevices.length > 0 && (
@@ -453,5 +467,19 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
     fontSize: 13,
+  },
+  mapFallback: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F3F4F6",
+    padding: 20,
+  },
+  mapFallbackText: {
+    marginTop: 8,
+    fontSize: 15,
+    color: "#6B7280",
+    textAlign: "center",
+    fontWeight: "500",
   },
 });
