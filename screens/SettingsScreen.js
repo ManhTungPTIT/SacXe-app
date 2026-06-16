@@ -407,11 +407,12 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: Colors.primary,
+    backgroundColor: "#FFFFFF",
   },
   scrollContent: {
     flexGrow: 1,
     backgroundColor: "#FFFFFF",
+    paddingHorizontal: 16,
     paddingBottom: 24,
   },
   container: {
@@ -428,6 +429,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     paddingVertical: 24,
     paddingHorizontal: 16,
+    marginHorizontal: -16,
+    marginBottom: 16,
   },
   accountCard: {
     borderRadius: 16,

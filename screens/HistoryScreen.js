@@ -184,10 +184,13 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.secondary,
   },
   scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 16,
     paddingBottom: 0,
+    backgroundColor: Colors.secondary,
   },
   container: {
     flex: 1,
@@ -199,10 +202,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 24,
     paddingHorizontal: 16,
+    marginHorizontal: -16,
   },
   contentWrap: {
     marginTop: 20,
-    paddingHorizontal: 16,
   },
   title: {
     fontSize: 24,
