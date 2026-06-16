@@ -21,20 +21,24 @@ export const useEChargeDeviceQuery = {
     });
     return { data, isLoading, isError, ...rest };
   },
-  useFindAllDevices: ({ latitude, longitude }) => {
+  useFindAllDevices: ({ latitude, longitude, enabled = true }) => {
+    const hasCoordinates =
+      Number.isFinite(Number(latitude)) && Number.isFinite(Number(longitude));
+
     const { data, isLoading, isError, ...rest } = useQuery({
       queryKey: ["E_CHARGE_DEVICE", "ALL", latitude, longitude],
       queryFn: async () => {
         try {
           const response = await eChargeDeviceApi.findAllDevices({
-            latitude,
-            longitude,
+            latitude: Number(latitude),
+            longitude: Number(longitude),
           });
           return response;
         } catch (error) {
           throw error;
         }
       },
+      enabled: enabled && hasCoordinates,
       retry: false,
       refetchOnWindowFocus: false,
     });
