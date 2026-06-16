@@ -32,11 +32,11 @@ const getInitialFormState = (user = {}) => ({
 const getInitialIdentityImages = (user = {}) => ({
   front: getProfileText(
     user?.cardImages?.frontCard?.previewUrl ||
-      user?.cardImages?.frontCard?.downloadUrl,
+    user?.cardImages?.frontCard?.downloadUrl,
   ),
   back: getProfileText(
     user?.cardImages?.backCard?.previewUrl ||
-      user?.cardImages?.backCard?.downloadUrl,
+    user?.cardImages?.backCard?.downloadUrl,
   ),
 });
 
@@ -233,6 +233,20 @@ const ProfileComponent = ({
       return;
     }
 
+    let finalPhone = "";
+    if (phoneNumber) {
+      const cleanPhone = phoneNumber.replace(/[\s-]/g, "");
+      const vnf_regex = /^(0|\+84|84)(3|5|7|8|9)([0-9]{8})$/;
+      if (!vnf_regex.test(cleanPhone)) {
+        Alert.alert(
+          "Thông báo",
+          "Số điện thoại không hợp lệ. Vui lòng nhập lại số điện thoại.",
+        );
+        return;
+      }
+      finalPhone = cleanPhone;
+    }
+
     const hasAnyNewCardFile = Boolean(
       identityFiles.front || identityFiles.back,
     );
@@ -247,7 +261,7 @@ const ProfileComponent = ({
 
     const payload = new FormData();
     payload.append("name", fullName);
-    payload.append("phoneNumber", phoneNumber);
+    payload.append("phoneNumber", finalPhone);
     payload.append("placeOfResidence", placeOfResidence);
 
     if (hasAnyNewCardFile) {
@@ -273,7 +287,7 @@ const ProfileComponent = ({
         Alert.alert(
           "Thông báo",
           error?.response?.data?.message ||
-            "Không thể cập nhật thông tin. Vui lòng thử lại.",
+          "Không thể cập nhật thông tin. Vui lòng thử lại.",
         );
       },
     });
@@ -351,7 +365,7 @@ const ProfileComponent = ({
                 Alert.alert(
                   "Thông báo",
                   error?.response?.data?.message ||
-                    "Không thể xóa tài khoản. Vui lòng kiểm tra mật khẩu và thử lại.",
+                  "Không thể xóa tài khoản. Vui lòng kiểm tra mật khẩu và thử lại.",
                 );
               },
             });
@@ -583,7 +597,7 @@ const ProfileComponent = ({
                   styles.deleteActionButton,
                   styles.deleteButton,
                   deleteAccountMutation.isPending &&
-                    styles.deleteButtonDisabled,
+                  styles.deleteButtonDisabled,
                 ]}
                 onPress={handlePressDeleteAccount}
                 disabled={deleteAccountMutation.isPending}
@@ -627,7 +641,7 @@ const ProfileComponent = ({
                       styles.deleteConfirmAction,
                       styles.deleteConfirmSubmit,
                       deleteAccountMutation.isPending &&
-                        styles.deleteButtonDisabled,
+                      styles.deleteButtonDisabled,
                     ]}
                     onPress={handleConfirmDeleteAccount}
                     disabled={deleteAccountMutation.isPending}

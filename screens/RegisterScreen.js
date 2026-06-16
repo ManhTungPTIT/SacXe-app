@@ -41,17 +41,33 @@ const RegisterScreen = ({ navigation }) => {
       Alert.alert("Thông báo", "Mật khẩu và xác nhận mật khẩu không khớp.");
       return;
     }
-    if (!name || !email || !password || !phoneNumber) {
+    if (!name || !email || !password) {
       Alert.alert("Thông báo", "Vui lòng điền đầy đủ thông tin bắt buộc.");
       return;
     }
+
+    const trimmedPhone = phoneNumber.trim();
+    let finalPhone = "";
+    if (trimmedPhone) {
+      const cleanPhone = trimmedPhone.replace(/[\s-]/g, "");
+      const vnf_regex = /^(0|\+84|84)(3|5|7|8|9)([0-9]{8})$/;
+      if (!vnf_regex.test(cleanPhone)) {
+        Alert.alert(
+          "Thông báo",
+          "Số điện thoại không hợp lệ. Vui lòng nhập đúng định dạng Việt Nam.",
+        );
+        return;
+      }
+      finalPhone = cleanPhone;
+    }
+
     setIsSubmitting(true);
     registerMutation.mutate(
       {
         name,
         email,
         password,
-        phoneNumber,
+        phoneNumber: finalPhone,
       },
       {
         onSuccess: (data) => {
@@ -99,7 +115,7 @@ const RegisterScreen = ({ navigation }) => {
 
                 <TextInput
                   style={styles.input}
-                  placeholder="Số điện thoại"
+                  placeholder="Số điện thoại (Tùy chọn)"
                   placeholderTextColor={"#7A8087"}
                   value={phoneNumber}
                   onChangeText={setPhoneNumber}
