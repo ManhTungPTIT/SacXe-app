@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Colors } from "../../constants/color";
+import { SocketContext } from "../../providers/SocketProvider";
+import { useQueryClient } from "@tanstack/react-query";
 
 const formatEnergy = (value) => {
   const energy = Number(value) || 0;
@@ -51,6 +53,40 @@ const formatStartTime = (startTime) => {
 const LatestHistory = ({ history }) => {
   const startTimeText = formatStartTime(history?.startTime);
   const hasDuration = Boolean(history?.totalTime);
+  const socketContext = useContext(SocketContext);
+  const socket = socketContext?.socket;
+  const queryClient = useQueryClient();
+  const [realtimeEnergy, setRealtimeEnergy] = useState(history?.energy || 0);
+
+  useEffect(() => {
+    setRealtimeEnergy(history?.energy || 0);
+  }, [history?.energy]);
+
+  useEffect(() => {
+    if (!socket || !history || hasDuration) return;
+
+    const handleWave = (value) => {
+      if (value?.energy !== undefined) {
+        setRealtimeEnergy(value.energy / 1000);
+      }
+    };
+
+    socket.on("wave_data", handleWave);
+
+    return () => {
+      socket.off("wave_data", handleWave);
+    };
+  }, [socket, history, hasDuration]);
+
+  // Cập nhật lại chi phí từ API mỗi khi điện năng tiêu thụ tăng lên 1 số điện (1 kWh)
+  const lastFetchedEnergy = history?.energy || 0;
+  useEffect(() => {
+    if (hasDuration) return;
+
+    if (realtimeEnergy - lastFetchedEnergy >= 1) {
+      queryClient.invalidateQueries({ queryKey: ["latestHistory"] });
+    }
+  }, [realtimeEnergy, lastFetchedEnergy, hasDuration, queryClient]);
 
   return (
     <View style={styles.wrapper}>
@@ -85,7 +121,7 @@ const LatestHistory = ({ history }) => {
             <View style={[styles.metricCard, styles.metricCardSpacing]}>
               <Text style={styles.metricLabel}>Điện năng tiêu thụ</Text>
               <Text style={styles.metricValue}>
-                {formatEnergy(history?.energy)} kWh
+                {formatEnergy(realtimeEnergy)} kWh
               </Text>
             </View>
 
