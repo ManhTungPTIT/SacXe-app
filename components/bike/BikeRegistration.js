@@ -307,7 +307,6 @@ const BikeRegistration = () => {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    marginHorizontal: -16,
   },
   keyboardView: {
     flex: 1,
