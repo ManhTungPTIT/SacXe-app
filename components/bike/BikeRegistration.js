@@ -313,11 +313,13 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    backgroundColor: Colors.secondary,
   },
   scrollContent: {
     flexGrow: 1,
     paddingBottom: 32,
     paddingHorizontal: 16,
+    backgroundColor: Colors.secondary,
   },
   headerSection: {
     backgroundColor: Colors.primary,
