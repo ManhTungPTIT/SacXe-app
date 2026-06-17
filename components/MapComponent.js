@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  Platform,
 } from "react-native";
 import { useRef } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -26,8 +27,8 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return (R * c).toFixed(1); // Trả về dạng xy.z km
 };
 
-// Tạm thời tắt bản đồ để tránh văng app khi API key chưa được cấu hình hoặc hết hạn
-const IS_MAP_ENABLED = false;
+// Tạm thời tắt bản đồ trên Android để tránh văng app khi API key chưa được cấu hình hoặc hết hạn
+const IS_MAP_ENABLED = Platform.OS === "ios";
 
 const MapComponent = ({
   eChargeDevices,
