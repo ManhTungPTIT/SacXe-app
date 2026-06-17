@@ -81,7 +81,7 @@ const RegisterScreen = ({ navigation }) => {
           Alert.alert(
             "Thông báo",
             error.response?.data?.message ||
-              "Đăng ký thất bại. Vui lòng thử lại.",
+            "Đăng ký thất bại. Vui lòng thử lại.",
           );
         },
         onSettled: () => {
@@ -113,7 +113,7 @@ const RegisterScreen = ({ navigation }) => {
 
                 <TextInput
                   style={styles.input}
-                  placeholder="Số điện thoại (Tùy chọn)"
+                  placeholder="Số điện thoại (Không bắt buộc)"
                   placeholderTextColor={"#7A8087"}
                   value={phoneNumber}
                   onChangeText={setPhoneNumber}

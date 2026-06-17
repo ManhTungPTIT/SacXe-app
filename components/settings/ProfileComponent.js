@@ -27,40 +27,6 @@ const getInitialFormState = (user = {}) => ({
   address: getProfileText(user?.placeOfResidence || user?.address),
 });
 
-const getInitialIdentityImages = (user = {}) => ({
-  front: getProfileText(
-    user?.cardImages?.frontCard?.previewUrl ||
-    user?.cardImages?.frontCard?.downloadUrl,
-  ),
-  back: getProfileText(
-    user?.cardImages?.backCard?.previewUrl ||
-    user?.cardImages?.backCard?.downloadUrl,
-  ),
-});
-
-const getEmptyIdentityFiles = () => ({
-  front: null,
-  back: null,
-});
-
-const getFileNameFromUri = (uri, fallback) => {
-  const normalizedUri = getProfileText(uri).split("?")[0];
-
-  if (!normalizedUri) {
-    return fallback;
-  }
-
-  const fileName = normalizedUri.substring(normalizedUri.lastIndexOf("/") + 1);
-  return fileName || fallback;
-};
-
-const getMimeTypeFromUri = (uri) => {
-  const normalizedUri = getProfileText(uri).toLowerCase();
-
-  if (normalizedUri.endsWith(".png")) return "image/png";
-  if (normalizedUri.endsWith(".webp")) return "image/webp";
-  return "image/jpeg";
-};
 
 const ProfileComponent = ({
   user,
@@ -112,14 +78,6 @@ const ProfileComponent = ({
       return;
     }
 
-    if (!identityImages.front || !identityImages.back) {
-      Alert.alert(
-        "Thông báo",
-        "Cập nhật thông tin cá nhân bắt buộc phải có đủ ảnh CCCD 2 mặt.",
-      );
-      return;
-    }
-
     let finalPhone = "";
     if (phoneNumber) {
       const cleanPhone = phoneNumber.replace(/[\s-]/g, "");
@@ -132,18 +90,6 @@ const ProfileComponent = ({
         return;
       }
       finalPhone = cleanPhone;
-    }
-
-    const hasAnyNewCardFile = Boolean(
-      identityFiles.front || identityFiles.back,
-    );
-
-    if (hasAnyNewCardFile && (!identityFiles.front || !identityFiles.back)) {
-      Alert.alert(
-        "Thông báo",
-        "Khi thay đổi ảnh CCCD, vui lòng chọn lại cả mặt trước và mặt sau.",
-      );
-      return;
     }
 
     const payload = new FormData();
