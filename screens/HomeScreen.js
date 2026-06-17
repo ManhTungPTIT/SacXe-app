@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -21,43 +21,6 @@ import normalizeAddress from "../utils/removeAccents";
 import Constants from "expo-constants";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const LOCATION_TIMEOUT_MS = 10000;
-const LAST_KNOWN_LOCATION_MAX_AGE_MS = 5 * 60 * 1000;
-
-const normalizeCoords = (coords) => {
-  const latitude = Number(coords?.latitude);
-  const longitude = Number(coords?.longitude);
-
-  if (
-    !Number.isFinite(latitude) ||
-    !Number.isFinite(longitude) ||
-    latitude < -90 ||
-    latitude > 90 ||
-    longitude < -180 ||
-    longitude > 180
-  ) {
-    return null;
-  }
-
-  return { latitude, longitude };
-};
-
-const getCurrentPositionWithTimeout = () => {
-  return new Promise((resolve, reject) => {
-    const timeoutId = setTimeout(() => {
-      reject(new Error("LOCATION_TIMEOUT"));
-    }, LOCATION_TIMEOUT_MS);
-
-    Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Balanced,
-      mayShowUserSettingsDialog: true,
-    })
-      .then(resolve)
-      .catch(reject)
-      .finally(() => clearTimeout(timeoutId));
-  });
-};
-
 const HomeScreen = ({ navigation }) => {
   const [location, setLocation] = useState(null);
   const [locationPermissionStatus, setLocationPermissionStatus] =
@@ -65,7 +28,6 @@ const HomeScreen = ({ navigation }) => {
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [searchAddress, setSearchAddress] = useState("");
-  const isRequestingLocationRef = useRef(false);
 
   useEffect(() => {
     const result = normalizeAddress(searchKeyword);
@@ -75,7 +37,6 @@ const HomeScreen = ({ navigation }) => {
   const { data: nearbyDevices } = useEChargeDeviceQuery.useFindAllDevices({
     latitude: location?.latitude,
     longitude: location?.longitude,
-    enabled: Boolean(location),
   });
   const { data: latestHistory } = useHistory.useGetLatestHistory();
 
@@ -116,11 +77,6 @@ const HomeScreen = ({ navigation }) => {
   }, [nearbyDevices, searchAddress]);
 
   const requestLocationPermission = useCallback(async () => {
-    if (isRequestingLocationRef.current) {
-      return;
-    }
-
-    isRequestingLocationRef.current = true;
     setIsResolvingLocation(true);
 
     try {
@@ -134,38 +90,13 @@ const HomeScreen = ({ navigation }) => {
         return;
       }
 
-      const lastKnownLocation = await Location.getLastKnownPositionAsync({
-        maxAge: LAST_KNOWN_LOCATION_MAX_AGE_MS,
-        requiredAccuracy: 5000,
-      });
-      const lastKnownCoords = normalizeCoords(lastKnownLocation?.coords);
-
-      if (lastKnownCoords) {
-        setLocation(lastKnownCoords);
-        setLocationPermissionStatus("granted");
-      }
-
-      try {
-        const currentLocation = await getCurrentPositionWithTimeout();
-        const currentCoords = normalizeCoords(currentLocation?.coords);
-
-        if (!currentCoords) {
-          throw new Error("INVALID_LOCATION_COORDS");
-        }
-
-        setLocation(currentCoords);
-      } catch (error) {
-        if (!lastKnownCoords) {
-          throw error;
-        }
-      }
-
+      const currentLocation = await Location.getCurrentPositionAsync({});
+      setLocation(currentLocation.coords);
       setLocationPermissionStatus("granted");
     } catch (error) {
       setLocation(null);
       setLocationPermissionStatus("error");
     } finally {
-      isRequestingLocationRef.current = false;
       setIsResolvingLocation(false);
     }
   }, []);
@@ -274,17 +205,14 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.primary,
   },
   container: {
     flexGrow: 1,
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 16,
   },
   mapSection: {
     marginBottom: 12,
-    marginHorizontal: -16,
-    overflow: "hidden",
   },
   mapHeaderSection: {
     backgroundColor: Colors.primary,
@@ -319,6 +247,7 @@ const styles = StyleSheet.create({
     borderColor: "#e5e7eb",
   },
   quickActions: {
+    paddingHorizontal: 16,
     marginTop: 16,
   },
   scanButton: {
