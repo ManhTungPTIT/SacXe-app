@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   overlay: {
     backgroundColor: "rgba(56, 55, 55, 0.34)",
     flex: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 20,
   },
   keyboardView: {

@@ -337,12 +337,12 @@ const styles = StyleSheet.create({
   },
   screen: {
     flex: 1,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.secondary,
   },
   contentContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 150,
+    paddingBottom: 96,
     gap: 14,
     backgroundColor: Colors.secondary,
   },

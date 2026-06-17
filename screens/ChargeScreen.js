@@ -114,44 +114,42 @@ const ChargeScreen = ({ route, navigation }) => {
         style={styles.keyboardView}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.container}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.page}>
-            {bike?.bike ? (
-              <>
-                <View style={styles.headerSection}>
-                  <Text style={styles.screenTitle}>Phiên sạc của bạn</Text>
-                </View>
+        {bike?.bike ? (
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.container}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.page}>
+              <View style={styles.headerSection}>
+                <Text style={styles.screenTitle}>Phiên sạc của bạn</Text>
+              </View>
 
-                {bike?.bike?.isCharging ? (
-                  <>
-                    <ChargingStatusComponent
-                      onStopCharging={handleStopCharging}
-                    />
-                  </>
-                ) : (
-                  <InitiateChargeComponent
-                    devices={eChargeDevices}
-                    setDevices={setDevices}
-                    isScanned={isScanned}
-                    setIsScanned={setIsScanned}
-                    deviceCode={deviceCode}
-                    setdeviceCode={setdeviceCode}
-                    setPowerId={setPowerId}
-                    deviceId={deviceId}
-                    onScanQrPress={() => navigation.navigate("ScanQR")}
-                    onChargeStarted={() => navigation.navigate("Charge")}
+              {bike?.bike?.isCharging ? (
+                <>
+                  <ChargingStatusComponent
+                    onStopCharging={handleStopCharging}
                   />
-                )}
-              </>
-            ) : (
-              <BikeRegistration />
-            )}
-          </View>
-        </ScrollView>
+                </>
+              ) : (
+                <InitiateChargeComponent
+                  devices={eChargeDevices}
+                  setDevices={setDevices}
+                  isScanned={isScanned}
+                  setIsScanned={setIsScanned}
+                  deviceCode={deviceCode}
+                  setdeviceCode={setdeviceCode}
+                  setPowerId={setPowerId}
+                  deviceId={deviceId}
+                  onScanQrPress={() => navigation.navigate("ScanQR")}
+                  onChargeStarted={() => navigation.navigate("Charge")}
+                />
+              )}
+            </View>
+          </ScrollView>
+        ) : (
+          <BikeRegistration />
+        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -171,11 +169,12 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.secondary,
   },
   container: {
     flexGrow: 1,
     backgroundColor: Colors.secondary,
+    paddingHorizontal: 16,
   },
   screenTitle: {
     fontSize: 24,
@@ -187,6 +186,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     paddingVertical: 24,
     paddingHorizontal: 16,
+    borderRadius: 16,
   },
 });
 

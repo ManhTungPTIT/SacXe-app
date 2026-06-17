@@ -139,7 +139,7 @@ const BikeRegistration = () => {
             Alert.alert(
               "Thông báo",
               error.response?.data?.message ||
-                "Trích xuất thông tin đăng ký thất bại. Vui lòng thử lại.",
+              "Trích xuất thông tin đăng ký thất bại. Vui lòng thử lại.",
             );
           },
           onSettled: () => {
@@ -164,7 +164,7 @@ const BikeRegistration = () => {
         Alert.alert(
           "Thông báo",
           error.response?.data?.message ||
-            "Đăng ký xe thất bại. Vui lòng thử lại.",
+          "Đăng ký xe thất bại. Vui lòng thử lại.",
         );
       },
       onSuccess: (data) => {
@@ -183,7 +183,7 @@ const BikeRegistration = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.root}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <KeyboardAvoidingView
           style={styles.keyboardView}
@@ -191,10 +191,12 @@ const BikeRegistration = () => {
         >
           <ScrollView
             style={styles.scrollView}
-            contentContainerStyle={styles.container}
+            contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.title}>Đăng ký sạc xe</Text>
+            <View style={styles.headerSection}>
+              <Text style={styles.title}>Đăng ký sạc xe</Text>
+            </View>
 
             <Text style={styles.label}>Ảnh giấy đăng ký xe</Text>
             <View style={styles.imageContainer}>
@@ -303,18 +305,34 @@ const BikeRegistration = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
+    flex: 1,
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+    backgroundColor: Colors.secondary,
+  },
+  scrollContent: {
     flexGrow: 1,
-    justifyContent: "center",
-    paddingVertical: 32,
-    paddingHorizontal: 24,
+    paddingBottom: 32,
+    paddingHorizontal: 16,
+    backgroundColor: Colors.secondary,
+  },
+  headerSection: {
+    backgroundColor: Colors.primary,
+    alignItems: "center",
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    marginHorizontal: -16,
+    marginBottom: 24,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 32,
-    color: "#333",
+    fontSize: 24,
+    fontWeight: "700",
+    color: Colors.secondary,
   },
   label: {
     fontSize: 16,

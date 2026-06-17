@@ -252,8 +252,8 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: "absolute",
-    top: 10,
-    left: 10,
+    top: 16,
+    left: 16,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
