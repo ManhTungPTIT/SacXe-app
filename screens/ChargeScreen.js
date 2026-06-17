@@ -14,6 +14,7 @@ import InitiateChargeComponent from "../components/bike/InitiateChargeComponent"
 import ChargingStatusComponent from "../components/charging/ChargingStatusComponent";
 import { useChargeQuery } from "../queries/charge.query";
 import { useEChargeDeviceQuery } from "../queries/eChargeDevice.query";
+import { useHistory } from "../queries/history.query";
 import { Colors } from "../constants/color";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -28,6 +29,7 @@ const ChargeScreen = ({ route, navigation }) => {
     isLoading: isLoadingBikeData,
     isError,
   } = useBike.useGetMyBike();
+  const { data: latestHistory } = useHistory.useGetLatestHistory();
   const terminateChargeMutation = useChargeQuery.useTerminate();
   const {
     data: eChargeDevices,
@@ -38,6 +40,7 @@ const ChargeScreen = ({ route, navigation }) => {
   });
 
   const deviceId = eChargeDevices?.eChargeDevices?._id || null;
+  const chargingStartTime = latestHistory?.startTime || latestHistory?.createdAt;
 
   useEffect(() => {
     const scannedDeviceCode = route?.params?.scannedDeviceCode;
@@ -128,6 +131,7 @@ const ChargeScreen = ({ route, navigation }) => {
               {bike?.bike?.isCharging ? (
                 <>
                   <ChargingStatusComponent
+                    chargingStartTime={chargingStartTime}
                     onStopCharging={handleStopCharging}
                   />
                 </>

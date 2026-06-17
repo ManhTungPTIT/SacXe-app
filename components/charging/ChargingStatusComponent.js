@@ -5,7 +5,7 @@ import { Colors } from "../../constants/color";
 import { vietnamDate, vietnamTime } from "../../utils/time";
 import WaveChart from "../WaveChart";
 
-const ChargingStatusComponent = ({ onStopCharging }) => {
+const ChargingStatusComponent = ({ chargingStartTime, onStopCharging }) => {
   return (
     <View style={styles.container}>
       <WaveChart />
@@ -14,8 +14,8 @@ const ChargingStatusComponent = ({ onStopCharging }) => {
       <View style={styles.timeInfoContainer}>
         <View style={styles.timeBox}>
           <Text style={styles.timeLabel}>THỜI GIAN BẮT ĐẦU SẠC</Text>
-          <Text style={styles.timeValue}>{vietnamTime(new Date())}</Text>
-          <Text style={styles.timeDate}>{vietnamDate(new Date())}</Text>
+          <Text style={styles.timeValue}>{vietnamTime(chargingStartTime)}</Text>
+          <Text style={styles.timeDate}>{vietnamDate(chargingStartTime)}</Text>
         </View>
       </View>
 
