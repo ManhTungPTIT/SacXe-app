@@ -113,7 +113,7 @@ const TopUpComponent = ({
                       );
                     }}
                     placeholder="Nhập số tiền khác"
-                    placeholderTextColor="#999"
+                    placeholderTextColor={Colors.textMuted}
                     keyboardType="numeric"
                     returnKeyType="done"
                     onSubmitEditing={Keyboard.dismiss}
@@ -146,7 +146,7 @@ const TopUpComponent = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.white,
     paddingHorizontal: 24,
   },
   title: {
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   logoutButton: {
-    backgroundColor: "#FF3B30",
+    backgroundColor: Colors.danger,
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 32,
@@ -163,18 +163,18 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   logoutButtonText: {
-    color: "#FFFFFF",
+    color: Colors.white,
     fontSize: 16,
     fontWeight: "600",
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: Colors.overlayBg,
     justifyContent: "center",
     alignItems: "center",
   },
   modalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
     borderRadius: 12,
     padding: 24,
     width: "85%",
@@ -185,23 +185,23 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 20,
     textAlign: "center",
-    color: "#333",
+    color: Colors.textPrimary,
   },
   inputLabel: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#333",
+    color: Colors.textPrimary,
     marginBottom: 6,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: Colors.borderLight,
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 14,
     fontSize: 15,
-    color: "#333",
-    backgroundColor: "#f9f9f9",
+    color: Colors.textPrimary,
+    backgroundColor: Colors.cardBgLight,
     marginBottom: 16,
   },
   modalButtons: {
@@ -217,12 +217,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   cancelButton: {
-    backgroundColor: "#e0e0e0",
+    backgroundColor: Colors.dividerMuted,
   },
   cancelButtonText: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#333",
+    color: Colors.textPrimary,
   },
   saveButton: {
     backgroundColor: Colors.primary,
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#fff",
+    color: Colors.white,
   },
   topUpOptionsContainer: {
     flexDirection: "row",
@@ -241,21 +241,21 @@ const styles = StyleSheet.create({
   topUpOption: {
     width: "48%",
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: Colors.borderLight,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: "center",
     marginBottom: 12,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
   },
   topUpOptionSelected: {
     borderColor: Colors.primary,
-    backgroundColor: "rgba(26,73,215,0.08)",
+    backgroundColor: Colors.blueTranslucent08,
   },
   topUpAmountText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
+    color: Colors.textPrimary,
   },
   topUpAmountTextSelected: {
     color: Colors.primary,
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     fontWeight: "600",
     textAlign: "center",
-    color: "#333",
+    color: Colors.textPrimary,
   },
   qrImage: {
     width: 300,
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
   qrCloseButtonText: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#fff",
+    color: Colors.white,
   },
   customAmountContainer: {
     marginBottom: 16,

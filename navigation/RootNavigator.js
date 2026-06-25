@@ -9,6 +9,7 @@ import AppNavigator from "./AppNavigator";
 import FeedbackScreen from "../screens/FeedbackScreen";
 import { socket } from "../services/socket.service";
 import { useHistory } from "../queries/history.query";
+import { Colors } from "../constants/color";
 
 const Stack = createNativeStackNavigator();
 
@@ -226,13 +227,13 @@ const RootNavigator = () => {
 const styles = StyleSheet.create({
   container: {
     paddingBottom: 0,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.white,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.white,
   },
 });
 

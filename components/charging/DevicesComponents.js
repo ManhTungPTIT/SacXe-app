@@ -91,7 +91,7 @@ const DevicesComponents = ({
           activeOpacity={0.8}
           hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
         >
-          <Ionicons name="arrow-back" size={22} color="#111111" />
+          <Ionicons name="arrow-back" size={22} color={Colors.textDark} />
         </TouchableOpacity>
         <View style={styles.headerTextBlock}>
           <Text style={styles.title}>Chọn ô sạc xe</Text>
@@ -153,7 +153,7 @@ const DevicesComponents = ({
                   <Ionicons
                     name={isAvailable ? "flash-outline" : "lock-closed-outline"}
                     size={17}
-                    color={isAvailable ? Colors.primary : "#8E8E93"}
+                    color={isAvailable ? Colors.primary : Colors.inactive}
                   />
                 </View>
               </View>
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: "#F5F7F6",
     borderWidth: 1,
-    borderColor: "#E7ECE9",
+    borderColor: Colors.borderGreenLight,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
@@ -243,19 +243,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "800",
-    color: "#111111",
+    color: Colors.textDark,
     lineHeight: 29,
   },
   subtitle: {
     marginTop: 3,
     fontSize: 13,
     fontWeight: "600",
-    color: "#6B7280",
+    color: Colors.textSecondary,
   },
   summaryCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F7FBF8",
+    backgroundColor: Colors.bgGreenTint,
     borderWidth: 1,
     borderColor: "#DDF3E5",
     borderRadius: 12,
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: "#EAF9EF",
+    backgroundColor: Colors.successBgLight,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -277,19 +277,19 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 12,
-    color: "#6B7280",
+    color: Colors.textSecondary,
     marginBottom: 3,
   },
   summaryValue: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#111827",
+    color: Colors.textPrimaryDark,
   },
   summaryBadge: {
     borderRadius: 999,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.white,
     borderWidth: 1,
-    borderColor: "#D0F0DC",
+    borderColor: Colors.successBorder,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   legendText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#6B7280",
+    color: Colors.textSecondary,
   },
   listContainer: {
     flexDirection: "row",
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
   deviceCardAvailable: {
     backgroundColor: Colors.primary,
     borderColor: Colors.primary,
-    shadowColor: "#0E4120",
+    shadowColor: Colors.shadowGreen,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.16,
     shadowRadius: 12,
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
   },
   deviceCardDisabled: {
     backgroundColor: "#F1F3F5",
-    borderColor: "#E2E8F0",
+    borderColor: Colors.borderMuted,
     elevation: 0,
     shadowOpacity: 0,
     transform: [{ translateY: 0 }],
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   outletIconWrapAvailable: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.white,
   },
   outletIconWrapDisabled: {
     backgroundColor: "#E4E7EC",
@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   statusBadgeAvailable: {
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: Colors.whiteTranslucent20,
   },
   statusBadgeDisabled: {
     backgroundColor: "#E8EAED",
@@ -391,10 +391,10 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   statusBadgeTextAvailable: {
-    color: "#FFFFFF",
+    color: Colors.white,
   },
   statusBadgeTextDisabled: {
-    color: "#7B7E82",
+    color: Colors.textPlaceholder,
   },
   deviceName: {
     fontSize: 22,
@@ -408,13 +408,13 @@ const styles = StyleSheet.create({
     lineHeight: 17,
   },
   textAvailable: {
-    color: "#FFFFFF",
+    color: Colors.white,
   },
   textAvailableSub: {
-    color: "rgba(255, 255, 255, 0.85)",
+    color: Colors.whiteTranslucent85,
   },
   textDisabled: {
-    color: "#8E8E93",
+    color: Colors.inactive,
   },
   cardActionRow: {
     flexDirection: "row",
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: Colors.overlayBgLight,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 24,
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
   modalContent: {
     width: "100%",
     maxWidth: 360,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
     borderRadius: 12,
     padding: 24,
   },
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 12,
-    backgroundColor: "#EAF9EF",
+    backgroundColor: Colors.successBgLight,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
@@ -457,13 +457,13 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#111111",
+    color: Colors.textDark,
     marginBottom: 8,
     textAlign: "center",
   },
   modalMessage: {
     fontSize: 15,
-    color: "#666666",
+    color: Colors.textSecondary,
     textAlign: "center",
     lineHeight: 22,
     marginBottom: 24,
@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: Colors.cardBgLight,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 12,
@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   cancelButtonText: {
-    color: "#666666",
+    color: Colors.textSecondary,
     fontWeight: "700",
     fontSize: 15,
   },
@@ -494,10 +494,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   confirmButtonDisabled: {
-    backgroundColor: "#A7E8BB",
+    backgroundColor: Colors.accentGreen,
   },
   confirmButtonText: {
-    color: "#fff",
+    color: Colors.white,
     fontWeight: "700",
     fontSize: 15,
   },

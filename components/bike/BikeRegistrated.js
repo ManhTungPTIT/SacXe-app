@@ -92,10 +92,10 @@ const BikeRegistrated = ({ bike }) => {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
     borderRadius: 12,
     padding: 16,
-    shadowColor: "#000",
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -113,12 +113,12 @@ const styles = StyleSheet.create({
   plate: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#1f1f1f",
+    color: Colors.textPrimary,
   },
   owner: {
     marginTop: 2,
     fontSize: 14,
-    color: "#666",
+    color: Colors.textSecondary,
   },
   approvalBadge: {
     borderRadius: 999,
@@ -131,11 +131,11 @@ const styles = StyleSheet.create({
   },
   infoBox: {
     borderWidth: 1,
-    borderColor: "#F0F0F0",
+    borderColor: Colors.borderLightGray,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: "#FCFCFC",
+    backgroundColor: Colors.bgOffWhite,
     marginBottom: 12,
   },
   infoRow: {
@@ -150,12 +150,12 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    color: "#666",
+    color: Colors.textSecondary,
   },
   value: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#333",
+    color: Colors.textPrimary,
     flexShrink: 1,
     textAlign: "right",
   },
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   },
   quickStatItem: {
     flex: 1,
-    backgroundColor: "#F8F9FB",
+    backgroundColor: Colors.bgLightGrayBlue,
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 8,
@@ -175,19 +175,19 @@ const styles = StyleSheet.create({
   quickStatValue: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#1f1f1f",
+    color: Colors.textPrimary,
     textAlign: "center",
   },
   quickStatLabel: {
     fontSize: 11,
-    color: "#7A7A7A",
+    color: Colors.textMutedGray,
     marginTop: 4,
     textAlign: "center",
   },
   statusRow: {
     flexDirection: "row",
     justifyContent: "space-around",
-    borderTopColor: "#eee",
+    borderTopColor: Colors.dividerMuted,
     borderTopWidth: 1,
     paddingTop: 12,
     marginTop: 4,
@@ -199,24 +199,24 @@ const styles = StyleSheet.create({
   },
   statusLabel: {
     fontSize: 12,
-    color: "#666",
+    color: Colors.textSecondary,
   },
   registrationSection: {
     marginTop: 14,
-    borderTopColor: "#eee",
+    borderTopColor: Colors.dividerMuted,
     borderTopWidth: 1,
     paddingTop: 12,
   },
   registrationTitle: {
     fontSize: 13,
-    color: "#666",
+    color: Colors.textSecondary,
     marginBottom: 8,
   },
   registrationImage: {
     width: "100%",
     height: 150,
     borderRadius: 8,
-    backgroundColor: "#f3f3f3",
+    backgroundColor: Colors.bgGrayLight,
   },
   openCardButton: {
     marginTop: 8,

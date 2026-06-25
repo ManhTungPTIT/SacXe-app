@@ -1,5 +1,5 @@
-import React, { useContext, useEffect, useMemo, useState } from "react";
-import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { Animated, Easing, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import Svg, {
   Circle,
   Defs,
@@ -10,6 +10,7 @@ import Svg, {
 } from "react-native-svg";
 import { Colors } from "../constants/color";
 import { SocketContext } from "../providers/SocketProvider";
+import BatteryCharging from "./charging/BatteryCharging";
 
 const MAX_POINTS = 28;
 const CHART_HEIGHT = 140;
@@ -118,6 +119,8 @@ const buildChartGeometry = (values, width) => {
   };
 };
 
+
+
 const WaveChart = ({ chargingStartTime }) => {
   const socketContext = useContext(SocketContext);
   const socket = socketContext?.socket;
@@ -221,8 +224,9 @@ const WaveChart = ({ chargingStartTime }) => {
         <View style={[styles.liveBadge, !isLive && styles.liveBadgeIdle]}>
           <View style={[styles.liveDot, !isLive && styles.liveDotIdle]} />
           <Text style={[styles.liveText, !isLive && styles.liveTextIdle]}>
-            {isLive ? "Đang nhận" : "Chờ dữ liệu"}
+            {isLive ? "Đang sạc" : "Đang chờ sạc"}
           </Text>
+          <BatteryCharging status={isLive ? "charging" : "waiting"} />
         </View>
       </View>
 
@@ -243,7 +247,7 @@ const WaveChart = ({ chargingStartTime }) => {
               x2={chartWidth - CHART_PADDING.right}
               y1={lineY}
               y2={lineY}
-              stroke={index === GRID_LINE_COUNT - 1 ? "#DDEBE1" : "#EEF6F0"}
+              stroke={index === GRID_LINE_COUNT - 1 ? Colors.gridLineActive : Colors.gridLineIdle}
               strokeDasharray={index === GRID_LINE_COUNT - 1 ? undefined : "5 8"}
               strokeWidth={1}
             />
@@ -271,7 +275,7 @@ const WaveChart = ({ chargingStartTime }) => {
               <Circle
                 cx={activePoint.x}
                 cy={activePoint.y}
-                fill="#FFFFFF"
+                fill={Colors.white}
                 r={5}
                 stroke={Colors.primary}
                 strokeWidth={3}
@@ -324,10 +328,10 @@ const styles = StyleSheet.create({
     width: "100%",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#D8EFDC",
-    backgroundColor: "#F5FBF6",
+    borderColor: Colors.cardBorderGreen,
+    backgroundColor: Colors.cardBgGreen,
     padding: 16,
-    shadowColor: "#0E4120",
+    shadowColor: Colors.shadowGreen,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.06,
     shadowRadius: 16,
@@ -343,7 +347,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   eyebrow: {
-    color: "#5F6368",
+    color: Colors.textSecondary,
     fontSize: 12,
     fontWeight: "700",
     letterSpacing: 0.7,
@@ -355,7 +359,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   powerValue: {
-    color: "#111111",
+    color: Colors.textDark,
     fontSize: 40,
     fontWeight: "800",
     lineHeight: 44,
@@ -371,12 +375,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 999,
-    backgroundColor: "#E6F6EA",
+    backgroundColor: Colors.successBg,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
   liveBadgeIdle: {
-    backgroundColor: "#F1F3F2",
+    backgroundColor: Colors.neutralBg,
   },
   liveDot: {
     width: 7,
@@ -394,7 +398,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   liveTextIdle: {
-    color: "#6A6F73",
+    color: Colors.neutralText,
   },
   chartSurface: {
     alignItems: "center",
@@ -410,13 +414,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   emptyTitle: {
-    color: "#1D1D1F",
+    color: Colors.textPrimary,
     fontSize: 14,
     fontWeight: "800",
     textAlign: "center",
   },
   emptyText: {
-    color: "#6A6F73",
+    color: Colors.neutralText,
     fontSize: 12,
     lineHeight: 17,
     marginTop: 6,
@@ -429,7 +433,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   scaleText: {
-    color: "#7B837E",
+    color: Colors.textMutedGreen,
     fontSize: 11,
     fontWeight: "600",
   },
@@ -443,32 +447,33 @@ const styles = StyleSheet.create({
     minHeight: 68,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#E4F2E7",
-    backgroundColor: "#FFFFFF",
+    borderColor: Colors.borderGreenLight,
+    backgroundColor: Colors.white,
     paddingHorizontal: 10,
     paddingVertical: 10,
     justifyContent: "space-between",
   },
   metricLabel: {
-    color: "#6A6F73",
+    color: Colors.neutralText,
     fontSize: 11,
     fontWeight: "600",
     lineHeight: 14,
   },
   metricValue: {
-    color: "#1D1D1F",
+    color: Colors.textPrimary,
     fontSize: 14,
     fontWeight: "800",
     marginTop: 8,
   },
   chartDescription: {
-    color: "#4F5C54",
+    color: Colors.textDarkGreen,
     fontSize: 13,
     fontWeight: "600",
     lineHeight: 18,
     marginTop: 14,
     textAlign: "center",
   },
+
 });
 
 export default WaveChart;

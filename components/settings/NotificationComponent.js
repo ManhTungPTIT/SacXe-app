@@ -40,7 +40,7 @@ const getNotificationMeta = (title = "") => {
   ) {
     return {
       icon: "checkmark-done",
-      color: "#0F9D58",
+      color: Colors.successGreen,
       iconWrapperStyle: styles.notificationIconSuccess,
     };
   }
@@ -51,7 +51,7 @@ const getNotificationMeta = (title = "") => {
   ) {
     return {
       icon: "flash",
-      color: "#F57C00",
+      color: Colors.warningOrange,
       iconWrapperStyle: styles.notificationIconWarning,
     };
   }
@@ -191,7 +191,7 @@ const NotificationComponent = ({
                 <Ionicons
                   name="notifications-off-outline"
                   size={24}
-                  color="#64748B"
+                  color={Colors.textSlate}
                 />
               </View>
               <Text style={styles.emptyTitle}>Chưa có thông báo nào</Text>
@@ -209,7 +209,7 @@ const NotificationComponent = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: Colors.overlayBgLight,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 14,
@@ -220,12 +220,12 @@ const styles = StyleSheet.create({
   sheetContainer: {
     width: "100%",
     maxHeight: "90%",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.white,
     borderRadius: 18,
     paddingHorizontal: 14,
     paddingTop: 10,
     paddingBottom: 12,
-    shadowColor: "#0F172A",
+    shadowColor: Colors.textDarkGray,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.2,
     shadowRadius: 20,
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 4,
     borderRadius: 999,
-    backgroundColor: "#D1D5DB",
+    backgroundColor: Colors.borderMuted,
     marginBottom: 12,
   },
   headerRow: {
@@ -248,12 +248,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#0F172A",
+    color: Colors.textDarkGray,
   },
   headerSubtitle: {
     marginTop: 3,
     fontSize: 12,
-    color: "#64748B",
+    color: Colors.textSlate,
   },
   closeButton: {
     width: 34,
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F1F5F9",
+    backgroundColor: Colors.bgLightMuted,
   },
   listScroll: {
     flexGrow: 0,
@@ -273,16 +273,16 @@ const styles = StyleSheet.create({
   notificationItem: {
     flexDirection: "row",
     alignItems: "flex-start",
-    backgroundColor: "#F8FAFC",
+    backgroundColor: Colors.bgLightMuted,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: Colors.borderMuted,
     padding: 11,
     marginBottom: 10,
   },
   unreadItem: {
-    borderColor: "#BEEAD1",
-    backgroundColor: "#F4FCF7",
+    borderColor: Colors.borderGreenLight,
+    backgroundColor: Colors.cardBgGreen,
   },
   notificationIconWrapper: {
     width: 34,
@@ -293,13 +293,13 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   notificationIconSuccess: {
-    backgroundColor: "#EAF9EF",
+    backgroundColor: Colors.successBgLight,
   },
   notificationIconWarning: {
-    backgroundColor: "#FFF3E8",
+    backgroundColor: Colors.warningBg,
   },
   notificationIconDefault: {
-    backgroundColor: "#EAF8EE",
+    backgroundColor: Colors.cardBgGreen,
   },
   notificationContent: {
     flex: 1,
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: "700",
-    color: "#111827",
+    color: Colors.textPrimaryDark,
     marginRight: 8,
   },
   unreadBadge: {
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   unreadBadgeText: {
-    color: "#FFFFFF",
+    color: Colors.white,
     fontSize: 11,
     fontWeight: "600",
   },
@@ -330,12 +330,12 @@ const styles = StyleSheet.create({
     marginTop: 5,
     fontSize: 13,
     lineHeight: 18,
-    color: "#475569",
+    color: Colors.textSecondaryDark,
   },
   notificationTime: {
     marginTop: 8,
     fontSize: 11,
-    color: "#94A3B8",
+    color: Colors.textSlateLight,
     fontWeight: "500",
   },
   emptyStateContainer: {
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 14,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: Colors.bgLightMuted,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 10,
@@ -355,11 +355,11 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#0F172A",
+    color: Colors.textDarkGray,
   },
   emptyDescription: {
     marginTop: 6,
-    color: "#64748B",
+    color: Colors.textSlate,
     textAlign: "center",
     lineHeight: 18,
     paddingHorizontal: 12,
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: "center",
     fontSize: 11,
-    color: "#94A3B8",
+    color: Colors.textSlateLight,
   },
 });
 

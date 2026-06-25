@@ -212,7 +212,7 @@ const QrScanScreen = ({ navigation }) => {
           style={styles.backButton}
           onPress={() => navigation.navigate("Charge")}
         >
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <Ionicons name="arrow-back" size={20} color={Colors.white} />
           <Text style={styles.backText}>Quay lại</Text>
         </TouchableOpacity>
       </View>
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: Colors.black,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -239,11 +239,11 @@ const styles = StyleSheet.create({
     height: 250,
     borderRadius: 20,
     borderWidth: 3,
-    borderColor: "#FFFFFF",
-    backgroundColor: "rgba(255,255,255,0.05)",
+    borderColor: Colors.white,
+    backgroundColor: Colors.whiteTranslucent05,
   },
   guideText: {
-    color: "#FFFFFF",
+    color: Colors.white,
     fontSize: 16,
     fontWeight: "600",
     marginTop: 20,
@@ -257,13 +257,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "rgba(0,0,0,0.55)",
+    backgroundColor: Colors.overlayBgDark,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 999,
   },
   backText: {
-    color: "#FFFFFF",
+    color: Colors.white,
     fontWeight: "600",
   },
   permissionContainer: {
@@ -271,17 +271,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 24,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.white,
   },
   permissionTitle: {
     marginTop: 12,
     fontSize: 22,
     fontWeight: "700",
-    color: "#1E1E1E",
+    color: Colors.textDark,
   },
   permissionDescription: {
     marginTop: 10,
-    color: "#666",
+    color: Colors.textSecondary,
     textAlign: "center",
     lineHeight: 22,
   },
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   permissionButtonText: {
-    color: "#FFFFFF",
+    color: Colors.white,
     fontWeight: "700",
   },
   permissionSecondaryButton: {

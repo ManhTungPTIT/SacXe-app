@@ -51,7 +51,7 @@ const MyBikeComponent = ({
               <View style={styles.modalHeaderRow}>
                 <View style={styles.modalHeaderLeft}>
                   <View style={styles.modalHeaderIconWrap}>
-                    <Ionicons name="car-sport" size={18} color="#FFFFFF" />
+                    <Ionicons name="car-sport" size={18} color={Colors.white} />
                   </View>
                   <View>
                     <Text style={styles.modalTitle}>Xe của bạn</Text>
@@ -65,7 +65,7 @@ const MyBikeComponent = ({
                   onPress={handleCloseMyBikeModal}
                   style={styles.closeButton}
                 >
-                  <Ionicons name="close" size={20} color="#4B5563" />
+                  <Ionicons name="close" size={20} color={Colors.textSecondaryDark} />
                 </TouchableOpacity>
               </View>
 
@@ -88,7 +88,7 @@ const MyBikeComponent = ({
                   <Ionicons
                     name={isCharging ? "flash" : "flash-outline"}
                     size={14}
-                    color={isCharging ? Colors.primary : "#6B7280"}
+                    color={isCharging ? Colors.primary : Colors.textSecondary}
                   />
                   <Text
                     style={[
@@ -148,7 +148,7 @@ const MyBikeComponent = ({
                   <Ionicons
                     name="document-text-outline"
                     size={16}
-                    color="#FFFFFF"
+                    color={Colors.white}
                     style={{ marginRight: 6 }}
                   />
                   <Text style={styles.updateButtonText}>Cập nhật giấy tờ</Text>
@@ -172,7 +172,7 @@ const MyBikeComponent = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: Colors.overlayBg,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 16,
@@ -180,10 +180,10 @@ const styles = StyleSheet.create({
   card: {
     width: "100%",
     maxWidth: 440,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.white,
     borderRadius: 16,
     padding: 16,
-    shadowColor: "#000",
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.12,
     shadowRadius: 10,
@@ -211,18 +211,18 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 17,
     fontWeight: "700",
-    color: "#111827",
+    color: Colors.textPrimaryDark,
   },
   modalSubtitle: {
     marginTop: 1,
     fontSize: 12,
-    color: "#6B7280",
+    color: Colors.textSecondary,
   },
   closeButton: {
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: Colors.bgGrayLight,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -240,12 +240,12 @@ const styles = StyleSheet.create({
   plate: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#111827",
+    color: Colors.textPrimaryDark,
   },
   owner: {
     marginTop: 2,
     fontSize: 14,
-    color: "#6B7280",
+    color: Colors.textSecondary,
   },
   statusBadge: {
     flexDirection: "row",
@@ -257,12 +257,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   statusBadgeActive: {
-    backgroundColor: "#EAF9EF",
-    borderColor: "#D0F0DC",
+    backgroundColor: Colors.successBgLight,
+    borderColor: Colors.successBorder,
   },
   statusBadgeIdle: {
-    backgroundColor: "#F3F4F6",
-    borderColor: "#E5E7EB",
+    backgroundColor: Colors.bgGrayLight,
+    borderColor: Colors.borderMuted,
   },
   statusBadgeText: {
     fontSize: 12,
@@ -272,15 +272,15 @@ const styles = StyleSheet.create({
     color: Colors.primary,
   },
   statusBadgeTextIdle: {
-    color: "#6B7280",
+    color: Colors.textSecondary,
   },
   infoBox: {
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: Colors.borderMuted,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: Colors.bgLightMuted,
     marginBottom: 12,
   },
   infoRow: {
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    color: "#6B7280",
+    color: Colors.textSecondary,
   },
   value: {
     fontSize: 13,
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   },
   quickStatItem: {
     flex: 1,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: Colors.bgGrayLight,
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 8,
@@ -320,12 +320,12 @@ const styles = StyleSheet.create({
   quickStatValue: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#111827",
+    color: Colors.textPrimaryDark,
     textAlign: "center",
   },
   quickStatLabel: {
     fontSize: 11,
-    color: "#6B7280",
+    color: Colors.textSecondary,
     marginTop: 4,
     textAlign: "center",
   },
@@ -346,17 +346,17 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
   },
   updateButtonText: {
-    color: "#FFFFFF",
+    color: Colors.white,
     fontSize: 14,
     fontWeight: "700",
   },
   closeModalButton: {
-    backgroundColor: "#F3F4F6",
+    backgroundColor: Colors.bgGrayLight,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: Colors.borderMuted,
   },
   closeModalButtonText: {
-    color: "#4B5563",
+    color: Colors.textSecondaryDark,
     fontSize: 14,
     fontWeight: "700",
   },

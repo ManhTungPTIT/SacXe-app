@@ -217,7 +217,7 @@ const ProfileComponent = ({
                 <Ionicons
                   name="person-circle-outline"
                   size={18}
-                  color="#FFFFFF"
+                  color={Colors.white}
                 />
               </View>
 
@@ -233,7 +233,7 @@ const ProfileComponent = ({
               onPress={handleCloseProfileModal}
               style={styles.closeButton}
             >
-              <Ionicons name="close" size={20} color="#4B5563" />
+              <Ionicons name="close" size={20} color={Colors.textSecondaryDark} />
             </TouchableOpacity>
           </View>
 
@@ -250,7 +250,7 @@ const ProfileComponent = ({
                 onChangeText={(text) => handleChangeField("fullName", text)}
                 style={styles.input}
                 placeholder="Nhập họ và tên"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={Colors.grayMuted}
               />
             </View>
 
@@ -261,7 +261,7 @@ const ProfileComponent = ({
                 onChangeText={(text) => handleChangeField("phoneNumber", text)}
                 style={styles.input}
                 placeholder="Nhập số điện thoại"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={Colors.grayMuted}
                 keyboardType="phone-pad"
               />
             </View>
@@ -273,7 +273,7 @@ const ProfileComponent = ({
                 onChangeText={(text) => handleChangeField("email", text)}
                 style={styles.input}
                 placeholder="Nhập email"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={Colors.grayMuted}
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
@@ -286,7 +286,7 @@ const ProfileComponent = ({
                 onChangeText={(text) => handleChangeField("address", text)}
                 style={[styles.input, styles.inputMultiline]}
                 placeholder="Nhập nơi thường trú"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={Colors.grayMuted}
                 multiline={true}
                 textAlignVertical="top"
               />
@@ -340,7 +340,7 @@ const ProfileComponent = ({
                   onChangeText={setDeletePassword}
                   style={styles.deletePasswordInput}
                   placeholder="Nhập mật khẩu"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={Colors.grayMuted}
                   secureTextEntry={true}
                   autoCapitalize="none"
                   editable={!deleteAccountMutation.isPending}
@@ -387,7 +387,7 @@ const ProfileComponent = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: Colors.overlayBg,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 16,
@@ -399,10 +399,10 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 460,
     maxHeight: "92%",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.white,
     borderRadius: 16,
     padding: 16,
-    shadowColor: "#000",
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.14,
     shadowRadius: 12,
@@ -432,18 +432,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: "700",
-    color: "#111827",
+    color: Colors.textPrimaryDark,
   },
   subtitle: {
     marginTop: 2,
     fontSize: 12,
-    color: "#6B7280",
+    color: Colors.textSecondary,
   },
   closeButton: {
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: Colors.bgGrayLight,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -457,17 +457,17 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     fontSize: 13,
     fontWeight: "600",
-    color: "#374151",
+    color: Colors.textSecondaryDark,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: Colors.borderMuted,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 11,
     fontSize: 14,
-    color: "#111827",
-    backgroundColor: "#FFFFFF",
+    color: Colors.textPrimaryDark,
+    backgroundColor: Colors.white,
   },
   inputMultiline: {
     minHeight: 86,
@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   deleteButton: {
-    backgroundColor: "#DC2626",
+    backgroundColor: Colors.danger,
   },
   deleteButtonDisabled: {
     opacity: 0.7,
@@ -492,31 +492,31 @@ const styles = StyleSheet.create({
   deleteAccountButtonText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: Colors.white,
   },
   deleteConfirmCard: {
     width: "100%",
     borderWidth: 1,
-    borderColor: "#FECACA",
+    borderColor: Colors.errorBorderLight,
     borderRadius: 12,
-    backgroundColor: "#FEF2F2",
+    backgroundColor: Colors.errorBgLight2,
     padding: 12,
   },
   deleteConfirmLabel: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#991B1B",
+    color: Colors.errorTextDark,
     marginBottom: 8,
   },
   deletePasswordInput: {
     borderWidth: 1,
-    borderColor: "#FCA5A5",
+    borderColor: Colors.errorBorderMuted,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 11,
     fontSize: 14,
-    color: "#111827",
-    backgroundColor: "#FFFFFF",
+    color: Colors.textPrimaryDark,
+    backgroundColor: Colors.white,
   },
   deleteConfirmActions: {
     marginTop: 10,
@@ -531,22 +531,22 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   deleteConfirmCancel: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.white,
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: Colors.borderMuted,
   },
   deleteConfirmCancelText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#374151",
+    color: Colors.textSecondaryDark,
   },
   deleteConfirmSubmit: {
-    backgroundColor: "#DC2626",
+    backgroundColor: Colors.danger,
   },
   deleteConfirmSubmitText: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: Colors.white,
   },
   footerActions: {
     flexDirection: "row",
@@ -570,7 +570,7 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: Colors.white,
   },
 });
 
