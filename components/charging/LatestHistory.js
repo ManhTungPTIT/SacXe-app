@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Colors } from "../../constants/color";
 import { SocketContext } from "../../providers/SocketProvider";
@@ -14,27 +14,61 @@ const formatPrice = (value) => {
   return price.toLocaleString("vi-VN");
 };
 
+const PRICE_PER_KWH = 3000;
+const PRICE_UPDATE_STEP_KWH = 0.2;
+
+const getEnergyStep = (value) => {
+  const energy = Number(value) || 0;
+  return Math.floor((energy + Number.EPSILON) / PRICE_UPDATE_STEP_KWH);
+};
+
+const calculatePrice = (energy) => {
+  const steppedEnergy = getEnergyStep(energy) * PRICE_UPDATE_STEP_KWH;
+  return Math.round(steppedEnergy * PRICE_PER_KWH);
+};
+
+const getElapsedDuration = (startTime, currentTime) => {
+  if (!startTime) {
+    return null;
+  }
+
+  const start = new Date(startTime).getTime();
+  if (Number.isNaN(start)) {
+    return null;
+  }
+
+  const diff = Math.max(0, currentTime - start);
+  const totalSeconds = Math.floor(diff / 1000);
+
+  return {
+    hours: Math.floor(totalSeconds / 3600),
+    minutes: Math.floor((totalSeconds % 3600) / 60),
+    seconds: totalSeconds % 60,
+  };
+};
+
 const formatDuration = (totalTime) => {
   if (!totalTime) {
-    return "Đang trong quá trình sạc...";
+    return "0 giây";
   }
 
   const hours = Number(totalTime?.hours) || 0;
   const minutes = Number(totalTime?.minutes) || 0;
+  const seconds = Number(totalTime?.seconds) || 0;
+
+  if (!hours && !minutes && !seconds) {
+    return "0 giây";
+  }
 
   if (!hours && !minutes) {
-    return "0 phút";
+    return `${seconds} giây`;
   }
 
   if (!hours) {
-    return `${minutes} phút`;
+    return `${minutes} phút ${seconds} giây`;
   }
 
-  if (!minutes) {
-    return `${hours} giờ`;
-  }
-
-  return `${hours} giờ ${minutes} phút`;
+  return `${hours} giờ ${minutes} phút ${seconds} giây`;
 };
 
 const formatStartTime = (startTime) => {
@@ -51,16 +85,20 @@ const formatStartTime = (startTime) => {
 };
 
 const LatestHistory = ({ history }) => {
-  const startTimeText = formatStartTime(history?.startTime);
+  const chargingStartTime = history?.startTime || history?.createdAt;
+  const startTimeText = formatStartTime(chargingStartTime);
   const hasDuration = Boolean(history?.totalTime);
   const socketContext = useContext(SocketContext);
   const socket = socketContext?.socket;
   const queryClient = useQueryClient();
   const [realtimeEnergy, setRealtimeEnergy] = useState(history?.energy || 0);
+  const [currentTime, setCurrentTime] = useState(Date.now());
+  const lastInvalidatedEnergyStepRef = useRef(getEnergyStep(history?.energy));
 
   useEffect(() => {
     setRealtimeEnergy(history?.energy || 0);
-  }, [history?.energy]);
+    lastInvalidatedEnergyStepRef.current = getEnergyStep(history?.energy);
+  }, [history?._id, history?.energy]);
 
   useEffect(() => {
     if (!socket || !history || hasDuration) return;
@@ -78,12 +116,38 @@ const LatestHistory = ({ history }) => {
     };
   }, [socket, history, hasDuration]);
 
-  // Cập nhật lại chi phí từ API mỗi khi điện năng tiêu thụ tăng lên 1 số điện (1 kWh)
+  useEffect(() => {
+    if (!history || hasDuration || !chargingStartTime) return;
+
+    setCurrentTime(Date.now());
+    const intervalId = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [history?._id, hasDuration, chargingStartTime]);
+
+  // Refresh API cost every 0.2 kWh step while charging.
   const lastFetchedEnergy = history?.energy || 0;
+  const displayPrice = hasDuration
+    ? history?.price
+    : Math.max(Number(history?.price) || 0, calculatePrice(realtimeEnergy));
+  const displayDuration = hasDuration
+    ? history?.totalTime
+    : getElapsedDuration(chargingStartTime, currentTime);
+
   useEffect(() => {
     if (hasDuration) return;
 
-    if (realtimeEnergy - lastFetchedEnergy >= 1) {
+    const realtimeEnergyStep = getEnergyStep(realtimeEnergy);
+    const lastFetchedEnergyStep = getEnergyStep(lastFetchedEnergy);
+    const lastInvalidatedEnergyStep = Math.max(
+      lastInvalidatedEnergyStepRef.current,
+      lastFetchedEnergyStep,
+    );
+
+    if (realtimeEnergyStep > lastInvalidatedEnergyStep) {
+      lastInvalidatedEnergyStepRef.current = realtimeEnergyStep;
       queryClient.invalidateQueries({ queryKey: ["latestHistory"] });
     }
   }, [realtimeEnergy, lastFetchedEnergy, hasDuration, queryClient]);
@@ -128,7 +192,7 @@ const LatestHistory = ({ history }) => {
             <View style={styles.metricCard}>
               <Text style={styles.metricLabel}>Chi phí</Text>
               <Text style={styles.metricValue}>
-                {formatPrice(history?.price)} VND
+                {formatPrice(displayPrice)} VND
               </Text>
             </View>
           </View>
@@ -138,7 +202,7 @@ const LatestHistory = ({ history }) => {
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Tổng thời gian sạc</Text>
             <Text style={styles.infoValue}>
-              {formatDuration(history?.totalTime)}
+              {formatDuration(displayDuration)}
             </Text>
           </View>
         </View>

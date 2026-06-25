@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { useQueryClient } from "@tanstack/react-query";
 import { useHistory } from "../queries/history.query";
 import {
   calculateChargingDurationFormatted,
@@ -15,6 +16,7 @@ import {
 } from "../utils/time";
 import { Colors } from "../constants/color";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { SocketContext } from "../providers/SocketProvider";
 
 const formatCurrency = (value) => {
   const price = Number(value) || 0;
@@ -28,7 +30,72 @@ const formatEnergy = (value) => {
   })} kWh`;
 };
 
+const PRICE_PER_KWH = 3000;
+const PRICE_UPDATE_STEP_KWH = 0.2;
+
+const getEnergyStep = (value) => {
+  const energy = Number(value) || 0;
+  return Math.floor((energy + Number.EPSILON) / PRICE_UPDATE_STEP_KWH);
+};
+
+const calculatePrice = (energy) => {
+  const steppedEnergy = getEnergyStep(energy) * PRICE_UPDATE_STEP_KWH;
+  return Math.round(steppedEnergy * PRICE_PER_KWH);
+};
+
+const isChargingHistory = (history) => !history?.totalTime;
+
+const getHistoryStartTime = (history) =>
+  history?.startTime || history?.createdAt;
+
+const getElapsedDuration = (startTime, currentTime) => {
+  if (!startTime) {
+    return null;
+  }
+
+  const start = new Date(startTime).getTime();
+  if (Number.isNaN(start)) {
+    return null;
+  }
+
+  const diff = Math.max(0, currentTime - start);
+  const totalSeconds = Math.floor(diff / 1000);
+
+  return {
+    hours: Math.floor(totalSeconds / 3600),
+    minutes: Math.floor((totalSeconds % 3600) / 60),
+    seconds: totalSeconds % 60,
+  };
+};
+
+const formatElapsedDuration = (duration) => {
+  if (!duration) {
+    return "0 giây";
+  }
+
+  const hours = Number(duration?.hours) || 0;
+  const minutes = Number(duration?.minutes) || 0;
+  const seconds = Number(duration?.seconds) || 0;
+
+  if (!hours && !minutes && !seconds) {
+    return "0 giây";
+  }
+
+  if (!hours && !minutes) {
+    return `${seconds} giây`;
+  }
+
+  if (!hours) {
+    return `${minutes} phút ${seconds} giây`;
+  }
+
+  return `${hours} giờ ${minutes} phút ${seconds} giây`;
+};
+
 const HistoryScreen = () => {
+  const queryClient = useQueryClient();
+  const socketContext = useContext(SocketContext);
+  const socket = socketContext?.socket;
   const {
     data: historyData,
     isLoading,
@@ -37,6 +104,99 @@ const HistoryScreen = () => {
 
   const monthlyStats = historyData?.monthlyStats;
   const histories = historyData?.histories ?? [];
+  const activeHistory = histories.find(isChargingHistory);
+  const activeHistoryId = activeHistory?._id;
+  const activeHistoryStartTime = getHistoryStartTime(activeHistory);
+  const activeHistoryEnergy = activeHistory?.energy || 0;
+  const activeHistoryPrice = activeHistory?.price || 0;
+  const [currentTime, setCurrentTime] = useState(Date.now());
+  const [realtimeEnergy, setRealtimeEnergy] = useState(activeHistoryEnergy);
+  const lastInvalidatedEnergyStepRef = useRef(
+    getEnergyStep(activeHistoryEnergy),
+  );
+
+  useEffect(() => {
+    setRealtimeEnergy(activeHistoryEnergy);
+    lastInvalidatedEnergyStepRef.current = getEnergyStep(activeHistoryEnergy);
+  }, [activeHistoryId, activeHistoryEnergy]);
+
+  useEffect(() => {
+    if (!activeHistoryId || !activeHistoryStartTime) return;
+
+    setCurrentTime(Date.now());
+    const intervalId = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [activeHistoryId, activeHistoryStartTime]);
+
+  useEffect(() => {
+    if (!socket || !activeHistoryId) return;
+
+    const handleWave = (value) => {
+      const nextEnergy = Number(value?.energy);
+
+      if (Number.isFinite(nextEnergy)) {
+        setRealtimeEnergy(nextEnergy / 1000);
+      }
+    };
+
+    socket.on("wave_data", handleWave);
+
+    return () => {
+      socket.off("wave_data", handleWave);
+    };
+  }, [socket, activeHistoryId]);
+
+  useEffect(() => {
+    if (!activeHistoryId) return;
+
+    const realtimeEnergyStep = getEnergyStep(realtimeEnergy);
+    const lastFetchedEnergyStep = getEnergyStep(activeHistoryEnergy);
+    const lastInvalidatedEnergyStep = Math.max(
+      lastInvalidatedEnergyStepRef.current,
+      lastFetchedEnergyStep,
+    );
+
+    if (realtimeEnergyStep > lastInvalidatedEnergyStep) {
+      lastInvalidatedEnergyStepRef.current = realtimeEnergyStep;
+      queryClient.invalidateQueries({ queryKey: ["history"] });
+      queryClient.invalidateQueries({ queryKey: ["latestHistory"] });
+    }
+  }, [activeHistoryId, realtimeEnergy, activeHistoryEnergy, queryClient]);
+
+  const getDisplayEnergy = (history) => {
+    if (!isChargingHistory(history)) {
+      return history?.energy;
+    }
+
+    return Math.max(Number(history?.energy) || 0, realtimeEnergy);
+  };
+
+  const getDisplayPrice = (history) => {
+    if (!isChargingHistory(history)) {
+      return history?.price;
+    }
+
+    return Math.max(
+      Number(history?.price) || 0,
+      calculatePrice(getDisplayEnergy(history)),
+    );
+  };
+
+  const activeDisplayEnergy = activeHistory ? getDisplayEnergy(activeHistory) : 0;
+  const activeDisplayPrice = activeHistory ? getDisplayPrice(activeHistory) : 0;
+  const displayMonthlyEnergy = activeHistory
+    ? (Number(monthlyStats?.totalEnergy) || 0) -
+      (Number(activeHistoryEnergy) || 0) +
+      activeDisplayEnergy
+    : monthlyStats?.totalEnergy;
+  const displayMonthlyAmount = activeHistory
+    ? (Number(monthlyStats?.totalAmount) || 0) -
+      (Number(activeHistoryPrice) || 0) +
+      activeDisplayPrice
+    : monthlyStats?.totalAmount;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
@@ -75,7 +235,7 @@ const HistoryScreen = () => {
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Tổng chi phí</Text>
                 <Text style={styles.infoValue}>
-                  {formatCurrency(monthlyStats?.totalAmount)}
+                  {formatCurrency(displayMonthlyAmount)}
                 </Text>
               </View>
 
@@ -84,7 +244,7 @@ const HistoryScreen = () => {
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Điện năng tiêu thụ</Text>
                 <Text style={styles.infoValue}>
-                  {formatEnergy(monthlyStats?.totalEnergy)}
+                  {formatEnergy(displayMonthlyEnergy)}
                 </Text>
               </View>
             </View>
@@ -101,62 +261,82 @@ const HistoryScreen = () => {
                 </Text>
               </View>
             ) : histories.length > 0 ? (
-              histories.map((item, index) => (
-                <View
-                  key={item?._id ?? `${item?.createdAt}-${index}`}
-                  style={styles.sessionCard}
-                >
-                  <View style={styles.cardHeader}>
-                    <Text style={styles.cardTitle}>
-                      Phiên sạc #{index + 1}
-                    </Text>
-                    <View style={[styles.statusBadge, styles.statusDone]}>
-                      <Text
-                        style={[styles.statusText, styles.statusDoneText]}
+              histories.map((item, index) => {
+                const isCharging = isChargingHistory(item);
+                const sessionStartTime = getHistoryStartTime(item);
+                const displayEnergy = getDisplayEnergy(item);
+                const displayPrice = getDisplayPrice(item);
+                const displayDuration = isCharging
+                  ? formatElapsedDuration(
+                      getElapsedDuration(sessionStartTime, currentTime),
+                    )
+                  : calculateChargingDurationFormatted(
+                      item?.createdAt,
+                      item?.updatedAt,
+                    );
+
+                return (
+                  <View
+                    key={item?._id ?? `${item?.createdAt}-${index}`}
+                    style={styles.sessionCard}
+                  >
+                    <View style={styles.cardHeader}>
+                      <Text style={styles.cardTitle}>
+                        Phiên sạc #{index + 1}
+                      </Text>
+                      <View
+                        style={[
+                          styles.statusBadge,
+                          isCharging ? styles.statusActive : styles.statusDone,
+                        ]}
                       >
-                        Hoàn tất
-                      </Text>
-                    </View>
-                  </View>
-
-                  <Text style={styles.startTime}>
-                    Bắt đầu: {vietnamDate(item?.createdAt)} -
-                    {` ${vietnamTime(item?.createdAt)}`}
-                  </Text>
-
-                  <View style={styles.metricsRow}>
-                    <View
-                      style={[styles.metricCard, styles.metricCardSpacing]}
-                    >
-                      <Text style={styles.metricLabel}>
-                        Điện năng tiêu thụ
-                      </Text>
-                      <Text style={styles.metricValue}>
-                        {formatEnergy(item?.energy)}
-                      </Text>
+                        <Text
+                          style={[
+                            styles.statusText,
+                            isCharging
+                              ? styles.statusActiveText
+                              : styles.statusDoneText,
+                          ]}
+                        >
+                          {isCharging ? "Đang sạc" : "Hoàn tất"}
+                        </Text>
+                      </View>
                     </View>
 
-                    <View style={styles.metricCard}>
-                      <Text style={styles.metricLabel}>Chi phí</Text>
-                      <Text style={styles.metricValue}>
-                        {formatCurrency(item?.price)}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.divider} />
-
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Tổng thời gian sạc</Text>
-                    <Text style={styles.infoValue}>
-                      {calculateChargingDurationFormatted(
-                        item?.createdAt,
-                        item?.updatedAt,
-                      )}
+                    <Text style={styles.startTime}>
+                      Bắt đầu: {vietnamDate(sessionStartTime)} -
+                      {` ${vietnamTime(sessionStartTime)}`}
                     </Text>
+
+                    <View style={styles.metricsRow}>
+                      <View
+                        style={[styles.metricCard, styles.metricCardSpacing]}
+                      >
+                        <Text style={styles.metricLabel}>
+                          Điện năng tiêu thụ
+                        </Text>
+                        <Text style={styles.metricValue}>
+                          {formatEnergy(displayEnergy)}
+                        </Text>
+                      </View>
+
+                      <View style={styles.metricCard}>
+                        <Text style={styles.metricLabel}>Chi phí</Text>
+                        <Text style={styles.metricValue}>
+                          {formatCurrency(displayPrice)}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.divider} />
+
+                    <View style={styles.infoRow}>
+                      <Text style={styles.infoLabel}>Tổng thời gian sạc</Text>
+                      <Text style={styles.infoValue}>{displayDuration}</Text>
+                    </View>
                   </View>
-                </View>
-              ))
+                );
+              })
             ) : (
               <View style={[styles.monthlyCard, styles.emptyCard]}>
                 <Text style={styles.emptyTitle}>Chưa có lịch sử nào</Text>
@@ -259,12 +439,18 @@ const styles = StyleSheet.create({
   statusDone: {
     backgroundColor: "#E6F6EA",
   },
+  statusActive: {
+    backgroundColor: "#FFF2DD",
+  },
   statusText: {
     fontSize: 12,
     fontWeight: "700",
   },
   statusDoneText: {
     color: Colors.primary,
+  },
+  statusActiveText: {
+    color: "#B97100",
   },
   startTime: {
     fontSize: 13,
