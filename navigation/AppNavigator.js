@@ -1,8 +1,5 @@
 import React from "react";
-import {
-  BottomTabBar,
-  createBottomTabNavigator,
-} from "@react-navigation/bottom-tabs";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { Colors } from "../constants/color";
@@ -12,7 +9,6 @@ import ChargeScreen from "../screens/ChargeScreen";
 import HistoryScreen from "../screens/HistoryScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import QrScanScreen from "../screens/QrScanScreen";
-import FeedbackScreen from "../screens/FeedbackScreen";
 
 const Tab = createBottomTabNavigator();
 
@@ -32,42 +28,9 @@ const FloatingScanButton = ({ onPress, accessibilityState }) => {
   );
 };
 
-const FloatingFeedbackButton = ({ onPress, isActive }) => {
-  return (
-    <TouchableOpacity
-      activeOpacity={0.9}
-      onPress={onPress}
-      style={styles.feedbackButtonWrapper}
-    >
-      <View
-        style={[styles.feedbackButton, isActive && styles.feedbackButtonActive]}
-      >
-        <Ionicons
-          name={isActive ? "help" : "help-outline"}
-          size={24}
-          color={isActive ? "#FFFFFF" : Colors.primary}
-        />
-      </View>
-    </TouchableOpacity>
-  );
-};
-
 const AppNavigator = () => {
   return (
     <Tab.Navigator
-      tabBar={(props) => {
-        const activeRouteName = props.state.routes[props.state.index]?.name;
-
-        return (
-          <View style={styles.tabBarWrapper}>
-            <BottomTabBar {...props} />
-            <FloatingFeedbackButton
-              isActive={activeRouteName === "Feedback"}
-              onPress={() => props.navigation.navigate("Feedback")}
-            />
-          </View>
-        );
-      }}
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, size }) => {
           let iconName;
@@ -100,10 +63,16 @@ const AppNavigator = () => {
         headerShown: false,
         tabBarStyle: {
           backgroundColor: Colors.background,
-          borderTopColor: Colors.border,
+          borderTopColor: Colors.primary,
+          borderTopWidth: 1.5,
           paddingBottom: 10,
           paddingTop: 8,
           height: 72,
+          shadowColor: "#000000",
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.05,
+          shadowRadius: 10,
+          elevation: 4,
         },
       })}
     >
@@ -121,22 +90,12 @@ const AppNavigator = () => {
       />
       <Tab.Screen name="History" component={HistoryScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
-      <Tab.Screen
-        name="Feedback"
-        component={FeedbackScreen}
-        options={{
-          tabBarButton: () => null,
-          tabBarItemStyle: { display: "none" },
-        }}
-      />
+
     </Tab.Navigator>
   );
 };
 
 const styles = StyleSheet.create({
-  tabBarWrapper: {
-    position: "relative",
-  },
   scanButtonWrapper: {
     top: -24,
     justifyContent: "center",
@@ -159,28 +118,6 @@ const styles = StyleSheet.create({
   },
   scanButtonActive: {
     transform: [{ scale: 1.04 }],
-  },
-  feedbackButtonWrapper: {
-    position: "absolute",
-    right: 16,
-    top: -65,
-  },
-  feedbackButton: {
-    color: Colors.primary,
-    width: 50,
-    height: 50,
-    borderRadius: 28,
-    backgroundColor: Colors.secondary,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 8,
-  },
-  feedbackButtonActive: {
-    backgroundColor: Colors.primary,
   },
 });
 

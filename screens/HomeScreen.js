@@ -126,7 +126,7 @@ const HomeScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <View style={styles.page}>
         <KeyboardAvoidingView
           style={styles.keyboardView}
@@ -173,7 +173,7 @@ const HomeScreen = ({ navigation }) => {
               </View>
             </View>
 
-            <View style={styles.quickActions}>
+            {/* <View style={styles.quickActions}>
               <TouchableOpacity
                 style={styles.scanButton}
                 onPress={() => navigation.navigate("ScanQR")}
@@ -181,7 +181,7 @@ const HomeScreen = ({ navigation }) => {
                 <Ionicons name="qr-code" size={18} color="#FFFFFF" />
                 <Text style={styles.scanButtonText}>Quét mã để sạc</Text>
               </TouchableOpacity>
-            </View>
+            </View> */}
 
             <LatestHistory history={latestHistory} />
           </ScrollView>
@@ -212,6 +212,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   mapSection: {
+    flex: 1,
     marginBottom: 12,
   },
   mapHeaderSection: {
@@ -241,7 +242,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   mapContainer: {
-    height: 400,
+    flex: 1,
+    minHeight: 320,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "#e5e7eb",

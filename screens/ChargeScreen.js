@@ -18,8 +18,10 @@ import { useEChargeDeviceQuery } from "../queries/eChargeDevice.query";
 import { useHistory } from "../queries/history.query";
 import { Colors } from "../constants/color";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useQueryClient } from "@tanstack/react-query";
 
 const ChargeScreen = ({ route, navigation }) => {
+  const queryClient = useQueryClient();
   const [devices, setDevices] = useState([]);
   const [isScanned, setIsScanned] = useState(false);
   const [deviceCode, setdeviceCode] = useState(null);
@@ -58,11 +60,17 @@ const ChargeScreen = ({ route, navigation }) => {
     setdeviceCode(String(scannedDeviceCode));
     setIsScanned(true);
 
+    // Show heads-up notification for successful QR scan
+    setToastMessage("Quét mã QR tại trụ sạc thành công!");
+    setToastVisible(true);
+
     navigation.setParams({
       scannedDeviceCode: undefined,
       scanToken: undefined,
     });
   }, [route?.params?.scanToken, route?.params?.scannedDeviceCode, navigation]);
+
+
 
   useEffect(() => {
     if (isScanned && deviceCode && !isDeviceLoading) {
@@ -92,21 +100,38 @@ const ChargeScreen = ({ route, navigation }) => {
     );
   }
 
+  const isStopping = terminateChargeMutation.isLoading || terminateChargeMutation.isPending;
+
   const executeStopCharging = () => {
     terminateChargeMutation.mutate(
       {},
       {
         onSuccess: (data) => {
-          setDevices([]);
-          setIsScanned(false);
-          setdeviceCode(null);
-          setPowerId(null);
+          const activeDeviceCode = deviceCode || latestHistory?.deviceId?.deviceCode;
+          queryClient.invalidateQueries({ queryKey: ["USERS_BIKE"] });
+          queryClient.invalidateQueries({ queryKey: ["latestHistory"] });
+
+          setToastMessage("Dừng sạc xe thành công!");
+          setToastVisible(true);
+
+          if (activeDeviceCode) {
+            queryClient.invalidateQueries({ queryKey: ["E_CHARGE_DEVICE", String(activeDeviceCode)] });
+            setdeviceCode(String(activeDeviceCode));
+            setIsScanned(true);
+            setPowerId(null);
+          } else {
+            setDevices([]);
+            setIsScanned(false);
+            setdeviceCode(null);
+            setPowerId(null);
+          }
         },
       },
     );
   };
 
   const handleStopCharging = () => {
+    if (isStopping) return;
     Alert.alert(
       "Thông báo",
       "Bạn có chắc chắn muốn dừng sạc không?",
@@ -127,7 +152,7 @@ const ChargeScreen = ({ route, navigation }) => {
   const isUpdating = route?.params?.isUpdating;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -148,6 +173,7 @@ const ChargeScreen = ({ route, navigation }) => {
                   <ChargingStatusComponent
                     chargingStartTime={chargingStartTime}
                     onStopCharging={handleStopCharging}
+                    isStopping={isStopping}
                   />
                 </>
               ) : (
@@ -161,7 +187,11 @@ const ChargeScreen = ({ route, navigation }) => {
                   setPowerId={setPowerId}
                   deviceId={deviceId}
                   onScanQrPress={() => navigation.navigate("ScanQR")}
-                  onChargeStarted={() => navigation.navigate("Charge")}
+                  onChargeStarted={() => {
+                    setToastMessage("Bắt đầu sạc xe thành công!");
+                    setToastVisible(true);
+                    navigation.navigate("Charge");
+                  }}
                 />
               )}
             </View>
@@ -203,7 +233,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: Colors.secondary,
+    backgroundColor: Colors.primary,
   },
   container: {
     flexGrow: 1,

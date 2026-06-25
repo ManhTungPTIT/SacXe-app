@@ -32,6 +32,7 @@ const ProfileComponent = ({
   user,
   profileModalVisible,
   handleCloseProfileModal,
+  onProfileUpdated,
 }) => {
   const updateProfileMutation = useAuth.useUpdateProfile();
   const deleteAccountMutation = useAuth.useDeleteAccount();
@@ -100,7 +101,7 @@ const ProfileComponent = ({
     updateProfileMutation.mutate(payload, {
       onSuccess: () => {
         handleCloseProfileModal();
-        Alert.alert("Thông báo", "Cập nhật thông tin thành công.");
+        onProfileUpdated?.();
       },
       onError: (error) => {
         Alert.alert(
@@ -477,7 +478,7 @@ const styles = StyleSheet.create({
   },
   deleteActionButton: {
     width: "100%",
-    borderRadius: 10,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 12,
@@ -524,7 +525,7 @@ const styles = StyleSheet.create({
   },
   deleteConfirmAction: {
     flex: 1,
-    borderRadius: 10,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 10,
@@ -555,7 +556,7 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-    borderRadius: 10,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 12,

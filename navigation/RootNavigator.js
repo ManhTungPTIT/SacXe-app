@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import AuthNavigator from "./AuthNavigator";
 import AppNavigator from "./AppNavigator";
+import FeedbackScreen from "../screens/FeedbackScreen";
 import { socket } from "../services/socket.service";
 import { useHistory } from "../queries/history.query";
 
@@ -211,7 +212,10 @@ const RootNavigator = () => {
       }}
     >
       {isAuthenticated ? (
-        <Stack.Screen name="Main" component={AppNavigator} />
+        <>
+          <Stack.Screen name="Main" component={AppNavigator} />
+          <Stack.Screen name="Feedback" component={FeedbackScreen} />
+        </>
       ) : (
         <Stack.Screen name="Auth" component={AuthNavigator} />
       )}

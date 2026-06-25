@@ -53,7 +53,7 @@ const normalizeScannedCode = (rawData) => {
   return value;
 };
 
-const FeedbackScreen = () => {
+const FeedbackScreen = ({ navigation }) => {
   const scannedRef = useRef(false);
   const [permission, requestPermission] = useCameraPermissions();
   const [isScannerVisible, setIsScannerVisible] = useState(false);
@@ -176,11 +176,23 @@ const FeedbackScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <KeyboardAvoidingView
         style={styles.screen}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
+        <View style={styles.appHeader}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.appHeaderTitle}>Phản ánh sự cố</Text>
+          <View style={styles.headerPlaceholder} />
+        </View>
+
         <ScrollView
           style={styles.screen}
           contentContainerStyle={styles.contentContainer}
@@ -489,7 +501,7 @@ const styles = StyleSheet.create({
   submitButton: {
     marginTop: 4,
     height: 52,
-    borderRadius: 14,
+    borderRadius: 12,
     backgroundColor: Colors.primary,
     flexDirection: "row",
     justifyContent: "center",
@@ -545,6 +557,31 @@ const styles = StyleSheet.create({
   closeScannerText: {
     color: "#FFFFFF",
     fontWeight: "700",
+  },
+  appHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: Colors.primary,
+    height: 56,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.1)",
+  },
+  backButton: {
+    padding: 4,
+    marginLeft: -4,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  appHeaderTitle: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  headerPlaceholder: {
+    width: 24,
   },
 });
 

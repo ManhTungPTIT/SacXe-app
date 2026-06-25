@@ -156,7 +156,8 @@ const LatestHistory = ({ history }) => {
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginVertical: 24,
+    marginTop: "auto",
+    marginBottom: 24,
     paddingHorizontal: 16,
   },
   sectionTitle: {

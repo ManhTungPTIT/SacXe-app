@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
   doneButton: {
     marginTop: 14,
     backgroundColor: Colors.primary,
-    borderRadius: 10,
+    borderRadius: 12,
     paddingVertical: 12,
     alignItems: "center",
   },

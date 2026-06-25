@@ -31,22 +31,26 @@ const InitiateChargeComponent = ({
         <View style={styles.iconWrap}>
           <MaterialIcons
             name="electrical-services"
-            size={24}
+            size={28}
             color={Colors.primary}
           />
         </View>
         <Text style={styles.title}>Bắt đầu phiên sạc</Text>
         <Text style={styles.description}>
-          Vui lòng quét mã QR để bắt đầu phiên sạc
+          Vui lòng quét mã QR gắn trên trụ sạc để kích hoạt phiên sạc cho xe của bạn.
         </Text>
-        <View>
-          <TouchableOpacity style={styles.scanButton} onPress={onScanQrPress}>
-            <Text style={styles.scanButtonText}>Quét mã QR để sạc</Text>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={styles.scanButton}
+            onPress={onScanQrPress}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.scanButtonText}>Quét mã QR ngay</Text>
           </TouchableOpacity>
         </View>
       </View>
       <View style={styles.warningBox}>
-        <AntDesign name="warning" size={18} color={Colors.warning} />
+        <AntDesign name="warning" size={20} color={Colors.warning} />
         <Text style={styles.warningText}>
           Lưu ý: Bạn có 5 phút để kích hoạt phiên sạc sau khi đưa xe vào khu
           vực. Quá thời gian quy định sẽ bị phạt!
@@ -59,55 +63,70 @@ const InitiateChargeComponent = ({
 const styles = StyleSheet.create({
   container: {
     width: "100%",
-    marginVertical: 24,
-    gap: 16,
+    marginVertical: 32,
+    gap: 24,
   },
   contentContainer: {
     display: "flex",
-    alignItems: "center",
+    alignItems: "flex-start",
     width: "100%",
   },
   iconWrap: {
-    padding: 32,
-    backgroundColor: "#f1eeee",
-    borderRadius: 16,
+    padding: 16,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 24,
   },
   title: {
-    marginTop: 8,
-    fontWeight: "bold",
-    fontSize: 16,
+    fontWeight: "800",
+    fontSize: 28,
+    color: "#111111",
+    lineHeight: 34,
+    marginBottom: 12,
   },
   description: {
-    marginTop: 4,
-    color: "#666",
-    textAlign: "center",
+    color: "#666666",
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: "left",
+    marginBottom: 32,
+  },
+  buttonContainer: {
+    width: "100%",
   },
   scanButton: {
     backgroundColor: Colors.primary,
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    marginTop: 16,
-    borderRadius: 8,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    width: "100%",
   },
   scanButtonText: {
     color: "#fff",
-    fontWeight: "bold",
+    fontWeight: "700",
+    fontSize: 16,
   },
   warningBox: {
-    marginTop: 16,
     flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
+    alignItems: "flex-start",
+    gap: 12,
     width: "100%",
-    boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: "#fff",
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: "#FAFAFA",
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.warning,
   },
   warningText: {
-    color: "#666",
-    textAlign: "center",
+    color: "#666666",
+    textAlign: "left",
     flexShrink: 1,
+    fontSize: 14,
+    lineHeight: 20,
   },
 });
 

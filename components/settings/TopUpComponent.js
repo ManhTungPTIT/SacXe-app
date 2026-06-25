@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     backgroundColor: "#FF3B30",
-    borderRadius: 8,
+    borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 32,
     alignItems: "center",
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
   },
   modalButton: {
     flex: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     paddingVertical: 12,
     alignItems: "center",
   },
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     width: "48%",
     borderWidth: 1,
     borderColor: "#ddd",
-    borderRadius: 10,
+    borderRadius: 12,
     paddingVertical: 16,
     alignItems: "center",
     marginBottom: 12,
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   },
   qrCloseButton: {
     backgroundColor: Colors.primary,
-    borderRadius: 8,
+    borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 24,
     alignItems: "center",

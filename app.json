@@ -18,7 +18,7 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Ứng dụng sử dụng vị trí của bạn để hiển thị các thiết bị sạc gần đó và hỗ trợ chức năng bản đồ.",
         "NSCameraUsageDescription": "Ứng dụng sử dụng camera để quét mã QR khi tương tác với thiết bị sạc.",
-        "NSPhotoLibraryUsageDescription": "Ứng dụng cần truy cập thư viện ảnh để bạn chọn và tải lên hình ảnh, bao gồm ảnh giấy phép lái xe hoặc giấy tờ tùy thân khi cập nhật thông tin tài khoản.",
+        "NSPhotoLibraryUsageDescription": "Ứng dụng cần truy cập thư viện ảnh để bạn chọn và tải lên hình ảnh giấy phép lái xe khi cập nhật thông tin tài khoản.",
         "NSUserNotificationUsageDescription": "Ứng dụng gửi thông báo về trạng thái thanh toán, thông báo trạng thái sạc xe và cảnh báo tài khoản.",
         "ITSAppUsesNonExemptEncryption": false
       }

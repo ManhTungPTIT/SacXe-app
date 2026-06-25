@@ -5,36 +5,42 @@ import { Colors } from "../../constants/color";
 import { vietnamDate, vietnamTime } from "../../utils/time";
 import WaveChart from "../WaveChart";
 
-const ChargingStatusComponent = ({ chargingStartTime, onStopCharging }) => {
+const ChargingStatusComponent = ({ chargingStartTime, onStopCharging, isStopping }) => {
   return (
     <View style={styles.container}>
-      <WaveChart />
-
-      {/* Thông tin thời gian */}
-      <View style={styles.timeInfoContainer}>
-        <View style={styles.timeBox}>
-          <Text style={styles.timeLabel}>THỜI GIAN BẮT ĐẦU SẠC</Text>
+      <WaveChart chargingStartTime={chargingStartTime} />
+      {/* Bento Grid Info */}
+      <View style={styles.bentoGrid}>
+        {/* Thông tin thời gian */}
+        <View style={styles.timeInfoContainer}>
+          <Text style={styles.bentoLabel}>Thời gian bắt đầu</Text>
           <Text style={styles.timeValue}>{vietnamTime(chargingStartTime)}</Text>
           <Text style={styles.timeDate}>{vietnamDate(chargingStartTime)}</Text>
+        </View>
+
+        {/* Thông báo AI NOC */}
+        <View style={styles.aiNocContainer}>
+          <View style={styles.aiNocHeader}>
+            <MaterialCommunityIcons name="shield-check" size={16} color={Colors.primary} />
+            <Text style={[styles.bentoLabel, { marginBottom: 0 }]}>AI NOC</Text>
+          </View>
+          <Text style={styles.aiNocDescription}>
+            Giám sát 24/7 đảm bảo an toàn cho xe.
+          </Text>
         </View>
       </View>
 
       {/* Nút dừng sạc */}
-      <TouchableOpacity style={styles.stopButton} onPress={onStopCharging}>
-        <Text style={styles.stopButtonText}>Dừng sạc xe</Text>
+      <TouchableOpacity
+        style={[styles.stopButton, isStopping && styles.stopButtonDisabled]}
+        onPress={onStopCharging}
+        activeOpacity={0.8}
+        disabled={isStopping}
+      >
+        <Text style={[styles.stopButtonText, isStopping && styles.stopButtonTextDisabled]}>
+          {isStopping ? "Đang dừng sạc..." : "Dừng sạc xe"}
+        </Text>
       </TouchableOpacity>
-
-      {/* Thông báo AI NOC */}
-      <View style={styles.aiNocContainer}>
-        <MaterialCommunityIcons name="shield-check" size={24} color="#fff" />
-        <View style={styles.aiNocTextContainer}>
-          <Text style={styles.aiNocTitle}>HỆ THỐNG AI NOC</Text>
-          <Text style={styles.aiNocDescription}>
-            Hệ thống AI giám sát 24/7 đảm bảo an toàn cho xe của bạn trong suốt
-            phiên sạc.
-          </Text>
-        </View>
-      </View>
     </View>
   );
 };
@@ -42,105 +48,79 @@ const ChargingStatusComponent = ({ chargingStartTime, onStopCharging }) => {
 const styles = StyleSheet.create({
   container: {
     alignItems: "center",
-    padding: 16,
-  },
-  circleContainer: {
-    position: "relative",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  circleContent: {
-    position: "absolute",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  percentageText: {
-    fontSize: 48,
-    fontWeight: "bold",
-    color: Colors.primary,
-  },
-  chargingModeContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 4,
-  },
-  chargingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.primary,
-    marginRight: 6,
-  },
-  chargingModeText: {
-    fontSize: 12,
-    color: Colors.primary,
-    fontWeight: "600",
-  },
-  timeInfoContainer: {
-    flexDirection: "row",
-    marginTop: 24,
-    backgroundColor: Colors.primary,
-    color: Colors.secondary,
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-  },
-  timeBox: {
-    alignItems: "center",
-    paddingHorizontal: 16,
-  },
-  timeLabel: {
-    fontSize: 12,
-    color: Colors.secondary,
-    marginBottom: 4,
-  },
-  timeValue: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: Colors.secondary,
-  },
-  timeDate: {
-    fontSize: 14,
-    color: Colors.secondary,
-  },
-  divider: {
-    width: 1,
-    backgroundColor: "#DDD",
-  },
-  aiNocContainer: {
-    flexDirection: "row",
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 24,
+    paddingVertical: 24,
     width: "100%",
   },
-  aiNocTextContainer: {
+  bentoGrid: {
+    flexDirection: "row",
+    gap: 16,
+    marginTop: 32,
+    width: "100%",
+  },
+  bentoLabel: {
+    fontSize: 11,
+    color: "#787774",
+    letterSpacing: 1.2,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  timeInfoContainer: {
     flex: 1,
-    marginLeft: 12,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
-  aiNocTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#fff",
+  timeValue: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: Colors.primary,
+    lineHeight: 28,
   },
-  aiNocDescription: {
-    fontSize: 12,
-    color: "rgba(255, 255, 255, 0.8)",
+  timeDate: {
+    fontSize: 13,
+    color: "#111111",
+    fontWeight: "600",
     marginTop: 4,
   },
+  aiNocContainer: {
+    flex: 1.2,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 16,
+  },
+  aiNocHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 8,
+  },
+  aiNocDescription: {
+    fontSize: 13,
+    color: "#111111",
+    lineHeight: 18,
+  },
   stopButton: {
-    marginTop: 24,
-    borderWidth: 2,
-    borderColor: Colors.primary,
-    borderRadius: 25,
-    paddingVertical: 12,
-    paddingHorizontal: 40,
+    marginTop: 32,
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    paddingVertical: 16,
+    width: "100%",
+    alignItems: "center",
+  },
+  stopButtonDisabled: {
+    backgroundColor: "#A7E8BB",
   },
   stopButtonText: {
-    color: Colors.primary,
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "700",
+  },
+  stopButtonTextDisabled: {
+    color: "rgba(255, 255, 255, 0.8)",
   },
 });
 

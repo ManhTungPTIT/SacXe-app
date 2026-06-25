@@ -39,7 +39,7 @@ const HistoryScreen = () => {
   const histories = historyData?.histories ?? [];
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: Colors.secondary,
+    backgroundColor: Colors.primary,
   },
   scrollContent: {
     flexGrow: 1,

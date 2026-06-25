@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -25,6 +25,7 @@ import AboutEnovoComponent from "../components/settings/AboutEnovoComponent";
 import MyBikeComponent from "../components/bike/MyBikeComponent";
 import ProfileComponent from "../components/settings/ProfileComponent";
 import { SafeAreaView } from "react-native-safe-area-context";
+import ToastNotification from "../components/ToastNotification";
 
 const SETTINGS_ACTIONS = [
   {
@@ -82,18 +83,32 @@ const SettingsScreen = ({ navigation }) => {
   const [notificationsModalVisible, setNotificationsModalVisible] =
     useState(false);
   const [aboutEnovoModalVisible, setAboutEnovoModalVisible] = useState(false);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
-  const { data: notifications } = useNotificationQuery.useGetNotifications(
-    notificationsModalVisible,
-  );
+  const { data: notifications } = useNotificationQuery.useGetNotifications(true);
+
+  const notificationItems = useMemo(() => {
+    if (Array.isArray(notifications)) {
+      return notifications;
+    }
+    if (Array.isArray(notifications?.notifications)) {
+      return notifications.notifications;
+    }
+    return [];
+  }, [notifications]);
+
+  const unreadCount = useMemo(() => {
+    return notificationItems.filter((item) => !item?.isRead).length;
+  }, [notificationItems]);
 
   const ownerName = userData?.user?.name || storeUser?.name || "Người dùng";
   const ownerBalance = Number(
     userData?.user?.balance ||
-      userData?.user?.ownerId?.balance ||
-      storeUser?.balance ||
-      storeUser?.ownerId?.balance ||
-      0,
+    userData?.user?.ownerId?.balance ||
+    storeUser?.balance ||
+    storeUser?.ownerId?.balance ||
+    0,
   );
   const ownerInitial = ownerName?.trim()?.charAt(0)?.toUpperCase() || "U";
 
@@ -198,7 +213,7 @@ const SettingsScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <View style={styles.container}>
         <KeyboardAvoidingView
           style={styles.keyboardView}
@@ -213,7 +228,7 @@ const SettingsScreen = ({ navigation }) => {
             <View style={styles.headerSection}>
               <Text style={styles.title}>Cài đặt</Text>
             </View>
-            <View>
+            <View style={styles.bodyContainer}>
               <View style={styles.accountCard}>
                 <View style={styles.accountHeader}>
                   <View style={styles.avatarCircle}>
@@ -257,42 +272,60 @@ const SettingsScreen = ({ navigation }) => {
                 </View>
               </View>
               <View style={styles.settingsActionList}>
-                {SETTINGS_ACTIONS.map((item, index) => (
-                  <TouchableOpacity
-                    key={item.key}
-                    style={[
-                      styles.settingsActionItem,
-                      index === SETTINGS_ACTIONS.length - 1 &&
-                        styles.settingsActionItemLast,
-                    ]}
-                    onPress={() => handlePressSettingsAction(item.key)}
-                  >
-                    <View style={styles.settingsActionLeft}>
-                      <Ionicons
-                        name={item.icon}
-                        size={18}
-                        color={styles.settingsActionIcon.color}
-                      />
-                      <Text style={styles.settingsActionLabel}>
-                        {item.label}
-                      </Text>
-                    </View>
-                    <Ionicons
-                      name="chevron-forward"
-                      size={18}
-                      color="#7B7E82"
-                    />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
+                {SETTINGS_ACTIONS.map((item, index) => {
+                  const isNotifications = item.key === "notifications";
+                  const showBadge = isNotifications && unreadCount > 0;
 
-            <TouchableOpacity
-              style={styles.logoutButton}
-              onPress={handleOpenLogoutConfirm}
-            >
-              <Text style={styles.logoutButtonText}>Đăng xuất</Text>
-            </TouchableOpacity>
+                  return (
+                    <TouchableOpacity
+                      key={item.key}
+                      style={[
+                        styles.settingsActionItem,
+                        index === SETTINGS_ACTIONS.length - 1 &&
+                        styles.settingsActionItemLast,
+                      ]}
+                      onPress={() => handlePressSettingsAction(item.key)}
+                    >
+                      <View style={styles.settingsActionLeft}>
+                        <Ionicons
+                          name={item.icon}
+                          size={18}
+                          color={styles.settingsActionIcon.color}
+                        />
+                        <Text style={styles.settingsActionLabel}>
+                          {item.label}
+                        </Text>
+                      </View>
+                      <View style={styles.settingsActionRight}>
+                        {showBadge && (
+                          <View style={styles.badgeContainer}>
+                            <Text style={styles.badgeText}>{unreadCount}</Text>
+                          </View>
+                        )}
+                        <Ionicons
+                          name="chevron-forward"
+                          size={18}
+                          color="#7B7E82"
+                        />
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <TouchableOpacity
+                style={styles.logoutButton}
+                onPress={handleOpenLogoutConfirm}
+                activeOpacity={0.86}
+              >
+                <Ionicons
+                  name="log-out-outline"
+                  size={18}
+                  color={Colors.primary}
+                />
+                <Text style={styles.logoutButtonText}>Đăng xuất</Text>
+              </TouchableOpacity>
+            </View>
 
             {/* Modal xác nhận đăng xuất */}
             <Modal
@@ -377,6 +410,10 @@ const SettingsScreen = ({ navigation }) => {
               user={userData?.user}
               profileModalVisible={profileModalVisible}
               handleCloseProfileModal={() => setProfileModalVisible(false)}
+              onProfileUpdated={() => {
+                setToastMessage("Cập nhật thông tin thành công.");
+                setToastVisible(true);
+              }}
             />
 
             {/* Component thông báo */}
@@ -397,6 +434,11 @@ const SettingsScreen = ({ navigation }) => {
           </ScrollView>
         </KeyboardAvoidingView>
       </View>
+      <ToastNotification
+        visible={toastVisible}
+        message={toastMessage}
+        onDismiss={() => setToastVisible(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -411,13 +453,16 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.primary,
   },
   scrollContent: {
     flexGrow: 1,
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 16,
     paddingBottom: 24,
+  },
+  bodyContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   container: {
     flex: 1,
@@ -433,8 +478,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     paddingVertical: 24,
     paddingHorizontal: 16,
-    marginHorizontal: -16,
-    marginBottom: 16,
   },
   accountCard: {
     borderRadius: 16,
@@ -506,7 +549,7 @@ const styles = StyleSheet.create({
   },
   historyButton: {
     flex: 1,
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "#CDEAD4",
     paddingVertical: 11,
@@ -521,7 +564,7 @@ const styles = StyleSheet.create({
   },
   topUpButton: {
     flex: 1,
-    borderRadius: 10,
+    borderRadius: 12,
     backgroundColor: Colors.primary,
     paddingVertical: 11,
     alignItems: "center",
@@ -555,6 +598,27 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingRight: 8,
   },
+  settingsActionRight: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  badgeContainer: {
+    backgroundColor: "#FF3B30",
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 5,
+    marginRight: 6,
+  },
+  badgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "800",
+    lineHeight: 12,
+    textAlign: "center",
+  },
   settingsActionIcon: {
     color: "#4C5156",
   },
@@ -564,17 +628,22 @@ const styles = StyleSheet.create({
     color: "#2F3337",
   },
   logoutButton: {
-    backgroundColor: "#FF3B30",
-    borderRadius: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 32,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#F5FBF6",
+    borderWidth: 1,
+    borderColor: "#CDEAD4",
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     width: "100%",
   },
   logoutButtonText: {
-    color: "#FFFFFF",
+    color: Colors.primary,
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   modalOverlay: {
     flex: 1,
@@ -612,7 +681,7 @@ const styles = StyleSheet.create({
   },
   modalButton: {
     flex: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     paddingVertical: 12,
     alignItems: "center",
   },

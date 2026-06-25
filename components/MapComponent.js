@@ -204,6 +204,7 @@ const MapComponent = ({
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.bottomListContent}
+            nestedScrollEnabled={true}
           >
             {listDevices.map((device, index) => (
               <TouchableOpacity
@@ -315,7 +316,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: 12,
   },
   permissionPrimaryButtonText: {
     color: "#FFFFFF",
@@ -388,13 +389,13 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   myLocationButtonWithList: {
-    bottom: "38%",
+    bottom: "48%",
   },
   myLocationButtonWithoutList: {
     bottom: 20,
   },
   bottomListContainer: {
-    height: "35%", // Chiếm 35% màn hình ở dưới
+    height: "45%", // Chiếm 45% màn hình ở dưới
     backgroundColor: "#F8F9FA",
     paddingTop: 16,
     paddingHorizontal: 16,
@@ -455,7 +456,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#007BFF",
     paddingVertical: 10,
     paddingHorizontal: 14,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: "center",
   },
   listNavButtonAvailable: {

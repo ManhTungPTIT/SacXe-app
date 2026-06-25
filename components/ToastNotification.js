@@ -4,16 +4,13 @@ import {
   PanResponder,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
   Dimensions,
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Colors } from "../constants/color";
 
-const { width } = Dimensions.get("window");
 
 const ToastNotification = ({
   visible,
