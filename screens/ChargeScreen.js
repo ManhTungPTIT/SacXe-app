@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import BikeRegistration from "../components/bike/BikeRegistration";
 import { useBike } from "../queries/bike.query";
+import ToastNotification from "../components/ToastNotification";
 import InitiateChargeComponent from "../components/bike/InitiateChargeComponent";
 import ChargingStatusComponent from "../components/charging/ChargingStatusComponent";
 import { useChargeQuery } from "../queries/charge.query";
@@ -23,6 +24,8 @@ const ChargeScreen = ({ route, navigation }) => {
   const [isScanned, setIsScanned] = useState(false);
   const [deviceCode, setdeviceCode] = useState(null);
   const [powerId, setPowerId] = useState(null);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
   const {
     data: bike,
@@ -71,6 +74,16 @@ const ChargeScreen = ({ route, navigation }) => {
     }
   }, [isScanned, deviceCode, eChargeDevices, isDeviceLoading, isDeviceError]);
 
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("blur", () => {
+      if (route?.params?.isUpdating) {
+        navigation.setParams({ isUpdating: undefined });
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, route?.params?.isUpdating]);
+
   if (isLoadingBikeData) {
     return (
       <View style={styles.container}>
@@ -111,13 +124,15 @@ const ChargeScreen = ({ route, navigation }) => {
     );
   };
 
+  const isUpdating = route?.params?.isUpdating;
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        {bike?.bike ? (
+        {bike?.bike && !isUpdating ? (
           <ScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.container}
@@ -152,9 +167,24 @@ const ChargeScreen = ({ route, navigation }) => {
             </View>
           </ScrollView>
         ) : (
-          <BikeRegistration />
+          <BikeRegistration
+            isUpdating={isUpdating}
+            onCancel={() => navigation.setParams({ isUpdating: false })}
+            onSuccess={() => {
+              setToastMessage(isUpdating ? "Cập nhật giấy tờ xe thành công!" : "Đăng ký xe thành công!");
+              setToastVisible(true);
+              if (isUpdating) {
+                navigation.setParams({ isUpdating: false });
+              }
+            }}
+          />
         )}
       </KeyboardAvoidingView>
+      <ToastNotification
+        visible={toastVisible}
+        message={toastMessage}
+        onDismiss={() => setToastVisible(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -178,7 +208,8 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     backgroundColor: Colors.secondary,
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
+    paddingBottom: 48,
   },
   screenTitle: {
     fontSize: 24,
@@ -189,8 +220,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: Colors.primary,
     paddingVertical: 24,
-    paddingHorizontal: 16,
-    borderRadius: 16,
+    paddingHorizontal: 24,
+    marginHorizontal: -24,
   },
 });
 

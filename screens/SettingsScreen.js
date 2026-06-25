@@ -367,6 +367,10 @@ const SettingsScreen = ({ navigation }) => {
               bike={bike?.bike}
               myBikeModalVisible={myBikeModalVisible}
               handleCloseMyBikeModal={() => setMyBikeModalVisible(false)}
+              onUpdateRegistration={() => {
+                setMyBikeModalVisible(false);
+                navigation.navigate("Charge", { isUpdating: true });
+              }}
             />
 
             <ProfileComponent

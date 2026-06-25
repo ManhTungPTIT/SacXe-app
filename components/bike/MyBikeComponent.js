@@ -33,6 +33,7 @@ const MyBikeComponent = ({
   bike,
   myBikeModalVisible,
   handleCloseMyBikeModal,
+  onUpdateRegistration,
 }) => {
   const isCharging = Boolean(bike?.isCharging);
 
@@ -139,12 +140,27 @@ const MyBikeComponent = ({
                 </View>
               </View>
 
-              <TouchableOpacity
-                style={styles.doneButton}
-                onPress={handleCloseMyBikeModal}
-              >
-                <Text style={styles.doneButtonText}>Đóng</Text>
-              </TouchableOpacity>
+              <View style={styles.actionRow}>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.updateButton]}
+                  onPress={onUpdateRegistration}
+                >
+                  <Ionicons
+                    name="document-text-outline"
+                    size={16}
+                    color="#FFFFFF"
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text style={styles.updateButtonText}>Cập nhật giấy tờ</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.closeModalButton]}
+                  onPress={handleCloseMyBikeModal}
+                >
+                  <Text style={styles.closeModalButtonText}>Đóng</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </TouchableWithoutFeedback>
         </View>
@@ -313,14 +329,34 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: "center",
   },
-  doneButton: {
-    backgroundColor: Colors.primary,
+  actionRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 8,
+  },
+  actionButton: {
+    flex: 1,
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
   },
-  doneButtonText: {
+  updateButton: {
+    backgroundColor: Colors.primary,
+  },
+  updateButtonText: {
     color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  closeModalButton: {
+    backgroundColor: "#F3F4F6",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  closeModalButtonText: {
+    color: "#4B5563",
     fontSize: 14,
     fontWeight: "700",
   },

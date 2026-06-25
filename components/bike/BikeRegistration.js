@@ -14,14 +14,14 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Linking,
+  Modal,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/color";
 import { useIdentity } from "../../queries/identity.query";
 import { useBike } from "../../queries/bike.query";
-
-const BikeRegistration = () => {
+const BikeRegistration = ({ isUpdating, onCancel, onSuccess }) => {
   const [type, setType] = useState("");
   const [licensePlate, setLicensePlate] = useState("");
   const [registrationImage, setRegistrationImage] = useState(null);
@@ -31,6 +31,7 @@ const BikeRegistration = () => {
     useState(false);
   const [bikeOwnerName, setBikeOwnerName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPreviewVisible, setIsPreviewVisible] = useState(false);
 
   const extractRegistrationInfoMutation =
     useIdentity.useExtractRegistrationInfo();
@@ -123,6 +124,28 @@ const BikeRegistration = () => {
     setChoosingType("takePhoto");
   };
 
+  const handleChangeImagePress = () => {
+    Alert.alert(
+      "Thay đổi ảnh",
+      "Chọn phương thức tải lên ảnh mới",
+      [
+        {
+          text: "Hủy",
+          style: "cancel",
+        },
+        {
+          text: "Thư viện ảnh",
+          onPress: pickImage,
+        },
+        {
+          text: "Chụp ảnh mới",
+          onPress: takePhoto,
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
   useEffect(() => {
     if (registrationFile && !isExtractingRegistrationInfo) {
       setIsExtractingRegistrationInfo(true);
@@ -151,11 +174,32 @@ const BikeRegistration = () => {
   }, [registrationFile]);
 
   const handleSubmit = () => {
+    const trimmedOwnerName = bikeOwnerName?.trim();
+    const trimmedType = type?.trim();
+    const trimmedLicensePlate = licensePlate?.trim();
+
+    if (!registrationFile && !registrationImage) {
+      Alert.alert("Thông báo", "Vui lòng tải lên ảnh đăng ký xe.");
+      return;
+    }
+    if (!trimmedOwnerName) {
+      Alert.alert("Thông báo", "Vui lòng nhập tên chủ xe.");
+      return;
+    }
+    if (!trimmedType) {
+      Alert.alert("Thông báo", "Vui lòng nhập loại xe.");
+      return;
+    }
+    if (!trimmedLicensePlate) {
+      Alert.alert("Thông báo", "Vui lòng nhập biển số xe.");
+      return;
+    }
+
     setIsSubmitting(true);
     const data = {
-      type,
-      licensePlate,
-      bikeOwnerName,
+      type: trimmedType,
+      licensePlate: trimmedLicensePlate.toUpperCase(),
+      bikeOwnerName: trimmedOwnerName,
       vehicleRegistrationCard: registrationFile,
     };
     bikeRegistrationMutation.mutate(data, {
@@ -168,13 +212,17 @@ const BikeRegistration = () => {
         );
       },
       onSuccess: (data) => {
-        Alert.alert("Thành công", "Đăng ký xe thành công!");
         // Reset form
         setType("");
         setLicensePlate("");
         setBikeOwnerName("");
         setRegistrationImage(null);
         setRegistrationFile(null);
+        if (onSuccess) {
+          onSuccess();
+        } else if (isUpdating && onCancel) {
+          onCancel();
+        }
       },
       onSettled: () => {
         setIsSubmitting(false);
@@ -195,7 +243,35 @@ const BikeRegistration = () => {
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.headerSection}>
-              <Text style={styles.title}>Đăng ký sạc xe</Text>
+              {isUpdating && (
+                <TouchableOpacity style={styles.backButton} onPress={onCancel}>
+                  <Ionicons
+                    name="arrow-back"
+                    size={24}
+                    color={Colors.secondary}
+                  />
+                </TouchableOpacity>
+              )}
+              <Text style={styles.title}>
+                {isUpdating ? "Cập nhật giấy tờ xe" : "Đăng ký sạc xe"}
+              </Text>
+            </View>
+
+            <View style={styles.infoDescriptionBox}>
+              <View style={styles.infoDescriptionHeader}>
+                <Ionicons
+                  name="information-circle-outline"
+                  size={20}
+                  color="#1F6C9F"
+                  style={{ marginRight: 6 }}
+                />
+                <Text style={styles.infoDescriptionTitle}>Tại sao cần cung cấp giấy đăng ký xe?</Text>
+              </View>
+              <Text style={styles.infoDescriptionText}>
+                • <Text style={{ fontWeight: "700" }}>Xác minh phương tiện:</Text> Liên kết thông tin biển số và chủ sở hữu chính xác với tài khoản của bạn.{"\n"}
+                • <Text style={{ fontWeight: "700" }}>Đảm bảo an toàn sạc:</Text> Giúp hệ thống quản lý và phê duyệt quyền kích hoạt sạc cho các xe đủ tiêu chuẩn, phòng tránh rủi ro cháy nổ.{"\n"}
+                • <Text style={{ fontWeight: "700" }}>Trích xuất thông tin tự động:</Text> Công nghệ AI sẽ tự động đọc ảnh và điền trước thông tin, tiết kiệm thời gian nhập tay cho bạn.
+              </Text>
             </View>
 
             <Text style={styles.label}>Ảnh giấy đăng ký xe</Text>
@@ -209,20 +285,21 @@ const BikeRegistration = () => {
                 </View>
               )}
               {registrationImage ? (
-                <TouchableOpacity
-                  onPress={() => {
-                    choosingType === "pickImage" ? pickImage() : takePhoto();
-                  }}
-                  disabled={isExtractingRegistrationInfo}
-                >
-                  <Image
-                    source={{ uri: registrationImage }}
-                    style={[
-                      styles.image,
-                      isExtractingRegistrationInfo && styles.imageDisabled,
-                    ]}
-                  />
-                </TouchableOpacity>
+                <View style={styles.imageWrapper}>
+                  <TouchableOpacity
+                    onPress={() => setIsPreviewVisible(true)}
+                    disabled={isExtractingRegistrationInfo}
+                    activeOpacity={0.9}
+                  >
+                    <Image
+                      source={{ uri: registrationImage }}
+                      style={[
+                        styles.image,
+                        isExtractingRegistrationInfo && styles.imageDisabled,
+                      ]}
+                    />
+                  </TouchableOpacity>
+                </View>
               ) : (
                 <View
                   style={[
@@ -292,14 +369,80 @@ const BikeRegistration = () => {
                   disabled={isSubmitting}
                 >
                   <Text style={styles.buttonText}>
-                    {isSubmitting ? "Đang đăng ký..." : "Đăng ký"}
+                    {isSubmitting
+                      ? isUpdating
+                        ? "Đang cập nhật..."
+                        : "Đang đăng ký..."
+                      : isUpdating
+                        ? "Cập nhật"
+                        : "Đăng ký"}
                   </Text>
                 </TouchableOpacity>
+
+                {isUpdating && (
+                  <TouchableOpacity
+                    style={styles.cancelFormButton}
+                    onPress={onCancel}
+                    disabled={isSubmitting}
+                  >
+                    <Text style={styles.cancelFormButtonText}>Hủy bỏ</Text>
+                  </TouchableOpacity>
+                )}
               </>
             )}
           </ScrollView>
         </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
+
+      <Modal
+        visible={isPreviewVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsPreviewVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setIsPreviewVisible(false)}>
+          <View style={styles.previewOverlay}>
+            <TouchableWithoutFeedback onPress={() => { }}>
+              <View style={styles.previewContent}>
+                {registrationImage && (
+                  <Image
+                    source={{ uri: registrationImage }}
+                    style={styles.previewImage}
+                    resizeMode="contain"
+                  />
+                )}
+
+                {!isExtractingRegistrationInfo && (
+                  <TouchableOpacity
+                    style={styles.previewChangeButton}
+                    onPress={() => {
+                      setIsPreviewVisible(false);
+                      handleChangeImagePress();
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons
+                      name="camera"
+                      size={18}
+                      color="#FFFFFF"
+                      style={{ marginRight: 8 }}
+                    />
+                    <Text style={styles.previewChangeButtonText}>Thay đổi ảnh</Text>
+                  </TouchableOpacity>
+                )}
+
+                <TouchableOpacity
+                  style={styles.previewCloseButton}
+                  onPress={() => setIsPreviewVisible(false)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="close" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </View>
   );
 };
@@ -317,17 +460,41 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 32,
-    paddingHorizontal: 16,
+    paddingBottom: 48,
+    paddingHorizontal: 24,
     backgroundColor: Colors.secondary,
   },
   headerSection: {
     backgroundColor: Colors.primary,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 24,
-    paddingHorizontal: 16,
-    marginHorizontal: -16,
-    marginBottom: 24,
+    paddingHorizontal: 48,
+    marginHorizontal: -24,
+    marginBottom: 32,
+    position: "relative",
+  },
+  backButton: {
+    position: "absolute",
+    left: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    height: "100%",
+  },
+  cancelFormButton: {
+    backgroundColor: "#F3F4F6",
+    borderRadius: 8,
+    paddingVertical: 16,
+    alignItems: "center",
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  cancelFormButtonText: {
+    color: "#4B5563",
+    fontSize: 16,
+    fontWeight: "700",
   },
   title: {
     fontSize: 24,
@@ -335,34 +502,36 @@ const styles = StyleSheet.create({
     color: Colors.secondary,
   },
   label: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#333",
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#787774",
+    letterSpacing: 0.5,
     marginBottom: 8,
+    textTransform: "uppercase",
   },
   input: {
-    borderWidth: 1,
-    borderColor: "#E5E5EA",
-    borderRadius: 8,
-    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    paddingHorizontal: 0,
     paddingVertical: 12,
-    fontSize: 16,
-    marginBottom: 16,
+    fontSize: 18,
+    color: "#111111",
+    marginBottom: 24,
   },
   button: {
     backgroundColor: Colors.primary,
     borderRadius: 8,
-    paddingVertical: 14,
+    paddingVertical: 16,
     alignItems: "center",
-    marginTop: 8,
+    marginTop: 16,
   },
   buttonText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   imageContainer: {
-    marginBottom: 16,
+    marginBottom: 32,
     position: "relative",
   },
   loadingOverlay: {
@@ -375,13 +544,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     zIndex: 10,
-    borderRadius: 8,
+    borderRadius: 6,
   },
   loadingText: {
     marginTop: 12,
     fontSize: 14,
     color: Colors.primary,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   disabled: {
     opacity: 0.5,
@@ -391,26 +560,105 @@ const styles = StyleSheet.create({
   },
   imageButtons: {
     flexDirection: "row",
-    gap: 12,
+    gap: 16,
   },
   imageButton: {
     flex: 1,
     borderWidth: 1,
-    borderColor: "#E5E5EA",
+    borderColor: Colors.border,
     borderRadius: 8,
-    paddingVertical: 20,
+    paddingVertical: 24,
     alignItems: "center",
-    borderStyle: "dashed",
+    backgroundColor: "#FAFAFA",
   },
   imageButtonText: {
-    marginTop: 8,
-    fontSize: 14,
-    color: Colors.primary,
+    marginTop: 12,
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#666666",
   },
   image: {
     width: "100%",
     height: 200,
+    borderRadius: 6,
+  },
+  imageWrapper: {
+    position: "relative",
+    width: "100%",
+    height: 200,
+    borderRadius: 6,
+    overflow: "hidden",
+  },
+  previewChangeButton: {
+    position: "absolute",
+    bottom: Platform.OS === "ios" ? 60 : 40,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.primary,
     borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  previewChangeButtonText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  previewOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  previewContent: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
+  },
+  previewImage: {
+    width: "90%",
+    height: "80%",
+  },
+  previewCloseButton: {
+    position: "absolute",
+    top: Platform.OS === "ios" ? 60 : 40,
+    right: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  infoDescriptionBox: {
+    backgroundColor: "#F4F9FD",
+    borderWidth: 1,
+    borderColor: "#E1F3FE",
+    borderRadius: 8,
+    padding: 14,
+    marginBottom: 24,
+  },
+  infoDescriptionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  infoDescriptionTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1F6C9F",
+  },
+  infoDescriptionText: {
+    fontSize: 12.5,
+    color: "#4A5568",
+    lineHeight: 18,
   },
 });
 
