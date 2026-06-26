@@ -258,6 +258,12 @@ const SettingsScreen = ({ navigation }) => {
                     style={styles.historyButton}
                     onPress={() => setTransactionHistoryModalVisible(true)}
                   >
+                    <Ionicons
+                      name="receipt-outline"
+                      size={16}
+                      color={Colors.secondary}
+                      style={{ marginRight: 6 }}
+                    />
                     <Text style={styles.historyButtonText}>
                       Lịch sử giao dịch
                     </Text>
@@ -267,6 +273,12 @@ const SettingsScreen = ({ navigation }) => {
                     style={styles.topUpButton}
                     onPress={handleOpenTopUpModal}
                   >
+                    <Ionicons
+                      name="wallet-outline"
+                      size={16}
+                      color={Colors.white}
+                      style={{ marginRight: 6 }}
+                    />
                     <Text style={styles.topUpButtonText}>Nạp tiền</Text>
                   </TouchableOpacity>
                 </View>
@@ -554,8 +566,9 @@ const styles = StyleSheet.create({
     borderColor: Colors.borderGreenLight,
     paddingVertical: 11,
     alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
     backgroundColor: Colors.primary,
-    color: Colors.secondary,
   },
   historyButtonText: {
     color: Colors.secondary,
@@ -568,6 +581,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     paddingVertical: 11,
     alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
   },
   topUpButtonText: {
     color: Colors.white,

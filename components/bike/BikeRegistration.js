@@ -299,6 +299,15 @@ const BikeRegistration = ({ isUpdating, onCancel, onSuccess }) => {
                       ]}
                     />
                   </TouchableOpacity>
+                  {!isExtractingRegistrationInfo && (
+                    <TouchableOpacity
+                      style={styles.editPenButton}
+                      onPress={handleChangeImagePress}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="create-outline" size={16} color={Colors.white} />
+                    </TouchableOpacity>
+                  )}
                 </View>
               ) : (
                 <View
@@ -456,7 +465,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: Colors.secondary,
+    backgroundColor: Colors.primary,
   },
   scrollContent: {
     flexGrow: 1,
@@ -659,6 +668,22 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     color: "#4A5568",
     lineHeight: 18,
+  },
+  editPenButton: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: Colors.primary,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
 });
 
