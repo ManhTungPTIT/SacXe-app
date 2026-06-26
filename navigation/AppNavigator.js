@@ -22,7 +22,7 @@ const FloatingScanButton = ({ onPress, accessibilityState }) => {
       style={styles.scanButtonWrapper}
     >
       <View style={[styles.scanButton, isFocused && styles.scanButtonActive]}>
-        <Ionicons name="qr-code" size={30} color="#FFFFFF" />
+        <Ionicons name="qr-code" size={30} color={Colors.white} />
       </View>
     </TouchableOpacity>
   );
@@ -68,7 +68,7 @@ const AppNavigator = () => {
           paddingBottom: 10,
           paddingTop: 8,
           height: 72,
-          shadowColor: "#000000",
+          shadowColor: Colors.black,
           shadowOffset: { width: 0, height: -4 },
           shadowOpacity: 0.05,
           shadowRadius: 10,
@@ -109,8 +109,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 4,
-    borderColor: "#FFFFFF",
-    shadowColor: "#000",
+    borderColor: Colors.white,
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.22,
     shadowRadius: 6,

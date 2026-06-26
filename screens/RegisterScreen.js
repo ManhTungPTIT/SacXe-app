@@ -114,7 +114,7 @@ const RegisterScreen = ({ navigation }) => {
                 <TextInput
                   style={styles.input}
                   placeholder="Số điện thoại (Không bắt buộc)"
-                  placeholderTextColor={"#7A8087"}
+                  placeholderTextColor={Colors.textPlaceholder}
                   value={phoneNumber}
                   onChangeText={setPhoneNumber}
                   keyboardType="phone-pad"
@@ -124,7 +124,7 @@ const RegisterScreen = ({ navigation }) => {
                 <TextInput
                   style={styles.input}
                   placeholder="Tên đầy đủ"
-                  placeholderTextColor={"#7A8087"}
+                  placeholderTextColor={Colors.textPlaceholder}
                   value={name}
                   onChangeText={setName}
                   keyboardType="default"
@@ -134,7 +134,7 @@ const RegisterScreen = ({ navigation }) => {
                 <TextInput
                   style={styles.input}
                   placeholder="Email"
-                  placeholderTextColor={"#7A8087"}
+                  placeholderTextColor={Colors.textPlaceholder}
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -146,7 +146,7 @@ const RegisterScreen = ({ navigation }) => {
                     style={[styles.input, styles.passwordInput]}
                     placeholder="Mật khẩu"
                     keyboardType="password"
-                    placeholderTextColor="#7A8087"
+                    placeholderTextColor={Colors.textPlaceholder}
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!isPasswordVisible}
@@ -169,7 +169,7 @@ const RegisterScreen = ({ navigation }) => {
                   <TextInput
                     style={[styles.input, styles.passwordInput]}
                     placeholder="Xác nhận mật khẩu"
-                    placeholderTextColor="#7A8087"
+                    placeholderTextColor={Colors.textPlaceholder}
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
                     secureTextEntry={!isConfirmPasswordVisible}
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   overlay: {
-    backgroundColor: "rgba(56, 55, 55, 0.34)",
+    backgroundColor: Colors.grayTranslucent34,
     flex: 1,
     paddingHorizontal: 20,
     paddingVertical: 20,
@@ -238,11 +238,11 @@ const styles = StyleSheet.create({
   },
   container: {
     borderWidth: 1,
-    borderColor: "#D7E9DB",
+    borderColor: Colors.borderGreenLight,
     borderRadius: 20,
     paddingHorizontal: 18,
     paddingVertical: 24,
-    shadowColor: "#0E4120",
+    shadowColor: Colors.shadowGreen,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
     shadowRadius: 16,
@@ -257,14 +257,14 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: "#D7E9DB",
-    backgroundColor: "#FFFFFF",
+    borderColor: Colors.borderGreenLight,
+    backgroundColor: Colors.white,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
     marginBottom: 16,
-    color: "#1D1D1F",
+    color: Colors.textPrimary,
   },
   passwordField: {
     position: "relative",
@@ -286,14 +286,14 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: "center",
     marginTop: 8,
-    shadowColor: "#0E4120",
+    shadowColor: Colors.shadowGreen,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 3,
   },
   buttonText: {
-    color: "#FFFFFF",
+    color: Colors.white,
     fontSize: 16,
     fontWeight: "600",
   },
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   imageButtons: {
-    backgroundColor: "#ffffffde",
+    backgroundColor: Colors.whiteTranslucent,
     borderRadius: 12,
     flexDirection: "row",
     gap: 12,
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: "100%",
     borderWidth: 1,
-    borderColor: "#D7E9DB",
+    borderColor: Colors.borderGreenLight,
     borderRadius: 12,
     paddingVertical: 20,
     alignItems: "center",

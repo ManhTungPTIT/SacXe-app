@@ -305,7 +305,7 @@ const SettingsScreen = ({ navigation }) => {
                         <Ionicons
                           name="chevron-forward"
                           size={18}
-                          color="#7B7E82"
+                          color={Colors.textPlaceholder}
                         />
                       </View>
                     </TouchableOpacity>
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.white,
     paddingBottom: 24,
   },
   bodyContainer: {
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.white,
   },
   title: {
     fontSize: 24,
@@ -481,12 +481,12 @@ const styles = StyleSheet.create({
   },
   accountCard: {
     borderRadius: 16,
-    backgroundColor: "#F7FBF8",
+    backgroundColor: Colors.bgGreenTint,
     borderWidth: 1,
-    borderColor: "#E6F4EA",
+    borderColor: Colors.borderGreenLight2,
     padding: 14,
     marginBottom: 16,
-    shadowColor: "#000",
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   avatarText: {
-    color: "#fff",
+    color: Colors.white,
     fontSize: 18,
     fontWeight: "700",
   },
@@ -516,25 +516,25 @@ const styles = StyleSheet.create({
   },
   accountLabel: {
     fontSize: 12,
-    color: "#6A6A6A",
+    color: Colors.textSecondary,
     marginBottom: 2,
   },
   accountName: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#1F1F1F",
+    color: Colors.textPrimary,
   },
   balanceCard: {
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 14,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
     borderWidth: 1,
-    borderColor: "#E7ECE9",
+    borderColor: Colors.borderGreenLight,
   },
   balanceLabel: {
     fontSize: 13,
-    color: "#666",
+    color: Colors.textSecondary,
     marginBottom: 6,
   },
   balanceValue: {
@@ -551,7 +551,7 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#CDEAD4",
+    borderColor: Colors.borderGreenLight,
     paddingVertical: 11,
     alignItems: "center",
     backgroundColor: Colors.primary,
@@ -570,7 +570,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   topUpButtonText: {
-    color: "#fff",
+    color: Colors.white,
     fontWeight: "700",
     fontSize: 13,
   },
@@ -586,7 +586,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#D2D4D8",
+    borderBottomColor: Colors.borderMuted,
   },
   settingsActionItemLast: {
     borderBottomWidth: 0,
@@ -603,7 +603,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   badgeContainer: {
-    backgroundColor: "#FF3B30",
+    backgroundColor: Colors.danger,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
@@ -613,28 +613,28 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   badgeText: {
-    color: "#FFFFFF",
+    color: Colors.white,
     fontSize: 10,
     fontWeight: "800",
     lineHeight: 12,
     textAlign: "center",
   },
   settingsActionIcon: {
-    color: "#4C5156",
+    color: Colors.textSecondary,
   },
   settingsActionLabel: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#2F3337",
+    color: Colors.textPrimary,
   },
   logoutButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#F5FBF6",
+    backgroundColor: Colors.cardBgGreen,
     borderWidth: 1,
-    borderColor: "#CDEAD4",
+    borderColor: Colors.borderGreenLight,
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 16,
@@ -647,12 +647,12 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: Colors.overlayBg,
     justifyContent: "center",
     alignItems: "center",
   },
   confirmModalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
     borderRadius: 12,
     padding: 24,
     width: "85%",
@@ -662,13 +662,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     textAlign: "center",
-    color: "#333",
+    color: Colors.textPrimary,
     marginBottom: 10,
   },
   confirmModalMessage: {
     fontSize: 15,
     lineHeight: 22,
-    color: "#555",
+    color: Colors.textSecondary,
     textAlign: "center",
     marginBottom: 16,
   },
@@ -686,20 +686,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   cancelButton: {
-    backgroundColor: "#e0e0e0",
+    backgroundColor: Colors.dividerMuted,
   },
   cancelButtonText: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#333",
+    color: Colors.textPrimary,
   },
   confirmLogoutButton: {
-    backgroundColor: "#FF3B30",
+    backgroundColor: Colors.danger,
   },
   confirmLogoutButtonText: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#fff",
+    color: Colors.white,
   },
 });
 

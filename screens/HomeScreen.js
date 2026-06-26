@@ -140,11 +140,11 @@ const HomeScreen = ({ navigation }) => {
             <View style={styles.mapSection}>
               <View style={styles.mapHeaderSection}>
                 <View style={styles.searchInputWrap}>
-                  <Ionicons name="search" size={18} color="#6A6F73" />
+                  <Ionicons name="search" size={18} color={Colors.neutralText} />
                   <TextInput
                     style={styles.searchInput}
                     placeholder="Tìm kiếm trạm sạc theo mã hoặc địa chỉ"
-                    placeholderTextColor="#6A6F73"
+                    placeholderTextColor={Colors.neutralText}
                     value={searchKeyword}
                     onChangeText={setSearchKeyword}
                     returnKeyType="search"
@@ -154,7 +154,7 @@ const HomeScreen = ({ navigation }) => {
                       onPress={() => setSearchKeyword("")}
                       style={styles.clearSearchButton}
                     >
-                      <Ionicons name="close-circle" size={18} color="#7B7E82" />
+                      <Ionicons name="close-circle" size={18} color={Colors.textPlaceholder} />
                     </TouchableOpacity>
                   ) : null}
                 </View>
@@ -178,7 +178,7 @@ const HomeScreen = ({ navigation }) => {
                 style={styles.scanButton}
                 onPress={() => navigation.navigate("ScanQR")}
               >
-                <Ionicons name="qr-code" size={18} color="#FFFFFF" />
+                <Ionicons name="qr-code" size={18} color={Colors.white} />
                 <Text style={styles.scanButtonText}>Quét mã để sạc</Text>
               </TouchableOpacity>
             </View> */}
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   },
   page: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.white,
   },
   keyboardView: {
     flex: 1,
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flexGrow: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.white,
   },
   mapSection: {
     flex: 1,
@@ -223,9 +223,9 @@ const styles = StyleSheet.create({
   searchInputWrap: {
     height: 46,
     borderRadius: 12,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.white,
     borderWidth: 1,
-    borderColor: "#D7E9DB",
+    borderColor: Colors.borderGreenLight,
     paddingHorizontal: 12,
     flexDirection: "row",
     alignItems: "center",
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 14,
-    color: "#1D1D1F",
+    color: Colors.textPrimary,
     marginLeft: 8,
   },
   clearSearchButton: {
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     minHeight: 320,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: Colors.borderMuted,
   },
   quickActions: {
     paddingHorizontal: 16,
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   scanButtonText: {
-    color: "#FFFFFF",
+    color: Colors.white,
     fontWeight: "700",
     fontSize: 14,
   },

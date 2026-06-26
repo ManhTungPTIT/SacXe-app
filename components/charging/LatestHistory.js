@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { Colors } from "../../constants/color";
 import { SocketContext } from "../../providers/SocketProvider";
 import { useQueryClient } from "@tanstack/react-query";
+import BatteryCharging from "./BatteryCharging";
 
 const formatEnergy = (value) => {
   const energy = Number(value) || 0;
@@ -92,12 +93,14 @@ const LatestHistory = ({ history }) => {
   const socket = socketContext?.socket;
   const queryClient = useQueryClient();
   const [realtimeEnergy, setRealtimeEnergy] = useState(history?.energy || 0);
+  const [isLive, setIsLive] = useState((history?.energy || 0) > 0);
   const [currentTime, setCurrentTime] = useState(Date.now());
   const lastInvalidatedEnergyStepRef = useRef(getEnergyStep(history?.energy));
 
   useEffect(() => {
     setRealtimeEnergy(history?.energy || 0);
     lastInvalidatedEnergyStepRef.current = getEnergyStep(history?.energy);
+    setIsLive((history?.energy || 0) > 0);
   }, [history?._id, history?.energy]);
 
   useEffect(() => {
@@ -106,6 +109,7 @@ const LatestHistory = ({ history }) => {
     const handleWave = (value) => {
       if (value?.energy !== undefined) {
         setRealtimeEnergy(value.energy / 1000);
+        setIsLive(true);
       }
     };
 
@@ -152,6 +156,9 @@ const LatestHistory = ({ history }) => {
     }
   }, [realtimeEnergy, lastFetchedEnergy, hasDuration, queryClient]);
 
+  const status = hasDuration ? "completed" : (isLive ? "charging" : "waiting");
+  const isChargingState = status === "charging";
+
   return (
     <View style={styles.wrapper}>
       <Text style={styles.sectionTitle}>Phiên sạc đang sử dụng</Text>
@@ -160,10 +167,26 @@ const LatestHistory = ({ history }) => {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>Phiên sạc gần đây</Text>
-            <View style={[styles.statusBadge, styles.statusActive]}>
-              <Text style={[styles.statusText, styles.statusActiveText]}>
-                Đang sạc
+            <View
+              style={[
+                styles.statusBadge,
+                isChargingState ? styles.statusActive : styles.statusDone,
+                { flexDirection: "row", alignItems: "center" },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.statusText,
+                  isChargingState ? styles.statusActiveText : styles.statusDoneText,
+                ]}
+              >
+                {status === "completed"
+                  ? "Hoàn tất"
+                  : status === "charging"
+                    ? "Đang sạc"
+                    : "Đang chờ sạc"}
               </Text>
+              <BatteryCharging status={status} />
             </View>
           </View>
 
@@ -220,19 +243,19 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   card: {
-    backgroundColor: "#F5FBF6",
+    backgroundColor: Colors.cardBgGreen,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#D8EFDC",
+    borderColor: Colors.cardBorderGreen,
     padding: 16,
-    shadowColor: "#0E4120",
+    shadowColor: Colors.shadowGreen,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 3,
   },
   emptyCard: {
-    backgroundColor: "#FAFAFA",
+    backgroundColor: Colors.cardBgLight,
     borderColor: Colors.border,
   },
   cardHeader: {
@@ -244,7 +267,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#1D1D1F",
+    color: Colors.textPrimary,
   },
   statusBadge: {
     paddingHorizontal: 10,
@@ -252,24 +275,24 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   statusDone: {
-    backgroundColor: "#E6F6EA",
+    backgroundColor: Colors.neutralBg,
   },
   statusActive: {
-    backgroundColor: "#FFF2DD",
+    backgroundColor: Colors.successBg,
   },
   statusText: {
     fontSize: 12,
     fontWeight: "700",
   },
   statusDoneText: {
-    color: Colors.primary,
+    color: Colors.neutralText,
   },
   statusActiveText: {
-    color: "#B97100",
+    color: Colors.primary,
   },
   startTime: {
     fontSize: 13,
-    color: "#5F6368",
+    color: Colors.textSecondary,
     marginBottom: 12,
   },
   metricsRow: {
@@ -283,24 +306,24 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 10,
     borderWidth: 1,
-    borderColor: "#E4F2E7",
+    borderColor: Colors.borderGreenLight,
   },
   metricCardSpacing: {
     marginRight: 10,
   },
   metricLabel: {
     fontSize: 12,
-    color: "#6A6F73",
+    color: Colors.neutralText,
     marginBottom: 6,
   },
   metricValue: {
     fontSize: 17,
-    color: "#1D1D1F",
+    color: Colors.textPrimary,
     fontWeight: "700",
   },
   divider: {
     height: 1,
-    backgroundColor: "#E3EEE5",
+    backgroundColor: Colors.dividerGreen,
     marginVertical: 14,
   },
   infoRow: {
@@ -310,22 +333,22 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 14,
-    color: "#434A50",
+    color: Colors.textDarkSecondary,
   },
   infoValue: {
     fontSize: 14,
-    color: "#1D1D1F",
+    color: Colors.textPrimary,
     fontWeight: "700",
   },
   emptyTitle: {
     fontSize: 15,
-    color: "#1D1D1F",
+    color: Colors.textPrimary,
     fontWeight: "700",
   },
   emptySubtitle: {
     marginTop: 6,
     fontSize: 13,
-    color: "#6A6F73",
+    color: Colors.neutralText,
     lineHeight: 18,
   },
 });

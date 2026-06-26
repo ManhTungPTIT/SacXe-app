@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Colors } from "../constants/color";
 
 
 const ToastNotification = ({
@@ -101,7 +102,7 @@ const ToastNotification = ({
       <View style={styles.toastContent}>
         {/* Left Side: Green Icon Wrapper */}
         <View style={styles.iconWrapper}>
-          <Ionicons name="checkmark-circle" size={24} color="#346538" />
+          <Ionicons name="checkmark-circle" size={24} color={Colors.toastSuccessText} />
         </View>
 
         {/* Middle: Title & Message */}
@@ -123,13 +124,13 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     zIndex: 9999,
-    backgroundColor: "#EDF3EC", // Muted Pastel Green Background
+    backgroundColor: Colors.toastSuccessBg, // Muted Pastel Green Background
     borderWidth: 1,
-    borderColor: "#D0F0DC", // Subtle Green border
+    borderColor: Colors.successBorder, // Subtle Green border
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    shadowColor: "#000",
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -143,7 +144,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#D0F0DC",
+    backgroundColor: Colors.successBorder,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -155,12 +156,12 @@ const styles = StyleSheet.create({
   titleText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#346538", // Deep Green text
+    color: Colors.toastSuccessText, // Deep Green text
     marginBottom: 2,
   },
   messageText: {
     fontSize: 13,
-    color: "#4C5B4E", // Dark gray/green text
+    color: Colors.toastSuccessDesc, // Dark gray/green text
     lineHeight: 18,
   },
 
@@ -168,7 +169,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#CDE8D7",
+    backgroundColor: Colors.toastProgressBar,
     alignSelf: "center",
     marginTop: 8,
     marginBottom: -4,

@@ -59,14 +59,14 @@ const styles = StyleSheet.create({
   },
   bentoLabel: {
     fontSize: 11,
-    color: "#787774",
+    color: Colors.textMuted,
     letterSpacing: 1.2,
     fontWeight: "700",
     marginBottom: 8,
   },
   timeInfoContainer: {
     flex: 1,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: Colors.cardBgLight,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
@@ -80,13 +80,13 @@ const styles = StyleSheet.create({
   },
   timeDate: {
     fontSize: 13,
-    color: "#111111",
+    color: Colors.textDark,
     fontWeight: "600",
     marginTop: 4,
   },
   aiNocContainer: {
     flex: 1.2,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: Colors.cardBgLight,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   },
   aiNocDescription: {
     fontSize: 13,
-    color: "#111111",
+    color: Colors.textDark,
     lineHeight: 18,
   },
   stopButton: {
@@ -112,15 +112,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   stopButtonDisabled: {
-    backgroundColor: "#A7E8BB",
+    backgroundColor: Colors.accentGreen,
   },
   stopButtonText: {
-    color: "#FFFFFF",
+    color: Colors.white,
     fontSize: 16,
     fontWeight: "700",
   },
   stopButtonTextDisabled: {
-    color: "rgba(255, 255, 255, 0.8)",
+    color: Colors.whiteTranslucent80,
   },
 });
 

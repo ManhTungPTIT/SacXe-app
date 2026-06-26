@@ -37,7 +37,7 @@ const AboutEnovoComponent = ({
               <View style={styles.headerRow}>
                 <View style={styles.headerLeft}>
                   <View style={styles.logoBadge}>
-                    <Ionicons name="flash" size={20} color="#FFFFFF" />
+                    <Ionicons name="flash" size={20} color={Colors.white} />
                   </View>
                   <Text style={styles.title}>Về Enovo</Text>
                 </View>
@@ -45,7 +45,7 @@ const AboutEnovoComponent = ({
                   onPress={handleCloseAboutEnovoModal}
                   style={styles.closeButton}
                 >
-                  <Ionicons name="close" size={20} color="#4B5563" />
+                  <Ionicons name="close" size={20} color={Colors.textSecondaryDark} />
                 </TouchableOpacity>
               </View>
 
@@ -102,7 +102,7 @@ const AboutEnovoComponent = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: Colors.overlayBg,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 16,
@@ -110,10 +110,10 @@ const styles = StyleSheet.create({
   modalCard: {
     width: "100%",
     maxWidth: 440,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.white,
     borderRadius: 16,
     padding: 16,
-    shadowColor: "#000",
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.12,
     shadowRadius: 10,
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#111827",
+    color: Colors.textPrimaryDark,
   },
   closeButton: {
     width: 30,
@@ -149,14 +149,14 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: Colors.bgGrayLight,
   },
   content: {
     maxHeight: 420,
   },
   description: {
     fontSize: 14,
-    color: "#4B5563",
+    color: Colors.textSecondaryDark,
     lineHeight: 21,
   },
   sectionTitle: {
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontSize: 15,
     fontWeight: "700",
-    color: "#111827",
+    color: Colors.textPrimaryDark,
   },
   featureItem: {
     flexDirection: "row",
@@ -175,13 +175,13 @@ const styles = StyleSheet.create({
   featureText: {
     flex: 1,
     fontSize: 13,
-    color: "#374151",
+    color: Colors.textSecondaryDark,
     lineHeight: 19,
   },
   supportText: {
     marginTop: 12,
     fontSize: 13,
-    color: "#6B7280",
+    color: Colors.textSecondary,
     lineHeight: 19,
   },
   doneButton: {
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   doneButtonText: {
-    color: "#FFFFFF",
+    color: Colors.white,
     fontSize: 14,
     fontWeight: "700",
   },

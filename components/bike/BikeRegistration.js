@@ -262,7 +262,7 @@ const BikeRegistration = ({ isUpdating, onCancel, onSuccess }) => {
                 <Ionicons
                   name="information-circle-outline"
                   size={20}
-                  color="#1F6C9F"
+                  color={Colors.infoBlue}
                   style={{ marginRight: 6 }}
                 />
                 <Text style={styles.infoDescriptionTitle}>Tại sao cần cung cấp giấy đăng ký xe?</Text>
@@ -424,7 +424,7 @@ const BikeRegistration = ({ isUpdating, onCancel, onSuccess }) => {
                     <Ionicons
                       name="camera"
                       size={18}
-                      color="#FFFFFF"
+                      color={Colors.white}
                       style={{ marginRight: 8 }}
                     />
                     <Text style={styles.previewChangeButtonText}>Thay đổi ảnh</Text>
@@ -436,7 +436,7 @@ const BikeRegistration = ({ isUpdating, onCancel, onSuccess }) => {
                   onPress={() => setIsPreviewVisible(false)}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="close" size={24} color="#FFFFFF" />
+                  <Ionicons name="close" size={24} color={Colors.white} />
                 </TouchableOpacity>
               </View>
             </TouchableWithoutFeedback>
@@ -483,16 +483,16 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   cancelFormButton: {
-    backgroundColor: "#F3F4F6",
+    backgroundColor: Colors.bgGrayLight,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: "center",
     marginTop: 12,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: Colors.borderMuted,
   },
   cancelFormButtonText: {
-    color: "#4B5563",
+    color: Colors.textSecondaryDark,
     fontSize: 16,
     fontWeight: "700",
   },
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#787774",
+    color: Colors.textMuted,
     letterSpacing: 0.5,
     marginBottom: 8,
     textTransform: "uppercase",
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     paddingVertical: 12,
     fontSize: 18,
-    color: "#111111",
+    color: Colors.textDark,
     marginBottom: 24,
   },
   button: {
@@ -526,7 +526,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   buttonText: {
-    color: "#FFFFFF",
+    color: Colors.white,
     fontSize: 16,
     fontWeight: "700",
   },
@@ -540,7 +540,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    backgroundColor: Colors.whiteTranslucent80,
     justifyContent: "center",
     alignItems: "center",
     zIndex: 10,
@@ -569,13 +569,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 24,
     alignItems: "center",
-    backgroundColor: "#FAFAFA",
+    backgroundColor: Colors.cardBgLight,
   },
   imageButtonText: {
     marginTop: 12,
     fontSize: 13,
     fontWeight: "600",
-    color: "#666666",
+    color: Colors.textSecondary,
   },
   image: {
     width: "100%",
@@ -598,20 +598,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 24,
-    shadowColor: "#000",
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 5,
   },
   previewChangeButtonText: {
-    color: "#FFFFFF",
+    color: Colors.white,
     fontSize: 15,
     fontWeight: "700",
   },
   previewOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.9)",
+    backgroundColor: Colors.blackTranslucent90,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -633,7 +633,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: Colors.whiteTranslucent20,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -653,7 +653,7 @@ const styles = StyleSheet.create({
   infoDescriptionTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#1F6C9F",
+    color: Colors.infoBlue,
   },
   infoDescriptionText: {
     fontSize: 12.5,

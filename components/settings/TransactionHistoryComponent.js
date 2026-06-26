@@ -155,7 +155,7 @@ const TransactionHistoryComponent = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(14, 23, 18, 0.45)",
+    backgroundColor: Colors.greenTranslucent45,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 16,
@@ -164,14 +164,14 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 440,
     maxHeight: "78%",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.white,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 14,
     borderWidth: 1,
-    borderColor: "#D8EFDC",
-    shadowColor: "#0E4120",
+    borderColor: Colors.cardBorderGreen,
+    shadowColor: Colors.shadowGreen,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.12,
     shadowRadius: 18,
@@ -189,9 +189,9 @@ const styles = StyleSheet.create({
     color: Colors.primary,
   },
   closeButton: {
-    backgroundColor: "#EAF7ED",
+    backgroundColor: Colors.successBgLight,
     borderWidth: 1,
-    borderColor: "#D6EEDC",
+    borderColor: Colors.successBorder,
     borderRadius: 999,
     paddingVertical: 6,
     paddingHorizontal: 12,
@@ -203,17 +203,17 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 13,
-    color: "#5F6368",
+    color: Colors.textSecondary,
     marginBottom: 12,
   },
   list: {
     maxHeight: 420,
   },
   transactionCard: {
-    backgroundColor: "#F5FBF6",
+    backgroundColor: Colors.cardBgGreen,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#D8EFDC",
+    borderColor: Colors.cardBorderGreen,
     padding: 14,
     marginBottom: 12,
   },
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
   transactionTitle: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#1D1D1F",
+    color: Colors.textPrimary,
   },
   statusBadge: {
     paddingHorizontal: 10,
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   statusCompleted: {
-    backgroundColor: "#E6F6EA",
+    backgroundColor: Colors.successBg,
   },
   statusCompletedText: {
     color: Colors.primary,
@@ -250,14 +250,14 @@ const styles = StyleSheet.create({
     color: "#B97100",
   },
   statusFailed: {
-    backgroundColor: "#FFE4E7",
+    backgroundColor: Colors.errorBgLight,
   },
   statusFailedText: {
-    color: "#BA1A1A",
+    color: Colors.errorText,
   },
   timeText: {
     fontSize: 12,
-    color: "#5F6368",
+    color: Colors.textSecondary,
     marginBottom: 10,
   },
   metricsRow: {
@@ -271,23 +271,23 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 10,
     borderWidth: 1,
-    borderColor: "#E4F2E7",
+    borderColor: Colors.borderGreenLight,
   },
   metricSpacing: {
     marginRight: 10,
   },
   metricLabel: {
     fontSize: 12,
-    color: "#6A6F73",
+    color: Colors.neutralText,
     marginBottom: 4,
   },
   metricValue: {
     fontSize: 14,
-    color: "#1D1D1F",
+    color: Colors.textPrimary,
     fontWeight: "700",
   },
   emptyCard: {
-    backgroundColor: "#FAFAFA",
+    backgroundColor: Colors.cardBgLight,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -296,14 +296,14 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 15,
-    color: "#1D1D1F",
+    color: Colors.textPrimary,
     fontWeight: "700",
     textAlign: "center",
   },
   emptySubtitle: {
     marginTop: 6,
     fontSize: 13,
-    color: "#6A6F73",
+    color: Colors.neutralText,
     lineHeight: 18,
     textAlign: "center",
   },
