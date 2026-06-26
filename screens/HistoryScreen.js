@@ -19,6 +19,7 @@ import { Colors } from "../constants/color";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SocketContext } from "../providers/SocketProvider";
 import BatteryCharging from "../components/charging/BatteryCharging";
+import { Ionicons } from "@expo/vector-icons";
 
 const formatCurrency = (value) => {
   const price = Number(value) || 0;
@@ -99,15 +100,25 @@ const HistoryScreen = () => {
   const socketContext = useContext(SocketContext);
   const socket = socketContext?.socket;
   const [page, setPage] = useState(1);
+  const LIMIT = 10;
+  const scrollViewRef = useRef(null);
+
   const {
     data: historyData,
     isLoading,
     error,
-  } = useHistory.useGetHistory({ page, limit: 10 });
+  } = useHistory.useGetHistory({ page, limit: LIMIT });
 
-  const totalPages = Math.max(1, Math.ceil((historyData?.total || 0) / 10));
+  useEffect(() => {
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({ y: 0, animated: true });
+    }
+  }, [page]);
+
   const monthlyStats = historyData?.monthlyStats;
   const histories = historyData?.histories ?? [];
+  const totalItems = historyData?.total || 0;
+  const totalPages = Math.max(1, Math.ceil(totalItems / LIMIT));
   const activeHistory = histories.find(isChargingHistory);
   const activeHistoryId = activeHistory?._id;
   const activeHistoryStartTime = getHistoryStartTime(activeHistory);
@@ -212,6 +223,7 @@ const HistoryScreen = () => {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView
+          ref={scrollViewRef}
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
@@ -296,7 +308,7 @@ const HistoryScreen = () => {
                   >
                     <View style={styles.cardHeader}>
                       <Text style={styles.cardTitle}>
-                        Phiên sạc #{((page - 1) * 10) + index + 1}
+                        Phiên sạc #{((page - 1) * LIMIT) + index + 1}
                       </Text>
                       <View
                         style={[
@@ -369,21 +381,49 @@ const HistoryScreen = () => {
             {totalPages > 1 && (
               <View style={styles.paginationContainer}>
                 <TouchableOpacity
-                  style={[styles.pageButton, page === 1 && styles.pageButtonDisabled]}
-                  disabled={page === 1}
+                  style={styles.pageButton}
                   onPress={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  activeOpacity={0.5}
                 >
-                  <Text style={[styles.pageButtonText, page === 1 && styles.pageButtonTextDisabled]}>Trước</Text>
+                  <Ionicons
+                    name="chevron-back"
+                    size={14}
+                    color={page === 1 ? Colors.inactive : Colors.textPrimary}
+                  />
+                  <Text
+                    style={[
+                      styles.pageButtonText,
+                      page === 1 && styles.pageButtonTextDisabled,
+                    ]}
+                  >
+                    Trước
+                  </Text>
                 </TouchableOpacity>
-                <Text style={styles.pageIndicator}>
-                  Trang {page} / {totalPages}
+
+                <Text style={styles.pageInfoText}>
+                  {page} / {totalPages}
                 </Text>
+
                 <TouchableOpacity
-                  style={[styles.pageButton, page >= totalPages && styles.pageButtonDisabled]}
-                  disabled={page >= totalPages}
+                  style={styles.pageButton}
                   onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  activeOpacity={0.5}
                 >
-                  <Text style={[styles.pageButtonText, page >= totalPages && styles.pageButtonTextDisabled]}>Sau</Text>
+                  <Text
+                    style={[
+                      styles.pageButtonText,
+                      page === totalPages && styles.pageButtonTextDisabled,
+                    ]}
+                  >
+                    Sau
+                  </Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={14}
+                    color={page === totalPages ? Colors.inactive : Colors.textPrimary}
+                  />
                 </TouchableOpacity>
               </View>
             )}
@@ -409,7 +449,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 16,
-    paddingBottom: 0,
+    paddingBottom: 40,
     backgroundColor: Colors.secondary,
   },
   container: {
@@ -557,33 +597,30 @@ const styles = StyleSheet.create({
   },
   paginationContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 16,
-    marginBottom: 24,
-    paddingHorizontal: 8,
+    justifyContent: "center",
+    marginTop: 24,
+    gap: 16,
   },
   pageButton: {
-    backgroundColor: Colors.primary,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  pageButtonDisabled: {
-    backgroundColor: "#E0E0E0",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
   },
   pageButtonText: {
-    color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "500",
+    color: Colors.textPrimary,
   },
   pageButtonTextDisabled: {
-    color: "#A0A0A0",
+    color: Colors.inactive,
   },
-  pageIndicator: {
+  pageInfoText: {
     fontSize: 14,
-    fontWeight: "700",
-    color: "#1D1D1F",
+    fontWeight: "600",
+    color: Colors.textSecondary,
   },
 });
 
