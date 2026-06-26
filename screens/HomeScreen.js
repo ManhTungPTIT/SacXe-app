@@ -183,7 +183,7 @@ const HomeScreen = ({ navigation }) => {
               </TouchableOpacity>
             </View> */}
 
-            <LatestHistory history={latestHistory} />
+            <LatestHistory history={latestHistory} navigation={navigation} />
           </ScrollView>
         </KeyboardAvoidingView>
       </View>

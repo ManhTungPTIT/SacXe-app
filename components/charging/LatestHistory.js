@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Colors } from "../../constants/color";
+import { Ionicons } from "@expo/vector-icons";
 import { SocketContext } from "../../providers/SocketProvider";
 import { useQueryClient } from "@tanstack/react-query";
 import BatteryCharging from "./BatteryCharging";
@@ -85,13 +86,20 @@ const formatStartTime = (startTime) => {
   return date.toLocaleString("vi-VN");
 };
 
-const LatestHistory = ({ history }) => {
+const LatestHistory = ({ history, navigation }) => {
   const chargingStartTime = history?.startTime || history?.createdAt;
   const startTimeText = formatStartTime(chargingStartTime);
   const hasDuration = Boolean(history?.totalTime);
   const socketContext = useContext(SocketContext);
   const socket = socketContext?.socket;
   const queryClient = useQueryClient();
+
+  const handleEmptyPress = () => {
+    if (navigation) {
+      navigation.navigate("Charge");
+    }
+  };
+
   const [realtimeEnergy, setRealtimeEnergy] = useState(history?.energy || 0);
   const [isLive, setIsLive] = useState((history?.energy || 0) > 0);
   const [currentTime, setCurrentTime] = useState(Date.now());
@@ -161,70 +169,80 @@ const LatestHistory = ({ history }) => {
 
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.sectionTitle}>Phiên sạc đang sử dụng</Text>
-
       {history && !hasDuration ? (
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Phiên sạc gần đây</Text>
-            <View
-              style={[
-                styles.statusBadge,
-                isChargingState ? styles.statusActive : styles.statusDone,
-                { flexDirection: "row", alignItems: "center" },
-              ]}
-            >
-              <Text
+        <TouchableOpacity
+          onPress={() => navigation.navigate("Charge")}
+          activeOpacity={0.9}
+        >
+          <View style={styles.sectionTitleRow}>
+            <Text style={styles.sectionTitle}>Phiên sạc đang sử dụng</Text>
+            <Ionicons name="arrow-forward" size={18} color={Colors.primary} />
+          </View>
+          <View style={styles.card}>
+            <View style={styles.timeAndStatusRow}>
+              <Text style={styles.startTime}>
+                {startTimeText ? `Bắt đầu: ${startTimeText}` : ""}
+              </Text>
+              <View
                 style={[
-                  styles.statusText,
-                  isChargingState ? styles.statusActiveText : styles.statusDoneText,
+                  styles.statusBadge,
+                  isChargingState ? styles.statusActive : styles.statusDone,
+                  { flexDirection: "row", alignItems: "center" },
                 ]}
               >
-                {status === "completed"
-                  ? "Hoàn tất"
-                  : status === "charging"
-                    ? "Đang sạc"
-                    : "Đang chờ sạc"}
-              </Text>
-              <BatteryCharging status={status} />
-            </View>
-          </View>
-
-          {startTimeText ? (
-            <Text style={styles.startTime}>Bắt đầu: {startTimeText}</Text>
-          ) : null}
-
-          <View style={styles.metricsRow}>
-            <View style={[styles.metricCard, styles.metricCardSpacing]}>
-              <Text style={styles.metricLabel}>Điện năng tiêu thụ</Text>
-              <Text style={styles.metricValue}>
-                {formatEnergy(realtimeEnergy)} kWh
-              </Text>
+                <Text
+                  style={[
+                    styles.statusText,
+                    isChargingState ? styles.statusActiveText : styles.statusDoneText,
+                  ]}
+                >
+                  {status === "completed"
+                    ? "Hoàn tất"
+                    : status === "charging"
+                      ? "Đang sạc"
+                      : "Đang chờ sạc"}
+                </Text>
+                <BatteryCharging status={status} />
+              </View>
             </View>
 
-            <View style={styles.metricCard}>
-              <Text style={styles.metricLabel}>Chi phí</Text>
-              <Text style={styles.metricValue}>
-                {formatPrice(displayPrice)} VND
+            <View style={styles.metricsRow}>
+              <View style={[styles.metricCard, styles.metricCardSpacing]}>
+                <Text style={styles.metricLabel}>Điện năng tiêu thụ</Text>
+                <Text style={styles.metricValue}>
+                  {formatEnergy(realtimeEnergy)} kWh
+                </Text>
+              </View>
+
+              <View style={styles.metricCard}>
+                <Text style={styles.metricLabel}>Chi phí</Text>
+                <Text style={styles.metricValue}>
+                  {formatPrice(displayPrice)} VND
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Tổng thời gian sạc</Text>
+              <Text style={styles.infoValue}>
+                {formatDuration(displayDuration)}
               </Text>
             </View>
           </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Tổng thời gian sạc</Text>
-            <Text style={styles.infoValue}>
-              {formatDuration(displayDuration)}
-            </Text>
-          </View>
-        </View>
+        </TouchableOpacity>
       ) : (
-        <View style={[styles.card, styles.emptyCard]}>
-          <Text style={styles.emptyTitle}>
+        <TouchableOpacity
+          style={styles.emptyPressableRow}
+          onPress={handleEmptyPress}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.emptyTitleHighlighted}>
             Hiện tại bạn đang không sử dụng sạc
           </Text>
-        </View>
+          <Ionicons name="arrow-forward" size={20} color={Colors.warning} />
+        </TouchableOpacity>
       )}
     </View>
   );
@@ -240,6 +258,11 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontWeight: "700",
     fontSize: 18,
+  },
+  sectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 12,
   },
   card: {
@@ -293,6 +316,11 @@ const styles = StyleSheet.create({
   startTime: {
     fontSize: 13,
     color: Colors.textSecondary,
+  },
+  timeAndStatusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 12,
   },
   metricsRow: {
@@ -344,6 +372,17 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.textPrimary,
     fontWeight: "700",
+  },
+  emptyTitleHighlighted: {
+    fontSize: 15,
+    color: Colors.warning,
+    fontWeight: "700",
+  },
+  emptyPressableRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
   },
   emptySubtitle: {
     marginTop: 6,

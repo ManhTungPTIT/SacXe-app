@@ -23,8 +23,12 @@ import { useQueryClient } from "@tanstack/react-query";
 const ChargeScreen = ({ route, navigation }) => {
   const queryClient = useQueryClient();
   const [devices, setDevices] = useState([]);
-  const [isScanned, setIsScanned] = useState(false);
-  const [deviceCode, setdeviceCode] = useState(null);
+  const [isScanned, setIsScanned] = useState(() => {
+    return !!queryClient.getQueryData(["SCANNED_DEVICE_CODE"]);
+  });
+  const [deviceCode, setdeviceCode] = useState(() => {
+    return queryClient.getQueryData(["SCANNED_DEVICE_CODE"]) || null;
+  });
   const [powerId, setPowerId] = useState(null);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -46,6 +50,10 @@ const ChargeScreen = ({ route, navigation }) => {
 
   const deviceId = eChargeDevices?.eChargeDevices?._id || null;
   const chargingStartTime = latestHistory?.startTime || latestHistory?.createdAt;
+
+  useEffect(() => {
+    queryClient.setQueryData(["SCANNED_DEVICE_CODE"], deviceCode);
+  }, [deviceCode, queryClient]);
 
   useEffect(() => {
     const scannedDeviceCode = route?.params?.scannedDeviceCode;

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { StyleSheet, View, Animated, Easing } from "react-native";
+import Svg, { Path } from "react-native-svg";
 import { Colors } from "../../constants/color";
 
 export const BatteryCharging = ({ status, style }) => {
@@ -9,32 +10,18 @@ export const BatteryCharging = ({ status, style }) => {
     if (status === "charging") {
       animatedValue.setValue(0);
       const animation = Animated.loop(
-        Animated.timing(animatedValue, {
-          toValue: 1,
-          duration: 3000,
-          easing: Easing.bezier(0.4, 0, 0.2, 1),
-          useNativeDriver: false,
-        })
-      );
-      animation.start();
-      return () => {
-        animation.stop();
-      };
-    } else if (status === "waiting") {
-      animatedValue.setValue(0);
-      const animation = Animated.loop(
         Animated.sequence([
           Animated.timing(animatedValue, {
-            toValue: 0.3,
-            duration: 3000,
-            easing: Easing.linear,
-            useNativeDriver: false,
+            toValue: 1,
+            duration: 520,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
           }),
           Animated.timing(animatedValue, {
             toValue: 0,
-            duration: 1500,
-            easing: Easing.linear,
-            useNativeDriver: false,
+            duration: 520,
+            easing: Easing.in(Easing.quad),
+            useNativeDriver: true,
           }),
         ])
       );
@@ -43,63 +30,60 @@ export const BatteryCharging = ({ status, style }) => {
         animation.stop();
       };
     } else {
-      // Completed or other static states - full battery, no animation
-      animatedValue.setValue(1);
+      animatedValue.setValue(0);
     }
   }, [status]);
 
-  const fillWidth = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 16],
-  });
-
-  const fillColor = status === "charging" ? Colors.primary : Colors.inactive;
-  const borderColor = status === "charging" ? Colors.primary : Colors.inactive;
+  const isCharging = status === "charging";
+  const iconColor = isCharging ? Colors.primary : Colors.inactive;
+  const iconOpacity = isCharging
+    ? animatedValue.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0.38, 1],
+      })
+    : 0.6;
+  const iconScale = isCharging
+    ? animatedValue.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0.88, 1.08],
+      })
+    : 1;
 
   return (
-    <View style={[styles.batteryContainer, style]}>
-      <View style={[styles.batteryBody, { borderColor }]}>
-        <Animated.View
-          style={[
-            styles.batteryFill,
-            {
-              width: fillWidth,
-              backgroundColor: fillColor,
-            },
-          ]}
-        />
-      </View>
-      <View style={[styles.batteryTip, { backgroundColor: borderColor }]} />
+    <View style={[styles.iconContainer, style]}>
+      <Animated.View
+        style={[
+          styles.iconPulse,
+          {
+            opacity: iconOpacity,
+            transform: [{ scale: iconScale }],
+          },
+        ]}
+      >
+        <Svg width={16} height={16} viewBox="0 0 16 16">
+          <Path
+            d="M9.3 1.1 3.8 8.3h3.3l-.7 6.6 5.8-7.9H8.8l.5-5.9z"
+            fill={iconColor}
+          />
+        </Svg>
+      </Animated.View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  batteryContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+  iconContainer: {
     marginLeft: 4,
-    height: 12,
-  },
-  batteryBody: {
-    width: 22,
-    height: 12,
-    borderRadius: 3,
-    borderWidth: 1.5,
-    padding: 1,
+    width: 16,
+    height: 16,
+    alignItems: "center",
     justifyContent: "center",
-    alignItems: "flex-start",
   },
-  batteryFill: {
-    height: "100%",
-    borderRadius: 1,
-  },
-  batteryTip: {
-    width: 2,
-    height: 5,
-    borderTopRightRadius: 1,
-    borderBottomRightRadius: 1,
-    marginLeft: 1,
+  iconPulse: {
+    width: 16,
+    height: 16,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
 
