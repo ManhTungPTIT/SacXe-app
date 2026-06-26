@@ -6,6 +6,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  TouchableOpacity,
 } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useHistory } from "../queries/history.query";
@@ -97,12 +98,14 @@ const HistoryScreen = () => {
   const queryClient = useQueryClient();
   const socketContext = useContext(SocketContext);
   const socket = socketContext?.socket;
+  const [page, setPage] = useState(1);
   const {
     data: historyData,
     isLoading,
     error,
-  } = useHistory.useGetHistory({ page: 1, limit: 10 });
+  } = useHistory.useGetHistory({ page, limit: 10 });
 
+  const totalPages = Math.max(1, Math.ceil((historyData?.total || 0) / 10));
   const monthlyStats = historyData?.monthlyStats;
   const histories = historyData?.histories ?? [];
   const activeHistory = histories.find(isChargingHistory);
@@ -293,7 +296,7 @@ const HistoryScreen = () => {
                   >
                     <View style={styles.cardHeader}>
                       <Text style={styles.cardTitle}>
-                        Phiên sạc #{index + 1}
+                        Phiên sạc #{((page - 1) * 10) + index + 1}
                       </Text>
                       <View
                         style={[
@@ -360,6 +363,28 @@ const HistoryScreen = () => {
                 <Text style={styles.emptySubtitle}>
                   Sau khi hoàn tất phiên sạc, thông tin sẽ hiển thị tại đây.
                 </Text>
+              </View>
+            )}
+
+            {totalPages > 1 && (
+              <View style={styles.paginationContainer}>
+                <TouchableOpacity
+                  style={[styles.pageButton, page === 1 && styles.pageButtonDisabled]}
+                  disabled={page === 1}
+                  onPress={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  <Text style={[styles.pageButtonText, page === 1 && styles.pageButtonTextDisabled]}>Trước</Text>
+                </TouchableOpacity>
+                <Text style={styles.pageIndicator}>
+                  Trang {page} / {totalPages}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.pageButton, page >= totalPages && styles.pageButtonDisabled]}
+                  disabled={page >= totalPages}
+                  onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  <Text style={[styles.pageButtonText, page >= totalPages && styles.pageButtonTextDisabled]}>Sau</Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -529,6 +554,36 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.neutralText,
     lineHeight: 18,
+  },
+  paginationContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 16,
+    marginBottom: 24,
+    paddingHorizontal: 8,
+  },
+  pageButton: {
+    backgroundColor: Colors.primary,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  pageButtonDisabled: {
+    backgroundColor: "#E0E0E0",
+  },
+  pageButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  pageButtonTextDisabled: {
+    color: "#A0A0A0",
+  },
+  pageIndicator: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1D1D1F",
   },
 });
 
