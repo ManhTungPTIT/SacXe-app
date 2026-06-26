@@ -154,25 +154,15 @@ const LatestHistory = ({ history }) => {
 
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.sectionTitle}>Lần sạc gần nhất</Text>
+      <Text style={styles.sectionTitle}>Phiên sạc đang sử dụng</Text>
 
-      {history ? (
+      {history && !hasDuration ? (
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>Phiên sạc gần đây</Text>
-            <View
-              style={[
-                styles.statusBadge,
-                hasDuration ? styles.statusDone : styles.statusActive,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.statusText,
-                  hasDuration ? styles.statusDoneText : styles.statusActiveText,
-                ]}
-              >
-                {hasDuration ? "Hoàn tất" : "Đang sạc"}
+            <View style={[styles.statusBadge, styles.statusActive]}>
+              <Text style={[styles.statusText, styles.statusActiveText]}>
+                Đang sạc
               </Text>
             </View>
           </View>
@@ -208,9 +198,8 @@ const LatestHistory = ({ history }) => {
         </View>
       ) : (
         <View style={[styles.card, styles.emptyCard]}>
-          <Text style={styles.emptyTitle}>Chưa có lịch sử sạc gần nhất</Text>
-          <Text style={styles.emptySubtitle}>
-            Sau khi hoàn tất phiên sạc, thông tin sẽ hiển thị tại đây.
+          <Text style={styles.emptyTitle}>
+            Hiện tại bạn đang không sử dụng sạc
           </Text>
         </View>
       )}

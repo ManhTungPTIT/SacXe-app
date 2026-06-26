@@ -13,6 +13,9 @@ Notifications.setNotificationHandler({
 });
 
 export async function registerForPushNotificationsAsync() {
+  // Tạm thời bỏ qua việc lấy push token khi chưa cấu hình Firebase để tránh lỗi console
+  return null;
+
   let token = null;
 
   // Bước 1: Kiểm tra thiết bị vật lý (không phải emulator)
