@@ -194,13 +194,13 @@ const MapComponent = ({
       )}
 
       {/* Hiển thị danh sách thiết bị gần đây */}
-      {listDevices.length > 0 && (
-        <View style={styles.bottomListContainer}>
-          <Text style={styles.bottomListTitle}>
-            {isSearching
-              ? `Kết quả tìm kiếm (${listDevices.length})`
-              : `Chỗ sạc gần bạn (${listDevices.length})`}
-          </Text>
+      <View style={styles.bottomListContainer}>
+        <Text style={styles.bottomListTitle}>
+          {isSearching
+            ? `Kết quả tìm kiếm (${listDevices.length})`
+            : `Trụ sạc gần bạn (${listDevices.length})`}
+        </Text>
+        {listDevices.length > 0 ? (
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.bottomListContent}
@@ -271,8 +271,28 @@ const MapComponent = ({
               </TouchableOpacity>
             ))}
           </ScrollView>
-        </View>
-      )}
+        ) : (
+          <View style={styles.emptyContainer}>
+            <View style={styles.emptyIconWrapper}>
+              <MaterialIcons
+                name="ev-station"
+                size={32}
+                color={Colors.primary}
+              />
+            </View>
+            <Text style={styles.emptyTitle}>
+              {isSearching
+                ? "Không tìm thấy kết quả"
+                : "Không có trụ sạc gần đây"}
+            </Text>
+            <Text style={styles.emptyDescription}>
+              {isSearching
+                ? "Hãy thử tìm kiếm bằng từ khóa khác hoặc kiểm tra lại mã trụ sạc."
+                : "Trong bán kính 1km xung quanh bạn hiện chưa có trụ sạc nào khả dụng."}
+            </Text>
+          </View>
+        )}
+      </View>
     </View>
   );
 };
@@ -398,6 +418,7 @@ const styles = StyleSheet.create({
     height: "45%", // Chiếm 45% màn hình ở dưới
     backgroundColor: Colors.cardBgLight,
     paddingTop: 16,
+    paddingBottom: 16,
     paddingHorizontal: 16,
     shadowColor: Colors.black,
     shadowOffset: { width: 0, height: -2 },
@@ -483,5 +504,33 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: "center",
     fontWeight: "500",
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.borderGreenLight,
+    marginTop: 8,
+  },
+  emptyIconWrapper: {
+    marginBottom: 12,
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  emptyDescription: {
+    fontSize: 12.5,
+    color: Colors.textSecondary,
+    textAlign: "center",
+    lineHeight: 18,
+    paddingHorizontal: 12,
   },
 });
