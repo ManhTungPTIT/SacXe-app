@@ -117,6 +117,8 @@ const MyBikeComponent = ({
                 </View>
               </View>
 
+              <Text style={styles.statsTitle}>Thống kê tháng này</Text>
+
               <View style={styles.quickStatsRow}>
                 <View style={styles.quickStatItem}>
                   <Text style={styles.quickStatValue}>
@@ -303,6 +305,12 @@ const styles = StyleSheet.create({
     color: "#1F2937",
     flexShrink: 1,
     textAlign: "right",
+  },
+  statsTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: Colors.textPrimaryDark,
+    marginBottom: 8,
   },
   quickStatsRow: {
     flexDirection: "row",
