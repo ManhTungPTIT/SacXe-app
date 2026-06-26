@@ -168,7 +168,7 @@ const FeedbackScreen = ({ navigation }) => {
           Alert.alert(
             "Thông báo",
             error?.response?.data?.message ||
-              "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
           );
         },
       },
@@ -214,12 +214,12 @@ const FeedbackScreen = ({ navigation }) => {
           </View>
 
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>1. Mã thiết bị</Text>
+            <Text style={styles.sectionTitle}>1. Mã QR trên trụ sạc</Text>
 
             <View style={styles.deviceCodeBox}>
               <Ionicons name="qr-code" size={20} color={Colors.primary} />
               <Text style={styles.deviceCodeText} numberOfLines={2}>
-                {deviceCode || "Chưa quét mã thiết bị"}
+                {deviceCode || "Chưa có thông tin trụ sạc"}
               </Text>
             </View>
 
@@ -227,9 +227,9 @@ const FeedbackScreen = ({ navigation }) => {
               style={styles.primaryButton}
               onPress={openScanner}
             >
-              <Ionicons name="scan" size={18} color={Colors.white} />
+              <Ionicons name="scan" size={18} color={Colors.primary} />
               <Text style={styles.primaryButtonText}>
-                {deviceCode ? "Quét lại mã" : "Quét mã thiết bị"}
+                {deviceCode ? "Quét lại mã" : "Quét mã trên trụ sạc"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -402,7 +402,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.borderGreenLight,
-    backgroundColor: Colors.cardBgGreen,
+    borderStyle: "dashed",
+    backgroundColor: Colors.white,
     paddingHorizontal: 12,
     paddingVertical: 12,
     flexDirection: "row",
@@ -417,14 +418,18 @@ const styles = StyleSheet.create({
   primaryButton: {
     height: 46,
     borderRadius: 12,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.cardBgGreen,
+    borderWidth: 1,
+    borderColor: Colors.borderGreenLight,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     gap: 8,
+    alignSelf: "center",
+    paddingHorizontal: 16,
   },
   primaryButtonText: {
-    color: Colors.white,
+    color: Colors.primary,
     fontWeight: "700",
     fontSize: 15,
   },
@@ -450,6 +455,8 @@ const styles = StyleSheet.create({
   },
   photoActionsRow: {
     flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     gap: 10,
   },
   secondaryButton: {
