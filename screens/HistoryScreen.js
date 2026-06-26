@@ -95,7 +95,7 @@ const formatElapsedDuration = (duration) => {
   return `${hours} giờ ${minutes} phút ${seconds} giây`;
 };
 
-const HistoryScreen = () => {
+const HistoryScreen = ({ navigation }) => {
   const queryClient = useQueryClient();
   const socketContext = useContext(SocketContext);
   const socket = socketContext?.socket;
@@ -300,11 +300,19 @@ const HistoryScreen = () => {
                   ? "charging"
                   : "waiting";
                 const isChargingState = status === "charging";
+                const SessionCard = isChargingState ? TouchableOpacity : View;
+                const sessionCardProps = isChargingState
+                  ? {
+                      onPress: () => navigation.navigate("Charge"),
+                      activeOpacity: 0.88,
+                    }
+                  : {};
 
                 return (
-                  <View
+                  <SessionCard
                     key={item?._id ?? `${item?.createdAt}-${index}`}
                     style={styles.sessionCard}
+                    {...sessionCardProps}
                   >
                     <View style={styles.cardHeader}>
                       <Text style={styles.cardTitle}>
@@ -366,7 +374,7 @@ const HistoryScreen = () => {
                       <Text style={styles.infoLabel}>Tổng thời gian sạc</Text>
                       <Text style={styles.infoValue}>{displayDuration}</Text>
                     </View>
-                  </View>
+                  </SessionCard>
                 );
               })
             ) : (
