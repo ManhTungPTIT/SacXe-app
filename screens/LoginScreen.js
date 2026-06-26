@@ -5,6 +5,7 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  Image,
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
@@ -18,6 +19,7 @@ import { useAuthStore } from "../stores/auth.store";
 import Entypo from "@expo/vector-icons/Entypo";
 
 const loginBackground = require("../assets/background.png");
+const enovoLogo = require("../assets/enovo_logo.png");
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
@@ -45,7 +47,7 @@ const LoginScreen = ({ navigation }) => {
           Alert.alert(
             "Thông báo",
             error.response?.data?.message ||
-              "Đăng nhập thất bại. Vui lòng thử lại.",
+            "Đăng nhập thất bại. Vui lòng thử lại.",
           );
         },
         onSuccess: async (data) => {
@@ -71,6 +73,7 @@ const LoginScreen = ({ navigation }) => {
             style={styles.keyboardWrap}
             behavior={Platform.OS === "ios" ? "padding" : "height"}
           >
+            <Image source={enovoLogo} style={styles.logo} resizeMode="contain" />
             <View style={styles.container}>
               <Text style={styles.title}>Đăng nhập</Text>
 
@@ -158,6 +161,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 16,
     elevation: 5,
+  },
+  logo: {
+    width: "150%",
+    height: 150,
+    alignSelf: "center",
+    marginBottom: 20,
   },
   title: {
     fontSize: 28,

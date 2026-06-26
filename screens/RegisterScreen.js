@@ -20,6 +20,7 @@ import { useAuth } from "../queries/auth.query";
 import { TouchableWithoutFeedback } from "react-native";
 
 const registerBackground = require("../assets/background.png");
+const enovoLogo = require("../assets/enovo_logo.png");
 
 const RegisterScreen = ({ navigation }) => {
   const [name, setName] = useState("");
@@ -108,6 +109,7 @@ const RegisterScreen = ({ navigation }) => {
               contentContainerStyle={styles.scrollContent}
               showsVerticalScrollIndicator={false}
             >
+              <Image source={enovoLogo} style={styles.logo} resizeMode="contain" />
               <View style={styles.container}>
                 <Text style={styles.title}>Đăng ký</Text>
 
@@ -247,6 +249,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 16,
     elevation: 5,
+  },
+  logo: {
+    width: "150%",
+    height: 150,
+    alignSelf: "center",
+    marginBottom: 20,
   },
   title: {
     fontSize: 28,
