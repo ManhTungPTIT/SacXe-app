@@ -171,7 +171,7 @@ const MapComponent = ({
         </MapView>
       ) : (
         <View style={styles.mapFallback}>
-          <MaterialIcons name="map" size={48} color="#9CA3AF" />
+          <MaterialIcons name="map" size={48} color={Colors.grayMuted} />
           <Text style={styles.mapFallbackText}>
             Bản đồ tạm thời không khả dụng
           </Text>
@@ -189,7 +189,7 @@ const MapComponent = ({
           ]}
           onPress={goToMyLocation}
         >
-          <MaterialIcons name="my-location" size={24} color="#007BFF" />
+          <MaterialIcons name="my-location" size={24} color={Colors.primaryBlue} />
         </TouchableOpacity>
       )}
 
@@ -286,10 +286,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
   },
   loadingText: {
-    color: "#6b7280",
+    color: Colors.textSecondary,
     fontSize: 14,
   },
   permissionContainer: {
@@ -297,17 +297,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 24,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
   },
   permissionTitle: {
     marginTop: 12,
     fontSize: 22,
     fontWeight: "700",
-    color: "#1E1E1E",
+    color: Colors.textDark,
   },
   permissionDescription: {
     marginTop: 10,
-    color: "#666",
+    color: Colors.textSecondary,
     textAlign: "center",
     lineHeight: 22,
   },
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   permissionPrimaryButtonText: {
-    color: "#FFFFFF",
+    color: Colors.white,
     fontWeight: "700",
   },
   permissionSecondaryButton: {
@@ -336,20 +336,20 @@ const styles = StyleSheet.create({
     height: 30,
     borderRadius: 5,
     borderWidth: 2,
-    borderColor: "#333",
+    borderColor: Colors.textPrimary,
   },
   markerIconAvailable: {
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
   },
   markerIconUnavailable: {
-    backgroundColor: "#ff1e00",
+    backgroundColor: Colors.danger,
   },
   calloutContainer: {
     backgroundColor: "white",
     borderRadius: 8,
     padding: 12,
     width: 250,
-    shadowColor: "#000",
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
@@ -358,17 +358,17 @@ const styles = StyleSheet.create({
   calloutTitle: {
     fontWeight: "bold",
     fontSize: 16,
-    color: "#333",
+    color: Colors.textPrimary,
     marginBottom: 6,
   },
   calloutText: {
     fontSize: 14,
-    color: "#555",
+    color: Colors.textSecondary,
     marginBottom: 4,
   },
   calloutHint: {
     fontSize: 12,
-    color: "#007BFF",
+    color: Colors.primaryBlue,
     marginTop: 8,
     fontStyle: "italic",
     textAlign: "right",
@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
@@ -396,10 +396,10 @@ const styles = StyleSheet.create({
   },
   bottomListContainer: {
     height: "45%", // Chiếm 45% màn hình ở dưới
-    backgroundColor: "#F8F9FA",
+    backgroundColor: Colors.cardBgLight,
     paddingTop: 16,
     paddingHorizontal: 16,
-    shadowColor: "#000",
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 5,
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
   bottomListTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
+    color: Colors.textPrimary,
     marginBottom: 12,
     paddingHorizontal: 4,
   },
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
-    shadowColor: "#000",
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
@@ -445,15 +445,15 @@ const styles = StyleSheet.create({
   listItemTitle: {
     fontWeight: "bold",
     fontSize: 16,
-    color: "#333",
+    color: Colors.textPrimary,
   },
   listItemText: {
     fontSize: 13,
-    color: "#555",
+    color: Colors.textSecondary,
     marginBottom: 2,
   },
   listNavButton: {
-    backgroundColor: "#007BFF",
+    backgroundColor: Colors.primaryBlue,
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 12,
@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
   },
   listNavButtonUnavailable: {
-    backgroundColor: "#ff1e00",
+    backgroundColor: Colors.danger,
   },
   listNavButtonText: {
     color: "white",
@@ -474,13 +474,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: Colors.bgGrayLight,
     padding: 20,
   },
   mapFallbackText: {
     marginTop: 8,
     fontSize: 15,
-    color: "#6B7280",
+    color: Colors.textSecondary,
     textAlign: "center",
     fontWeight: "500",
   },

@@ -187,7 +187,7 @@ const FeedbackScreen = ({ navigation }) => {
             onPress={() => navigation.goBack()}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+            <Ionicons name="chevron-back" size={24} color={Colors.white} />
           </TouchableOpacity>
           <Text style={styles.appHeaderTitle}>Phản ánh sự cố</Text>
           <View style={styles.headerPlaceholder} />
@@ -227,7 +227,7 @@ const FeedbackScreen = ({ navigation }) => {
               style={styles.primaryButton}
               onPress={openScanner}
             >
-              <Ionicons name="scan" size={18} color="#FFFFFF" />
+              <Ionicons name="scan" size={18} color={Colors.white} />
               <Text style={styles.primaryButtonText}>
                 {deviceCode ? "Quét lại mã" : "Quét mã thiết bị"}
               </Text>
@@ -268,7 +268,7 @@ const FeedbackScreen = ({ navigation }) => {
                   style={styles.removeButton}
                   onPress={() => setPhotoUri("")}
                 >
-                  <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
+                  <Ionicons name="trash-outline" size={18} color={Colors.white} />
                   <Text style={styles.removeButtonText}>Bỏ ảnh</Text>
                 </TouchableOpacity>
               ) : null}
@@ -281,7 +281,7 @@ const FeedbackScreen = ({ navigation }) => {
               value={message}
               onChangeText={setMessage}
               placeholder="Mô tả sự cố, ví dụ: ổ cắm sạc không vào điện, màn hình báo lỗi..."
-              placeholderTextColor="#9AA0A6"
+              placeholderTextColor={Colors.textPlaceholder}
               style={styles.messageInput}
               multiline
               textAlignVertical="top"
@@ -298,7 +298,7 @@ const FeedbackScreen = ({ navigation }) => {
             disabled={!canSubmit || isSubmitting}
             onPress={handleSubmit}
           >
-            <Ionicons name="send" size={18} color="#FFFFFF" />
+            <Ionicons name="send" size={18} color={Colors.white} />
             <Text style={styles.submitButtonText}>
               {isSubmitting ? "Đang gửi..." : "Gửi phản ánh"}
             </Text>
@@ -332,7 +332,7 @@ const FeedbackScreen = ({ navigation }) => {
               style={styles.closeScannerButton}
               onPress={closeScanner}
             >
-              <Ionicons name="close" size={22} color="#FFFFFF" />
+              <Ionicons name="close" size={22} color={Colors.white} />
               <Text style={styles.closeScannerText}>Đóng</Text>
             </TouchableOpacity>
           </View>
@@ -359,17 +359,17 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.secondary,
   },
   headerCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.white,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#E7EEE9",
+    borderColor: Colors.borderGreenLight,
   },
   headerIconWrap: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "#EAF9EF",
+    backgroundColor: Colors.successBgLight,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 10,
@@ -377,32 +377,32 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#15211A",
+    color: Colors.textDarkGreen,
   },
   headerDescription: {
     marginTop: 6,
-    color: "#5D6760",
+    color: Colors.textSecondary,
     lineHeight: 20,
   },
   sectionCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.white,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#E7EEE9",
+    borderColor: Colors.borderGreenLight,
     gap: 12,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#19231D",
+    color: Colors.textDark,
   },
   deviceCodeBox: {
     minHeight: 54,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#D8E7DD",
-    backgroundColor: "#F7FCF9",
+    borderColor: Colors.borderGreenLight,
+    backgroundColor: Colors.cardBgGreen,
     paddingHorizontal: 12,
     paddingVertical: 12,
     flexDirection: "row",
@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
   },
   deviceCodeText: {
     flex: 1,
-    color: "#243128",
+    color: Colors.textDarkGreen,
     fontWeight: "600",
   },
   primaryButton: {
@@ -424,29 +424,29 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   primaryButtonText: {
-    color: "#FFFFFF",
+    color: Colors.white,
     fontWeight: "700",
     fontSize: 15,
   },
   imagePlaceholder: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#D8E0DA",
+    borderColor: Colors.borderGreenLight,
     borderStyle: "dashed",
     height: 180,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FBFDFC",
+    backgroundColor: Colors.white,
     gap: 8,
   },
   imagePlaceholderText: {
-    color: "#76817A",
+    color: Colors.textSecondary,
   },
   previewImage: {
     width: "100%",
     height: 220,
     borderRadius: 12,
-    backgroundColor: "#E5E5EA",
+    backgroundColor: Colors.border,
   },
   photoActionsRow: {
     flexDirection: "row",
@@ -459,8 +459,8 @@ const styles = StyleSheet.create({
     gap: 8,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#B9D8C3",
-    backgroundColor: "#F2FBF5",
+    borderColor: Colors.borderGreenLight,
+    backgroundColor: Colors.cardBgGreen,
     height: 44,
     paddingHorizontal: 14,
   },
@@ -474,28 +474,28 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     borderRadius: 12,
-    backgroundColor: "#FF6B6B",
+    backgroundColor: Colors.danger,
     height: 44,
     paddingHorizontal: 14,
   },
   removeButtonText: {
-    color: "#FFFFFF",
+    color: Colors.white,
     fontWeight: "700",
   },
   messageInput: {
     minHeight: 140,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#D8E0DA",
+    borderColor: Colors.borderGreenLight,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 15,
-    color: "#1F2822",
-    backgroundColor: "#FBFDFC",
+    color: Colors.textDarkGreen,
+    backgroundColor: Colors.white,
   },
   charCount: {
     alignSelf: "flex-end",
-    color: "#7C867F",
+    color: Colors.textSecondary,
     fontSize: 12,
   },
   submitButton: {
@@ -513,13 +513,13 @@ const styles = StyleSheet.create({
     opacity: 0.55,
   },
   submitButtonText: {
-    color: "#FFFFFF",
+    color: Colors.white,
     fontWeight: "700",
     fontSize: 16,
   },
   scannerContainer: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: Colors.black,
   },
   scannerOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -531,12 +531,12 @@ const styles = StyleSheet.create({
     height: 260,
     borderRadius: 24,
     borderWidth: 3,
-    borderColor: "#FFFFFF",
-    backgroundColor: "rgba(255,255,255,0.08)",
+    borderColor: Colors.white,
+    backgroundColor: Colors.whiteTranslucent08,
   },
   scannerGuideText: {
     marginTop: 20,
-    color: "#FFFFFF",
+    color: Colors.white,
     fontSize: 15,
     fontWeight: "600",
     textAlign: "center",
@@ -549,13 +549,13 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 14,
     height: 42,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: Colors.overlayBgLight,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
   closeScannerText: {
-    color: "#FFFFFF",
+    color: Colors.white,
     fontWeight: "700",
   },
   appHeader: {
@@ -566,7 +566,7 @@ const styles = StyleSheet.create({
     height: 56,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.1)",
+    borderBottomColor: Colors.whiteTranslucent10,
   },
   backButton: {
     padding: 4,
@@ -575,7 +575,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   appHeaderTitle: {
-    color: "#FFFFFF",
+    color: Colors.white,
     fontSize: 18,
     fontWeight: "700",
     textAlign: "center",
