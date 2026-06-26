@@ -70,6 +70,12 @@ export const Colors = {
   infoBg: "#F4F9FD",           // Info box blue background
   infoBorder: "#E1F3FE",       // Info box blue border
 
+  // Toast Notification Colors
+  toastSuccessBg: "#EDF3EC",   // Muted Pastel Green Background
+  toastSuccessText: "#346538", // Deep Green text
+  toastSuccessDesc: "#4C5B4E", // Dark gray/green text
+  toastProgressBar: "#CDE8D7", // Progress bar indicator color
+
   // Translucent RGBA colors
   overlayBg: "rgba(0, 0, 0, 0.5)",             // Translucent black overlay background
   overlayBgLight: "rgba(0, 0, 0, 0.45)",        // Lighter translucent black overlay
