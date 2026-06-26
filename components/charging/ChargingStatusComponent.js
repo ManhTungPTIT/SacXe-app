@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { ActivityIndicator, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Colors } from "../../constants/color";
 import { vietnamDate, vietnamTime } from "../../utils/time";
@@ -37,9 +37,14 @@ const ChargingStatusComponent = ({ chargingStartTime, onStopCharging, isStopping
         activeOpacity={0.8}
         disabled={isStopping}
       >
-        <Text style={[styles.stopButtonText, isStopping && styles.stopButtonTextDisabled]}>
-          {isStopping ? "Đang dừng sạc..." : "Dừng sạc xe"}
-        </Text>
+        <View style={styles.stopButtonContent}>
+          {isStopping && (
+            <ActivityIndicator size="small" color={Colors.white} />
+          )}
+          <Text style={[styles.stopButtonText, isStopping && styles.stopButtonTextDisabled]}>
+            Dừng sạc xe
+          </Text>
+        </View>
       </TouchableOpacity>
     </View>
   );
@@ -113,6 +118,13 @@ const styles = StyleSheet.create({
   },
   stopButtonDisabled: {
     backgroundColor: Colors.accentGreen,
+  },
+  stopButtonContent: {
+    minHeight: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
   },
   stopButtonText: {
     color: Colors.white,

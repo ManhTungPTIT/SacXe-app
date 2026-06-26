@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Modal,
   StyleSheet,
@@ -36,6 +37,13 @@ const DevicesComponents = ({
   const selectedOutletIndex = selectedPowerOutlet
     ? devices.findIndex((device) => device?._id === selectedPowerOutlet?._id) + 1
     : null;
+  const isStarting =
+    initiateChargeMutation.isLoading || initiateChargeMutation.isPending;
+
+  const resetConfirmModal = () => {
+    setConfirmModalVisible(false);
+    setSelectedPowerOutlet(null);
+  };
 
   const handleInitiateCharge = (powerId) => {
     setPowerId(powerId);
@@ -57,6 +65,7 @@ const DevicesComponents = ({
           setDevices(null);
           onChargeStarted?.();
         },
+        onSettled: resetConfirmModal,
       },
     );
   };
@@ -68,18 +77,19 @@ const DevicesComponents = ({
   };
 
   const handleCloseConfirmModal = () => {
-    setConfirmModalVisible(false);
-    setSelectedPowerOutlet(null);
+    if (isStarting) return;
+    resetConfirmModal();
   };
 
   const handleConfirmInitiateCharge = () => {
+    if (isStarting) return;
+
     if (!selectedPowerOutlet?._id) {
       handleCloseConfirmModal();
       return;
     }
 
     handleInitiateCharge(selectedPowerOutlet._id);
-    handleCloseConfirmModal();
   };
 
   return (
@@ -190,22 +200,36 @@ const DevicesComponents = ({
 
             <View style={styles.modalActionRow}>
               <TouchableOpacity
-                style={styles.cancelButton}
+                style={[
+                  styles.cancelButton,
+                  isStarting && styles.cancelButtonDisabled,
+                ]}
                 onPress={handleCloseConfirmModal}
+                disabled={isStarting}
               >
-                <Text style={styles.cancelButtonText}>Hủy</Text>
+                <Text
+                  style={[
+                    styles.cancelButtonText,
+                    isStarting && styles.cancelButtonTextDisabled,
+                  ]}
+                >
+                  Hủy
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
                   styles.confirmButton,
-                  initiateChargeMutation.isPending && styles.confirmButtonDisabled,
+                  isStarting && styles.confirmButtonDisabled,
                 ]}
                 onPress={handleConfirmInitiateCharge}
-                disabled={initiateChargeMutation.isPending}
+                disabled={isStarting}
               >
-                <Text style={styles.confirmButtonText}>
-                  {initiateChargeMutation.isPending ? "Đang bắt đầu..." : "Xác nhận"}
-                </Text>
+                <View style={styles.confirmButtonContent}>
+                  {isStarting && (
+                    <ActivityIndicator size="small" color={Colors.white} />
+                  )}
+                  <Text style={styles.confirmButtonText}>Xác nhận</Text>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -481,10 +505,17 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: "center",
   },
+  cancelButtonDisabled: {
+    backgroundColor: Colors.bgLightMuted,
+    borderColor: Colors.borderMuted,
+  },
   cancelButtonText: {
     color: Colors.textSecondary,
     fontWeight: "700",
     fontSize: 15,
+  },
+  cancelButtonTextDisabled: {
+    color: Colors.inactive,
   },
   confirmButton: {
     flex: 1,
@@ -495,6 +526,13 @@ const styles = StyleSheet.create({
   },
   confirmButtonDisabled: {
     backgroundColor: Colors.accentGreen,
+  },
+  confirmButtonContent: {
+    minHeight: 19,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
   },
   confirmButtonText: {
     color: Colors.white,
