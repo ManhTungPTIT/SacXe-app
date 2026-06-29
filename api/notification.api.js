@@ -8,9 +8,11 @@ export const notificationApi = {
       throw error;
     }
   },
-  getNotifications: async () => {
+  getNotifications: async ({ page = 1, limit = 10 } = {}) => {
     try {
-      const response = await api.get("/api/notification/get-notifications");
+      const response = await api.get(
+        `/api/notification/get-notifications?page=${page}&limit=${limit}`,
+      );
       return response;
     } catch (error) {
       throw error;

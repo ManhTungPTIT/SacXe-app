@@ -65,6 +65,9 @@ const getNotificationMeta = (title = "") => {
 
 const NotificationComponent = ({
   notifications,
+  page = 1,
+  limit = 10,
+  onPageChange,
   notificationsModalVisible,
   handleCloseNotificationsModal,
   onNotificationPress,
@@ -83,7 +86,8 @@ const NotificationComponent = ({
     return [];
   }, [notifications]);
 
-  const unreadCount = notificationItems.filter((item) => !item?.isRead).length;
+  const totalItems = notifications?.total ?? notificationItems.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / limit));
   const listMaxHeight = Math.min(screenHeight * 0.55, 420);
   const dynamicStyles = useMemo(
     () =>
@@ -201,6 +205,58 @@ const NotificationComponent = ({
               <Text style={styles.emptyDescription}>
                 Khi có cập nhật mới về phiên sạc, bạn sẽ thấy tại đây.
               </Text>
+            </View>
+          )}
+
+          {totalPages > 1 && (
+            <View style={styles.paginationContainer}>
+              <TouchableOpacity
+                style={styles.pageButton}
+                onPress={() => onPageChange?.(Math.max(1, page - 1))}
+                disabled={page === 1}
+                activeOpacity={0.5}
+              >
+                <Ionicons
+                  name="chevron-back"
+                  size={14}
+                  color={page === 1 ? Colors.inactive : Colors.textPrimary}
+                />
+                <Text
+                  style={[
+                    styles.pageButtonText,
+                    page === 1 && styles.pageButtonTextDisabled,
+                  ]}
+                >
+                  Trước
+                </Text>
+              </TouchableOpacity>
+
+              <Text style={styles.pageInfoText}>
+                {page} / {totalPages}
+              </Text>
+
+              <TouchableOpacity
+                style={styles.pageButton}
+                onPress={() => onPageChange?.(Math.min(totalPages, page + 1))}
+                disabled={page === totalPages}
+                activeOpacity={0.5}
+              >
+                <Text
+                  style={[
+                    styles.pageButtonText,
+                    page === totalPages && styles.pageButtonTextDisabled,
+                  ]}
+                >
+                  Sau
+                </Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={14}
+                  color={
+                    page === totalPages ? Colors.inactive : Colors.textPrimary
+                  }
+                />
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -372,6 +428,33 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 11,
     color: Colors.textSlateLight,
+  },
+  paginationContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
+    gap: 16,
+  },
+  pageButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  pageButtonText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: Colors.textPrimary,
+  },
+  pageButtonTextDisabled: {
+    color: Colors.inactive,
+  },
+  pageInfoText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.textSecondary,
   },
 });
 

@@ -1,4 +1,5 @@
-import MapView, { Marker, Callout } from "react-native-maps";
+import { GoogleMaps, AppleMaps } from "expo-maps";
+import { useImage } from "expo-image";
 import {
   StyleSheet,
   View,
@@ -10,6 +11,7 @@ import {
 } from "react-native";
 import { useRef } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import Constants from "expo-constants";
 import { Colors } from "../constants/color";
 
 // Hàm tính khoảng cách giữa 2 tọa độ (Haversine formula)
@@ -27,9 +29,6 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return (R * c).toFixed(1); // Trả về dạng xy.z km
 };
 
-// Tạm thời tắt bản đồ trên Android để tránh văng app khi API key chưa được cấu hình hoặc hết hạn
-const IS_MAP_ENABLED = Platform.OS === "ios";
-
 const MapComponent = ({
   eChargeDevices,
   location,
@@ -41,6 +40,10 @@ const MapComponent = ({
   onOpenLocationSettings,
 }) => {
   const mapRef = useRef(null);
+  const isAndroidMapUnavailable =
+    Platform.OS === "android" &&
+    Constants.expoConfig?.extra?.isAndroidMapEnabled !== true;
+
   const listDevices = Array.isArray(
     isSearching ? eChargeDevices?.allDevices : eChargeDevices?.nearbyDevices,
   )
@@ -49,16 +52,95 @@ const MapComponent = ({
       : eChargeDevices.nearbyDevices
     : [];
 
+  const chargeIcon = useImage(require("../assets/enovo_map_pin.png"), {
+    maxWidth: 120,
+    maxHeight: 120,
+  });
+
+  const formattedMarkers = (eChargeDevices?.allDevices || []).map((device) => ({
+    id: device.deviceCode,
+    coordinates: {
+      latitude: Number(device.latitude),
+      longitude: Number(device.longitude),
+    },
+    title: `${device.deviceCode} (Trống ${device.availableSlots} chỗ)`,
+    icon: chargeIcon,
+  }));
+
+  const handleMarkerClick = (marker) => {
+    const device = eChargeDevices?.allDevices?.find(
+      (d) => d.deviceCode === marker.id
+    );
+    if (device) {
+      mapRef.current?.setCameraPosition({
+        coordinates: {
+          latitude: Number(device.latitude),
+          longitude: Number(device.longitude),
+        },
+        zoom: 16,
+        duration: 1000,
+      });
+    }
+  };
+
   const goToMyLocation = () => {
     if (location && mapRef.current) {
-      mapRef.current.animateToRegion(
-        {
+      mapRef.current.setCameraPosition({
+        coordinates: {
           latitude: location.latitude,
           longitude: location.longitude,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
         },
-        1000,
+        zoom: 13,
+        duration: 1000,
+      });
+    }
+  };
+
+  const renderMapView = () => {
+    if (Platform.OS === "android") {
+      return (
+        <GoogleMaps.View
+          ref={mapRef}
+          style={styles.map}
+          colorScheme="LIGHT"
+          cameraPosition={{
+            coordinates: {
+              latitude: location.latitude,
+              longitude: location.longitude,
+            },
+            zoom: 13,
+          }}
+          markers={formattedMarkers}
+          properties={{
+            isMyLocationEnabled: true,
+          }}
+          uiSettings={{
+            myLocationButtonEnabled: false,
+          }}
+          onMarkerClick={handleMarkerClick}
+        />
+      );
+    } else {
+      return (
+        <AppleMaps.View
+          ref={mapRef}
+          style={styles.map}
+          cameraPosition={{
+            coordinates: {
+              latitude: location.latitude,
+              longitude: location.longitude,
+            },
+            zoom: 13,
+          }}
+          annotations={formattedMarkers}
+          properties={{
+            isMyLocationEnabled: true,
+          }}
+          uiSettings={{
+            myLocationButtonEnabled: false,
+          }}
+          onMarkerClick={handleMarkerClick}
+        />
       );
     }
   };
@@ -109,77 +191,17 @@ const MapComponent = ({
 
   return (
     <View style={styles.container}>
-      {IS_MAP_ENABLED ? (
-        <MapView
-          ref={mapRef}
-          showsUserLocation={true}
-          style={styles.map}
-          initialRegion={{
-            latitude: location.latitude,
-            longitude: location.longitude,
-            latitudeDelta: 0.05,
-            longitudeDelta: 0.05,
-          }}
-        >
-          {eChargeDevices?.allDevices?.map((device, index) => (
-            <Marker
-              key={index}
-              coordinate={{
-                latitude: Number(device.latitude),
-                longitude: Number(device.longitude),
-              }}
-            >
-              <Image
-                source={require("../assets/charge.png")}
-                style={[
-                  styles.markerIcon,
-                  Number(device.availableSlots) > 0
-                    ? styles.markerIconAvailable
-                    : styles.markerIconUnavailable,
-                ]}
-                resizeMode="contain"
-              />
-              <Callout
-                tooltip
-                onPress={() => openNavigation(device.latitude, device.longitude)}
-              >
-                <View style={styles.calloutContainer}>
-                  <Text style={styles.calloutTitle}>{device.deviceCode}</Text>
-
-                  <Text style={styles.calloutText}>
-                    📍 Khoảng cách:{" "}
-                    {calculateDistance(
-                      location.latitude,
-                      location.longitude,
-                      Number(device.latitude),
-                      Number(device.longitude),
-                    )}{" "}
-                    km
-                  </Text>
-
-                  {device.address && (
-                    <Text style={styles.calloutText} numberOfLines={2}>
-                      🏠 Địa chỉ: {device.address}
-                    </Text>
-                  )}
-
-                  <Text style={styles.calloutHint}>Bấm để chỉ đường</Text>
-                </View>
-              </Callout>
-            </Marker>
-          ))}
-        </MapView>
-      ) : (
-        <View style={styles.mapFallback}>
-          <MaterialIcons name="map" size={48} color={Colors.grayMuted} />
-          <Text style={styles.mapFallbackText}>
-            Bản đồ tạm thời không khả dụng
-          </Text>
+      {isAndroidMapUnavailable ? (
+        <View style={styles.mapUnavailableContainer}>
+          <MaterialIcons name="map" size={42} color={Colors.textSecondary} />
+          <Text style={styles.mapUnavailableText}>bản đồ không khả dụng</Text>
         </View>
+      ) : (
+        renderMapView()
       )}
 
       {/* Nút quay về vị trí của tôi */}
-      {IS_MAP_ENABLED && (
+      {!isAndroidMapUnavailable && (
         <TouchableOpacity
           style={[
             styles.myLocationButton,
@@ -211,15 +233,14 @@ const MapComponent = ({
                 key={index}
                 style={styles.listItemCard}
                 onPress={() => {
-                  mapRef.current?.animateToRegion(
-                    {
+                  mapRef.current?.setCameraPosition({
+                    coordinates: {
                       latitude: Number(device.latitude),
                       longitude: Number(device.longitude),
-                      latitudeDelta: 0.005,
-                      longitudeDelta: 0.005,
                     },
-                    1000,
-                  );
+                    zoom: 16,
+                    duration: 1000,
+                  });
                 }}
               >
                 <View style={styles.listItemInfo}>
@@ -288,7 +309,7 @@ const MapComponent = ({
             <Text style={styles.emptyDescription}>
               {isSearching
                 ? "Hãy thử tìm kiếm bằng từ khóa khác hoặc kiểm tra lại mã trụ sạc."
-                : "Trong bán kính 1km xung quanh bạn hiện chưa có trụ sạc nào khả dụng."}
+                : "Trong bán kính 5km xung quanh bạn hiện chưa có trụ sạc nào khả dụng."}
             </Text>
           </View>
         )}
@@ -302,6 +323,21 @@ export default MapComponent;
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
+  mapUnavailableContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: Colors.bgLightMuted,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderMuted,
+  },
+  mapUnavailableText: {
+    color: Colors.textSecondary,
+    fontSize: 15,
+    fontWeight: "700",
+    textAlign: "center",
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -490,20 +526,6 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
     fontSize: 13,
-  },
-  mapFallback: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: Colors.bgGrayLight,
-    padding: 20,
-  },
-  mapFallbackText: {
-    marginTop: 8,
-    fontSize: 15,
-    color: Colors.textSecondary,
-    textAlign: "center",
-    fontWeight: "500",
   },
   emptyContainer: {
     flex: 1,

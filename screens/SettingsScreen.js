@@ -56,6 +56,7 @@ const SETTINGS_ACTIONS = [
 ];
 
 const SettingsScreen = ({ navigation }) => {
+  const NOTIFICATIONS_LIMIT = 10;
   const storeUser = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const logoutMutation = useAuth.useLogout();
@@ -82,11 +83,16 @@ const SettingsScreen = ({ navigation }) => {
   const [myBikeModalVisible, setMyBikeModalVisible] = useState(false);
   const [notificationsModalVisible, setNotificationsModalVisible] =
     useState(false);
+  const [notificationsPage, setNotificationsPage] = useState(1);
   const [aboutEnovoModalVisible, setAboutEnovoModalVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
 
-  const { data: notifications } = useNotificationQuery.useGetNotifications(true);
+  const { data: notifications } = useNotificationQuery.useGetNotifications({
+    enabled: true,
+    page: notificationsPage,
+    limit: NOTIFICATIONS_LIMIT,
+  });
   const markNotificationAsReadMutation = useNotificationQuery.useMarkAsRead();
 
   const notificationItems = useMemo(() => {
@@ -100,8 +106,11 @@ const SettingsScreen = ({ navigation }) => {
   }, [notifications]);
 
   const unreadCount = useMemo(() => {
-    return notificationItems.filter((item) => !item?.isRead).length;
-  }, [notificationItems]);
+    return (
+      notifications?.unreadTotal ??
+      notificationItems.filter((item) => !item?.isRead).length
+    );
+  }, [notifications?.unreadTotal, notificationItems]);
 
   const ownerName = userData?.user?.name || storeUser?.name || "Người dùng";
   const ownerBalance = Number(
@@ -207,6 +216,7 @@ const SettingsScreen = ({ navigation }) => {
     }
 
     if (actionKey === "notifications") {
+      setNotificationsPage(1);
       setNotificationsModalVisible(true);
       return;
     }
@@ -438,6 +448,9 @@ const SettingsScreen = ({ navigation }) => {
             {/* Component thông báo */}
             <NotificationComponent
               notifications={notifications}
+              page={notificationsPage}
+              limit={NOTIFICATIONS_LIMIT}
+              onPageChange={setNotificationsPage}
               notificationsModalVisible={notificationsModalVisible}
               handleCloseNotificationsModal={() =>
                 setNotificationsModalVisible(false)

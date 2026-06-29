@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Image,
   ImageBackground,
+  ScrollView,
   KeyboardAvoidingView,
   Platform,
   TouchableWithoutFeedback,
@@ -73,63 +74,69 @@ const LoginScreen = ({ navigation }) => {
             style={styles.keyboardWrap}
             behavior={Platform.OS === "ios" ? "padding" : "height"}
           >
-            <Image source={enovoLogo} style={styles.logo} resizeMode="contain" />
-            <View style={styles.container}>
-              <Text style={styles.title}>Đăng nhập</Text>
+            <ScrollView
+              style={styles.scrollView}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <Image source={enovoLogo} style={styles.logo} resizeMode="contain" />
+              <View style={styles.container}>
+                <Text style={styles.title}>Đăng nhập</Text>
 
-              <TextInput
-                style={styles.input}
-                placeholder="Email hoặc số điện thoại"
-                placeholderTextColor={Colors.textPlaceholder}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-
-              <View style={styles.passwordField}>
                 <TextInput
-                  style={[styles.input, styles.passwordInput]}
-                  placeholder="Mật khẩu"
+                  style={styles.input}
+                  placeholder="Email hoặc số điện thoại"
                   placeholderTextColor={Colors.textPlaceholder}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!isPasswordVisible}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
                 />
-                <TouchableOpacity
-                  style={styles.passwordToggle}
-                  onPress={() => setIsPasswordVisible((prev) => !prev)}
-                  activeOpacity={0.7}
-                >
-                  <Entypo
-                    name={isPasswordVisible ? "eye" : "eye-with-line"}
-                    size={20}
-                    color={Colors.primary}
-                    style={styles.passwordToggleIcon}
+
+                <View style={styles.passwordField}>
+                  <TextInput
+                    style={[styles.input, styles.passwordInput]}
+                    placeholder="Mật khẩu"
+                    placeholderTextColor={Colors.textPlaceholder}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!isPasswordVisible}
                   />
+                  <TouchableOpacity
+                    style={styles.passwordToggle}
+                    onPress={() => setIsPasswordVisible((prev) => !prev)}
+                    activeOpacity={0.7}
+                  >
+                    <Entypo
+                      name={isPasswordVisible ? "eye" : "eye-with-line"}
+                      size={20}
+                      color={Colors.primary}
+                      style={styles.passwordToggleIcon}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.button}
+                  disabled={isSubmitting}
+                  onPress={handleLogin}
+                >
+                  <Text style={styles.buttonText}>
+                    {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.linkButton}
+                  onPress={() => navigation.navigate("Register")}
+                >
+                  <Text style={styles.linkText}>
+                    Chưa có tài khoản?{" "}
+                    <Text style={styles.linkHighlight}>Đăng ký</Text>
+                  </Text>
                 </TouchableOpacity>
               </View>
-
-              <TouchableOpacity
-                style={styles.button}
-                disabled={isSubmitting}
-                onPress={handleLogin}
-              >
-                <Text style={styles.buttonText}>
-                  {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.linkButton}
-                onPress={() => navigation.navigate("Register")}
-              >
-                <Text style={styles.linkText}>
-                  Chưa có tài khoản?{" "}
-                  <Text style={styles.linkHighlight}>Đăng ký</Text>
-                </Text>
-              </TouchableOpacity>
-            </View>
+            </ScrollView>
           </KeyboardAvoidingView>
         </View>
       </TouchableWithoutFeedback>
@@ -144,11 +151,18 @@ const styles = StyleSheet.create({
   overlay: {
     backgroundColor: Colors.grayTranslucent34,
     flex: 1,
-    justifyContent: "center",
     paddingHorizontal: 20,
+    paddingVertical: 20,
   },
   keyboardWrap: {
-    width: "100%",
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
   },
   container: {
     borderRadius: 20,

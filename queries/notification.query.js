@@ -9,8 +9,18 @@ const markNotificationReadInData = (data, notificationId) => {
   }
 
   if (Array.isArray(data?.notifications)) {
+    const selectedNotification = data.notifications.find(
+      (item) => item?._id === notificationId,
+    );
+    const shouldDecreaseUnread =
+      selectedNotification && selectedNotification?.isRead === false;
+
     return {
       ...data,
+      unreadTotal:
+        shouldDecreaseUnread && typeof data.unreadTotal === "number"
+          ? Math.max(0, data.unreadTotal - 1)
+          : data.unreadTotal,
       notifications: data.notifications.map((item) =>
         item?._id === notificationId ? { ...item, isRead: true } : item,
       ),
@@ -21,18 +31,21 @@ const markNotificationReadInData = (data, notificationId) => {
 };
 
 export const useNotificationQuery = {
-  useGetNotifications: (notificationsModalVisible) => {
+  useGetNotifications: ({ enabled, page = 1, limit = 10 }) => {
     const { data, isLoading, isError, ...rest } = useQuery({
-      queryKey: ["NOTIFICATIONS"],
+      queryKey: ["NOTIFICATIONS", page, limit],
       queryFn: async () => {
         try {
-          const response = await notificationApi.getNotifications();
+          const response = await notificationApi.getNotifications({
+            page,
+            limit,
+          });
           return response;
         } catch (error) {
           throw error;
         }
       },
-      enabled: !!notificationsModalVisible,
+      enabled: !!enabled,
       retry: false,
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000, // 5 minutes
@@ -47,20 +60,21 @@ export const useNotificationQuery = {
       onMutate: async (notificationId) => {
         await queryClient.cancelQueries({ queryKey: ["NOTIFICATIONS"] });
 
-        const previousNotifications = queryClient.getQueryData(["NOTIFICATIONS"]);
+        const previousNotifications = queryClient.getQueriesData({
+          queryKey: ["NOTIFICATIONS"],
+        });
 
-        queryClient.setQueryData(["NOTIFICATIONS"], (oldData) =>
+        queryClient.setQueriesData({ queryKey: ["NOTIFICATIONS"] }, (oldData) =>
           markNotificationReadInData(oldData, notificationId),
         );
 
         return { previousNotifications };
       },
       onError: (_error, _notificationId, context) => {
-        if (context?.previousNotifications !== undefined) {
-          queryClient.setQueryData(
-            ["NOTIFICATIONS"],
-            context.previousNotifications,
-          );
+        if (Array.isArray(context?.previousNotifications)) {
+          context.previousNotifications.forEach(([queryKey, data]) => {
+            queryClient.setQueryData(queryKey, data);
+          });
         }
       },
       onSettled: () => {

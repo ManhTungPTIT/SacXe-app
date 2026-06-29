@@ -7,6 +7,7 @@ import {
   ScrollView,
   Platform,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import BikeRegistration from "../components/bike/BikeRegistration";
 import { useBike } from "../queries/bike.query";
@@ -102,8 +103,9 @@ const ChargeScreen = ({ route, navigation }) => {
 
   if (isLoadingBikeData) {
     return (
-      <View style={styles.container}>
-        <Text>Đang tải thông tin xe...</Text>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={styles.loadingText}>Đang tải thông tin...</Text>
       </View>
     );
   }
@@ -228,6 +230,18 @@ const ChargeScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: Colors.secondary,
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 15,
+    color: Colors.primary,
+    fontWeight: "500",
+  },
   safeArea: {
     flex: 1,
     backgroundColor: Colors.primary,
