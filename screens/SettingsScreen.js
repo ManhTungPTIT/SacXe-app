@@ -87,6 +87,7 @@ const SettingsScreen = ({ navigation }) => {
   const [toastMessage, setToastMessage] = useState("");
 
   const { data: notifications } = useNotificationQuery.useGetNotifications(true);
+  const markNotificationAsReadMutation = useNotificationQuery.useMarkAsRead();
 
   const notificationItems = useMemo(() => {
     if (Array.isArray(notifications)) {
@@ -181,6 +182,12 @@ const SettingsScreen = ({ navigation }) => {
         console.error("Error generating QR code:", error);
       },
     });
+  };
+
+  const handlePressNotification = (notification) => {
+    if (!notification?._id || notification?.isRead) return;
+
+    markNotificationAsReadMutation.mutate(notification._id);
   };
 
   const handlePressSettingsAction = (actionKey) => {
@@ -435,6 +442,7 @@ const SettingsScreen = ({ navigation }) => {
               handleCloseNotificationsModal={() =>
                 setNotificationsModalVisible(false)
               }
+              onNotificationPress={handlePressNotification}
             />
 
             <AboutEnovoComponent

@@ -16,6 +16,13 @@ export const notificationApi = {
       throw error;
     }
   },
+  markAsRead: async (notificationId) => {
+    try {
+      return api.patch(`/api/notification/${notificationId}/read`);
+    } catch (error) {
+      throw error;
+    }
+  },
 
   removePushToken: async () => {
     return api.delete("/api/user/push-token");

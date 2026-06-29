@@ -67,6 +67,7 @@ const NotificationComponent = ({
   notifications,
   notificationsModalVisible,
   handleCloseNotificationsModal,
+  onNotificationPress,
 }) => {
   const { height: screenHeight } = useWindowDimensions();
 
@@ -137,11 +138,13 @@ const NotificationComponent = ({
                 const showUnread = item?.isRead === false;
 
                 return (
-                  <View
+                  <TouchableOpacity
                     key={
                       item?._id ||
                       `${item?.createdAt || item?.updatedAt || "notification"}-${index}`
                     }
+                    activeOpacity={0.82}
+                    onPress={() => onNotificationPress?.(item)}
                     style={[
                       styles.notificationItem,
                       showUnread && styles.unreadItem,
@@ -181,7 +184,7 @@ const NotificationComponent = ({
                         )}
                       </Text>
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 );
               })}
             </ScrollView>
