@@ -1,6 +1,6 @@
 import "dotenv/config";
 
-const googleMapsApiKey = "AIzaSyDIGUTSaUL8RY6xt_2EusWZtvZYGC_AQA4";
+const googleMapsApiKey = "AIzaSyCe5Ft06NdRvyQKi3opWZmJYMr5LxHndb8";
 const normalizedGoogleMapsApiKey = googleMapsApiKey.trim();
 const googleMapsApiKeyPattern = /^AIza[0-9A-Za-z_-]{35}$/;
 const isAndroidMapEnabled =
