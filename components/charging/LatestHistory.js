@@ -17,7 +17,7 @@ const formatPrice = (value) => {
 };
 
 const PRICE_PER_KWH = 3000;
-const PRICE_UPDATE_STEP_KWH = 0.2;
+const PRICE_UPDATE_STEP_KWH = 0.001;
 
 const getEnergyStep = (value) => {
   const energy = Number(value) || 0;
