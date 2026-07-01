@@ -113,7 +113,7 @@ const RegisterScreen = ({ navigation }) => {
               <View style={styles.container}>
                 <Text style={styles.title}>Đăng ký</Text>
 
-                <TextInput
+                {/* <TextInput
                   style={styles.input}
                   placeholder="Số điện thoại (Không bắt buộc)"
                   placeholderTextColor={Colors.textPlaceholder}
@@ -121,7 +121,7 @@ const RegisterScreen = ({ navigation }) => {
                   onChangeText={setPhoneNumber}
                   keyboardType="phone-pad"
                   autoCapitalize="none"
-                />
+                /> */}
 
                 <TextInput
                   style={styles.input}

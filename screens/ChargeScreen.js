@@ -188,6 +188,7 @@ const ChargeScreen = ({ route, navigation }) => {
                 </>
               ) : (
                 <InitiateChargeComponent
+                  navigation={navigation}
                   devices={eChargeDevices}
                   setDevices={setDevices}
                   isScanned={isScanned}
