@@ -5,6 +5,7 @@ import AntDesign from "@expo/vector-icons/AntDesign";
 import DevicesComponents from "../charging/DevicesComponents";
 
 const InitiateChargeComponent = ({
+  navigation,
   devices,
   setDevices,
   deviceCode,
@@ -17,6 +18,7 @@ const InitiateChargeComponent = ({
 }) => {
   return devices?.powerOutlets?.length > 0 ? (
     <DevicesComponents
+      navigation={navigation}
       devices={devices.powerOutlets}
       setDevices={setDevices}
       deviceCode={deviceCode}

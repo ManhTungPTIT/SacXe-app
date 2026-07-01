@@ -15,6 +15,7 @@ import { Colors } from "../../constants/color";
 import { useAuthStore } from "../../stores/auth.store";
 
 const DevicesComponents = ({
+  navigation,
   devices,
   setdeviceCode,
   deviceCode,
@@ -51,11 +52,34 @@ const DevicesComponents = ({
       { deviceId, powerId },
       {
         onError: (error) => {
-          Alert.alert(
-            "Thông báo",
+          const errorMessage =
             error.response?.data?.message ||
-            "Đã xảy ra lỗi khi bắt đầu phiên sạc.",
-          );
+            "Đã xảy ra lỗi khi bắt đầu phiên sạc.";
+
+          if (
+            errorMessage ===
+            "Bạn cần có số dư tối thiểu 2.000 VNĐ để sử dụng dịch vụ!"
+          ) {
+            Alert.alert(
+              "Thông báo",
+              errorMessage,
+              [
+                {
+                  text: "Hủy",
+                  style: "cancel",
+                },
+                {
+                  text: "Nạp tiền",
+                  onPress: () => {
+                    navigation?.navigate("Settings", { openTopUp: true });
+                  },
+                },
+              ],
+              { cancelable: true },
+            );
+          } else {
+            Alert.alert("Thông báo", errorMessage);
+          }
         },
         onSuccess: (data) => {
           socket.emit(

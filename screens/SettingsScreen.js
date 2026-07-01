@@ -55,7 +55,7 @@ const SETTINGS_ACTIONS = [
   },
 ];
 
-const SettingsScreen = ({ navigation }) => {
+const SettingsScreen = ({ navigation, route }) => {
   const NOTIFICATIONS_LIMIT = 10;
   const storeUser = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
@@ -141,6 +141,13 @@ const SettingsScreen = ({ navigation }) => {
 
     return () => clearInterval(interval);
   }, [qrGenerated]);
+
+  useEffect(() => {
+    if (route?.params?.openTopUp) {
+      handleOpenTopUpModal();
+      navigation.setParams({ openTopUp: undefined });
+    }
+  }, [route?.params?.openTopUp]);
 
   const handleLogout = async () => {
     await logout();
