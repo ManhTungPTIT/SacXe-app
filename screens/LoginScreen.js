@@ -85,7 +85,7 @@ const LoginScreen = ({ navigation }) => {
 
                 <TextInput
                   style={styles.input}
-                  placeholder="Email hoặc số điện thoại"
+                  placeholder="Email"
                   placeholderTextColor={Colors.textPlaceholder}
                   value={email}
                   onChangeText={setEmail}
