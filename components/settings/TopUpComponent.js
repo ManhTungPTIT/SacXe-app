@@ -44,7 +44,7 @@ const TopUpComponent = ({
           <View style={styles.modalContent}>
             {qrGenerated ? (
               <View style={styles.qrContainer}>
-                <Text style={styles.modalTitle}>QR Code nạp tiền</Text>
+                <Text style={styles.modalTitle}>QR Code nạp tài khoản sạc</Text>
                 <Text style={styles.qrCountdownText}>
                   Hết hạn sau: {timeLeft}s. Vui lòng quét mã trước khi hết hạn
                   để nạp tiền.
@@ -86,14 +86,24 @@ const TopUpComponent = ({
                           setCustomAmount("");
                         }}
                       >
-                        <Text
-                          style={[
-                            styles.topUpAmountText,
-                            isSelected && styles.topUpAmountTextSelected,
-                          ]}
-                        >
-                          {amount.toLocaleString("vi-VN")}
-                        </Text>
+                        <View style={styles.topUpAmountRow}>
+                          <Text
+                            style={[
+                              styles.topUpAmountText,
+                              isSelected && styles.topUpAmountTextSelected,
+                            ]}
+                          >
+                            {amount.toLocaleString("vi-VN")}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.topUpAmountUnit,
+                              isSelected && styles.topUpAmountUnitSelected,
+                            ]}
+                          >
+                            {" "}VND
+                          </Text>
+                        </View>
                       </TouchableOpacity>
                     );
                   })}
@@ -101,23 +111,29 @@ const TopUpComponent = ({
                 {/* // Nhập số tiền khác */}
                 <View style={styles.customAmountContainer}>
                   <Text style={styles.inputLabel}>Số tiền khác</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={customAmount}
-                    onChangeText={(text) => {
-                      const numericText = text.replace(/[^0-9]/g, "");
-                      setCustomAmount(numericText);
-                      const numericValue = parseInt(numericText, 10);
-                      setSelectedAmount(
-                        isNaN(numericValue) ? null : numericValue,
-                      );
-                    }}
-                    placeholder="Nhập số tiền khác"
-                    placeholderTextColor={Colors.textMuted}
-                    keyboardType="numeric"
-                    returnKeyType="done"
-                    onSubmitEditing={Keyboard.dismiss}
-                  />
+                  <View style={styles.inputWrapper}>
+                    <TextInput
+                      style={styles.input}
+                      value={customAmount}
+                      onChangeText={(text) => {
+                        const numericText = text.replace(/[^0-9]/g, "");
+                        setCustomAmount(numericText);
+                        const numericValue = parseInt(numericText, 10);
+                        setSelectedAmount(
+                          isNaN(numericValue) ? null : numericValue,
+                        );
+                      }}
+                      placeholder="Nhập số tiền khác"
+                      placeholderTextColor={Colors.textMuted}
+                      keyboardType="numeric"
+                      returnKeyType="done"
+                      onSubmitEditing={Keyboard.dismiss}
+                    />
+                    <Text style={styles.inputUnitLabel}>VND</Text>
+                  </View>
+                  <Text style={styles.noteText}>
+                    * Tiền trong tài khoản sạc không thể chuyển lại về tài khoản ngân hàng của bạn.
+                  </Text>
                 </View>
                 <View style={styles.modalButtons}>
                   <TouchableOpacity
@@ -128,10 +144,19 @@ const TopUpComponent = ({
                   </TouchableOpacity>
                   <TouchableOpacity
                     disabled={!selectedAmount}
-                    style={[styles.modalButton, styles.saveButton]}
+                    style={[
+                      styles.modalButton, 
+                      styles.saveButton,
+                      !selectedAmount && styles.saveButtonDisabled
+                    ]}
                     onPress={handleConfirmTopUp}
                   >
-                    <Text style={styles.saveButtonText}>Tiếp tục</Text>
+                    <Text style={[
+                      styles.saveButtonText,
+                      !selectedAmount && styles.saveButtonTextDisabled
+                    ]}>
+                      Tiếp tục
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </>
@@ -193,16 +218,32 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     marginBottom: 6,
   },
+  inputWrapper: {
+    position: "relative",
+    justifyContent: "center",
+  },
   input: {
     borderWidth: 1,
     borderColor: Colors.borderLight,
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 14,
+    paddingRight: 52,
     fontSize: 15,
     color: Colors.textPrimary,
     backgroundColor: Colors.cardBgLight,
     marginBottom: 16,
+  },
+  inputUnitLabel: {
+    position: "absolute",
+    right: 12,
+    fontSize: 13,
+    fontWeight: "700",
+    color: Colors.textSecondary,
+    top: 0,
+    bottom: 16,
+    textAlignVertical: "center",
+    lineHeight: 44,
   },
   modalButtons: {
     flexDirection: "row",
@@ -227,10 +268,19 @@ const styles = StyleSheet.create({
   saveButton: {
     backgroundColor: Colors.primary,
   },
+  saveButtonDisabled: {
+    backgroundColor: Colors.cardBgGreen,
+    borderWidth: 1,
+    borderColor: Colors.borderGreenLight,
+    opacity: 0.8,
+  },
   saveButtonText: {
     fontSize: 15,
     fontWeight: "600",
     color: Colors.white,
+  },
+  saveButtonTextDisabled: {
+    color: Colors.primary,
   },
   topUpOptionsContainer: {
     flexDirection: "row",
@@ -252,12 +302,25 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary,
     backgroundColor: Colors.blueTranslucent08,
   },
+  topUpAmountRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+  },
   topUpAmountText: {
     fontSize: 16,
     fontWeight: "600",
     color: Colors.textPrimary,
   },
   topUpAmountTextSelected: {
+    color: Colors.primary,
+  },
+  topUpAmountUnit: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: Colors.textSecondary,
+    letterSpacing: 0.5,
+  },
+  topUpAmountUnitSelected: {
     color: Colors.primary,
   },
   qrContainer: {
@@ -288,6 +351,13 @@ const styles = StyleSheet.create({
   },
   customAmountContainer: {
     marginBottom: 16,
+  },
+  noteText: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontStyle: "italic",
+    marginTop: 4,
+    lineHeight: 16,
   },
 });
 

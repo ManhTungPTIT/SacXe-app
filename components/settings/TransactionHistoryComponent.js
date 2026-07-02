@@ -68,10 +68,10 @@ const TransactionHistoryComponent = ({
     >
       <TouchableWithoutFeedback onPress={handleCloseTransactionHistoryModal}>
         <View style={styles.overlay}>
-          <TouchableWithoutFeedback onPress={() => {}}>
+          <TouchableWithoutFeedback onPress={() => { }}>
             <View style={styles.modalCard}>
               <View style={styles.headerRow}>
-                <Text style={styles.title}>Lịch sử giao dịch</Text>
+                <Text style={styles.title}>Lịch sử tài khoản sạc</Text>
                 <TouchableOpacity
                   onPress={handleCloseTransactionHistoryModal}
                   style={styles.closeButton}

@@ -71,6 +71,7 @@ const SettingsScreen = ({ navigation, route }) => {
 
   const generateQRMutation = useTransactionQuery.generateQR();
 
+  const [balanceInfoModalVisible, setBalanceInfoModalVisible] = useState(false);
   const [topUpModalVisible, setTopUpModalVisible] = useState(false);
   const [transationHistoryModalVisible, setTransactionHistoryModalVisible] =
     useState(false);
@@ -113,13 +114,14 @@ const SettingsScreen = ({ navigation, route }) => {
   }, [notifications?.unreadTotal, notificationItems]);
 
   const ownerName = userData?.user?.name || storeUser?.name || "Người dùng";
-  const ownerBalance = Number(
-    userData?.user?.balance ||
-    userData?.user?.ownerId?.balance ||
-    storeUser?.balance ||
-    storeUser?.ownerId?.balance ||
-    0,
-  );
+
+  const ownerBalance = useMemo(() => {
+    return Number(
+      userData?.user?.balance ||
+      0,
+    );
+  }, [userData, storeUser]);
+
   const ownerInitial = ownerName?.trim()?.charAt(0)?.toUpperCase() || "U";
 
   useEffect(() => {
@@ -270,8 +272,16 @@ const SettingsScreen = ({ navigation, route }) => {
                 <TouchableOpacity
                   style={styles.balanceCard}
                   activeOpacity={0.8}
+                  onPress={() => setBalanceInfoModalVisible(true)}
                 >
-                  <Text style={styles.balanceLabel}>Số dư khả dụng</Text>
+                  <View style={styles.balanceCardHeader}>
+                    <Text style={styles.balanceLabel}>Số dư khả dụng</Text>
+                    <Ionicons
+                      name="information-circle-outline"
+                      size={20}
+                      color={Colors.primary}
+                    />
+                  </View>
                   <Text style={styles.balanceValue}>
                     {ownerBalance.toLocaleString("vi-VN")} VND
                   </Text>
@@ -289,7 +299,7 @@ const SettingsScreen = ({ navigation, route }) => {
                       style={{ marginRight: 6 }}
                     />
                     <Text style={styles.historyButtonText}>
-                      Lịch sử giao dịch
+                      Lịch sử tài khoản sạc
                     </Text>
                   </TouchableOpacity>
 
@@ -298,12 +308,12 @@ const SettingsScreen = ({ navigation, route }) => {
                     onPress={handleOpenTopUpModal}
                   >
                     <Ionicons
-                      name="wallet-outline"
+                      name="logo-usd"
                       size={16}
                       color={Colors.white}
                       style={{ marginRight: 6 }}
                     />
-                    <Text style={styles.topUpButtonText}>Nạp tiền</Text>
+                    <Text style={styles.topUpButtonText}>Nạp tài khoản sạc</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -399,6 +409,53 @@ const SettingsScreen = ({ navigation, route }) => {
                           </Text>
                         </TouchableOpacity>
                       </View>
+                    </View>
+                  </TouchableWithoutFeedback>
+                </View>
+              </TouchableWithoutFeedback>
+            </Modal>
+
+            {/* Modal thông tin tài khoản sạc */}
+            <Modal
+              visible={balanceInfoModalVisible}
+              animationType="fade"
+              transparent={true}
+              onRequestClose={() => setBalanceInfoModalVisible(false)}
+            >
+              <TouchableWithoutFeedback onPress={() => setBalanceInfoModalVisible(false)}>
+                <View style={styles.modalOverlay}>
+                  <TouchableWithoutFeedback>
+                    <View style={styles.infoModalContent}>
+                      <View style={styles.infoDescriptionBox}>
+                        <View style={styles.infoDescriptionHeader}>
+                          <Ionicons
+                            name="information-circle-outline"
+                            size={20}
+                            color={Colors.primary}
+                            style={{ marginRight: 6 }}
+                          />
+                          <Text style={styles.infoDescriptionTitle}>Tài khoản sạc Enovo</Text>
+                        </View>
+                        <Text style={styles.infoDescriptionText}>
+                          Tài khoản sạc là số dư trả trước được sử dụng để thanh toán các dịch vụ sạc xe điện do Enovo cung cấp.{"\n\n"}
+                          <Text style={{ fontWeight: "700" }}>Lưu ý:</Text>{"\n"}
+                          • Số dư chỉ được sử dụng để thanh toán dịch vụ sạc của Enovo.{"\n"}
+                          • Không thể chuyển cho người dùng khác.{"\n"}
+                          • Tiền trong tài khoản sạc không thể chuyển lại về tài khoản ngân hàng của bạn.{"\n"}
+                          • Không thể quy đổi hoặc rút thành tiền mặt.{"\n"}
+                          • Không dùng để thanh toán hàng hóa hoặc dịch vụ khác.{"\n"}
+                          • Không phải ví điện tử và không có chức năng đầu tư hoặc sinh lãi.{"\n"}
+                          • Chi phí sạc sẽ được tự động khấu trừ từ số dư sau khi phiên sạc kết thúc theo biểu giá áp dụng tại điểm sạc.{"\n\n"}
+                          Vui lòng đảm bảo tài khoản sạc có đủ số dư trước khi bắt đầu phiên sạc để quá trình sử dụng dịch vụ diễn ra thuận lợi.
+                        </Text>
+                      </View>
+
+                      <TouchableOpacity
+                        style={styles.closeInfoButton}
+                        onPress={() => setBalanceInfoModalVisible(false)}
+                      >
+                        <Text style={styles.closeInfoButtonText}>Đóng</Text>
+                      </TouchableOpacity>
                     </View>
                   </TouchableWithoutFeedback>
                 </View>
@@ -572,10 +629,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.borderGreenLight,
   },
+  balanceCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
+  },
   balanceLabel: {
     fontSize: 13,
     color: Colors.textSecondary,
-    marginBottom: 6,
   },
   balanceValue: {
     fontSize: 24,
@@ -743,6 +805,47 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     color: Colors.white,
+  },
+  infoModalContent: {
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 20,
+    width: "90%",
+    maxWidth: 400,
+  },
+  infoDescriptionBox: {
+    backgroundColor: "#F4F9FD",
+    borderWidth: 1,
+    borderColor: "#E1F3FE",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+  },
+  infoDescriptionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  infoDescriptionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: Colors.primary,
+  },
+  infoDescriptionText: {
+    fontSize: 13,
+    color: "#4A5568",
+    lineHeight: 20,
+  },
+  closeInfoButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  closeInfoButtonText: {
+    color: Colors.white,
+    fontSize: 15,
+    fontWeight: "600",
   },
 });
 
