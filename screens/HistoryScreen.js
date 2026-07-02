@@ -207,13 +207,13 @@ const HistoryScreen = ({ navigation }) => {
   const activeDisplayPrice = activeHistory ? getDisplayPrice(activeHistory) : 0;
   const displayMonthlyEnergy = activeHistory
     ? (Number(monthlyStats?.totalEnergy) || 0) -
-      (Number(activeHistoryEnergy) || 0) +
-      activeDisplayEnergy
+    (Number(activeHistoryEnergy) || 0) +
+    activeDisplayEnergy
     : monthlyStats?.totalEnergy;
   const displayMonthlyAmount = activeHistory
     ? (Number(monthlyStats?.totalAmount) || 0) -
-      (Number(activeHistoryPrice) || 0) +
-      activeDisplayPrice
+    (Number(activeHistoryPrice) || 0) +
+    activeDisplayPrice
     : monthlyStats?.totalAmount;
 
   return (
@@ -229,7 +229,7 @@ const HistoryScreen = ({ navigation }) => {
           contentContainerStyle={styles.scrollContent}
         >
           <View style={styles.headerSection}>
-            <Text style={styles.title}>Lịch sử</Text>
+            <Text style={styles.title}>Lịch sử sạc xe</Text>
           </View>
           <View style={styles.contentWrap}>
             <View style={styles.monthlyCard}>
@@ -287,25 +287,25 @@ const HistoryScreen = ({ navigation }) => {
                 const displayPrice = getDisplayPrice(item);
                 const displayDuration = isCharging
                   ? formatElapsedDuration(
-                      getElapsedDuration(sessionStartTime, currentTime),
-                    )
+                    getElapsedDuration(sessionStartTime, currentTime),
+                  )
                   : calculateChargingDurationFormatted(
-                      item?.createdAt,
-                      item?.updatedAt,
-                    );
+                    item?.createdAt,
+                    item?.updatedAt,
+                  );
 
                 const status = !isCharging
                   ? "completed"
                   : isLive
-                  ? "charging"
-                  : "waiting";
+                    ? "charging"
+                    : "waiting";
                 const isChargingState = status === "charging";
                 const SessionCard = isChargingState ? TouchableOpacity : View;
                 const sessionCardProps = isChargingState
                   ? {
-                      onPress: () => navigation.navigate("Charge"),
-                      activeOpacity: 0.88,
-                    }
+                    onPress: () => navigation.navigate("Charge"),
+                    activeOpacity: 0.88,
+                  }
                   : {};
 
                 return (
@@ -336,8 +336,8 @@ const HistoryScreen = ({ navigation }) => {
                           {status === "completed"
                             ? "Hoàn tất"
                             : status === "charging"
-                            ? "Đang sạc"
-                            : "Đang chờ sạc"}
+                              ? "Đang sạc"
+                              : "Đang chờ sạc"}
                         </Text>
                         <BatteryCharging status={status} />
                       </View>

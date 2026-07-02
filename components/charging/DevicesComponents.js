@@ -58,7 +58,7 @@ const DevicesComponents = ({
 
           if (
             errorMessage ===
-            "Bạn cần có số dư tối thiểu 2.000 VNĐ để sử dụng dịch vụ!"
+            "Bạn cần có số dư tài khoản sạc tối thiểu là 2.000 VNĐ để sử dụng dịch vụ!"
           ) {
             Alert.alert(
               "Thông báo",
@@ -69,7 +69,7 @@ const DevicesComponents = ({
                   style: "cancel",
                 },
                 {
-                  text: "Nạp tiền",
+                  text: "Nạp tài khoản sạc",
                   onPress: () => {
                     navigation?.navigate("Settings", { openTopUp: true });
                   },
