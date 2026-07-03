@@ -275,7 +275,7 @@ const SettingsScreen = ({ navigation, route }) => {
                   onPress={() => setBalanceInfoModalVisible(true)}
                 >
                   <View style={styles.balanceCardHeader}>
-                    <Text style={styles.balanceLabel}>Số dư khả dụng</Text>
+                    <Text style={styles.balanceLabel}>Số dư tài khoản sạc</Text>
                     <Ionicons
                       name="information-circle-outline"
                       size={20}
@@ -445,7 +445,7 @@ const SettingsScreen = ({ navigation, route }) => {
                           • Không thể quy đổi hoặc rút thành tiền mặt.{"\n"}
                           • Không dùng để thanh toán hàng hóa hoặc dịch vụ khác.{"\n"}
                           • Không phải ví điện tử và không có chức năng đầu tư hoặc sinh lãi.{"\n"}
-                          • Chi phí sạc sẽ được tự động khấu trừ từ số dư sau khi phiên sạc kết thúc theo biểu giá áp dụng tại điểm sạc.{"\n\n"}
+                          • Chi phí sạc sẽ được tự động khấu trừ từ số dư trong quá trình sạc; phần chi phí còn lại sẽ được chốt khi phiên sạc kết thúc.{"\n\n"}
                           Vui lòng đảm bảo tài khoản sạc có đủ số dư trước khi bắt đầu phiên sạc để quá trình sử dụng dịch vụ diễn ra thuận lợi.
                         </Text>
                       </View>

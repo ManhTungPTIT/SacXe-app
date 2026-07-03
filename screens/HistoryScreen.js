@@ -34,7 +34,7 @@ const formatEnergy = (value) => {
 };
 
 const PRICE_PER_KWH = 3000;
-const PRICE_UPDATE_STEP_KWH = 0.2;
+const PRICE_UPDATE_STEP_KWH = 0.001;
 
 const getEnergyStep = (value) => {
   const energy = Number(value) || 0;
@@ -50,6 +50,26 @@ const isChargingHistory = (history) => !history?.totalTime;
 
 const getHistoryStartTime = (history) =>
   history?.startTime || history?.createdAt;
+
+const getHistoryBaseEnergy = (history) => {
+  if (!isChargingHistory(history)) {
+    return Number(history?.energy) || 0;
+  }
+
+  return Number(history?.lastKnownEnergy ?? history?.energy ?? 0) || 0;
+};
+
+const getHistoryBasePrice = (history) => {
+  if (!isChargingHistory(history)) {
+    return Number(history?.price) || 0;
+  }
+
+  return Math.max(
+    Number(history?.lastKnownPrice) || 0,
+    Number(history?.billedAmount) || 0,
+    Number(history?.price) || 0,
+  );
+};
 
 const getElapsedDuration = (startTime, currentTime) => {
   if (!startTime) {
@@ -122,8 +142,8 @@ const HistoryScreen = ({ navigation }) => {
   const activeHistory = histories.find(isChargingHistory);
   const activeHistoryId = activeHistory?._id;
   const activeHistoryStartTime = getHistoryStartTime(activeHistory);
-  const activeHistoryEnergy = activeHistory?.energy || 0;
-  const activeHistoryPrice = activeHistory?.price || 0;
+  const activeHistoryEnergy = getHistoryBaseEnergy(activeHistory);
+  const activeHistoryPrice = getHistoryBasePrice(activeHistory);
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [realtimeEnergy, setRealtimeEnergy] = useState(activeHistoryEnergy);
   const [isLive, setIsLive] = useState((activeHistoryEnergy || 0) > 0);
@@ -189,7 +209,7 @@ const HistoryScreen = ({ navigation }) => {
       return history?.energy;
     }
 
-    return Math.max(Number(history?.energy) || 0, realtimeEnergy);
+    return Math.max(getHistoryBaseEnergy(history), realtimeEnergy);
   };
 
   const getDisplayPrice = (history) => {
@@ -198,7 +218,7 @@ const HistoryScreen = ({ navigation }) => {
     }
 
     return Math.max(
-      Number(history?.price) || 0,
+      getHistoryBasePrice(history),
       calculatePrice(getDisplayEnergy(history)),
     );
   };

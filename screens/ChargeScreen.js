@@ -51,6 +51,8 @@ const ChargeScreen = ({ route, navigation }) => {
 
   const deviceId = eChargeDevices?.eChargeDevices?._id || null;
   const chargingStartTime = latestHistory?.startTime || latestHistory?.createdAt;
+  const initialEnergyKwh =
+    Number(latestHistory?.lastKnownEnergy ?? latestHistory?.energy ?? 0) || 0;
 
   useEffect(() => {
     queryClient.setQueryData(["SCANNED_DEVICE_CODE"], deviceCode);
@@ -182,6 +184,7 @@ const ChargeScreen = ({ route, navigation }) => {
                 <>
                   <ChargingStatusComponent
                     chargingStartTime={chargingStartTime}
+                    initialEnergyKwh={initialEnergyKwh}
                     onStopCharging={handleStopCharging}
                     isStopping={isStopping}
                   />

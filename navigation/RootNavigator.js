@@ -31,7 +31,7 @@ const RootNavigator = () => {
       socket.connect();
       // join vào room của user để nhận thông báo
       if (userId) {
-        if (latestHistory?._id && !latestHistory?.price) {
+        if (latestHistory?._id && !latestHistory?.totalTime) {
           socket.emit(
             "telemetry_data",
             `user_${userId}_${latestHistory.deviceId?.deviceCode}_${latestHistory.powerId?.index}`,
@@ -53,7 +53,7 @@ const RootNavigator = () => {
     }
 
     const joinRooms = () => {
-      if (latestHistory?._id && !latestHistory?.price) {
+      if (latestHistory?._id && !latestHistory?.totalTime) {
         socket.emit(
           "telemetry_data",
           `user_${userId}_${latestHistory.deviceId?.deviceCode}_${latestHistory.powerId?.index}`,
@@ -119,6 +119,101 @@ const RootNavigator = () => {
       });
     };
 
+    const updateCachedBalance = (nextBalance) => {
+      const numericBalance = Number(nextBalance);
+
+      if (!Number.isFinite(numericBalance)) {
+        queryClient.invalidateQueries({ queryKey: ["ME"] });
+        return;
+      }
+
+      const currentMeData = queryClient.getQueryData(["ME"]);
+      const fallbackUser = currentMeData?.user || useAuthStore.getState().user;
+
+      if (!fallbackUser) {
+        queryClient.invalidateQueries({ queryKey: ["ME"] });
+        return;
+      }
+
+      queryClient.setQueryData(["ME"], (oldData) => {
+        const currentUser = oldData?.user || fallbackUser;
+
+        return {
+          ...(oldData || {}),
+          user: {
+            ...currentUser,
+            balance: numericBalance,
+            ownerId: currentUser?.ownerId
+              ? {
+                  ...currentUser.ownerId,
+                  balance: numericBalance,
+                }
+              : currentUser?.ownerId,
+          },
+        };
+      });
+
+      useAuthStore.setState((state) => ({
+        user: state.user
+          ? {
+              ...state.user,
+              balance: numericBalance,
+              ownerId: state.user.ownerId
+                ? {
+                    ...state.user.ownerId,
+                    balance: numericBalance,
+                  }
+                : state.user.ownerId,
+            }
+          : state.user,
+      }));
+    };
+
+    const applyBalanceDelta = (amount) => {
+      const numericAmount = Number(amount);
+
+      if (!Number.isFinite(numericAmount)) {
+        queryClient.invalidateQueries({ queryKey: ["ME"] });
+        return;
+      }
+
+      const currentMeData = queryClient.getQueryData(["ME"]);
+      const fallbackUser = currentMeData?.user || useAuthStore.getState().user;
+
+      if (!fallbackUser) {
+        queryClient.invalidateQueries({ queryKey: ["ME"] });
+        return;
+      }
+
+      const currentBalance = Number(
+        fallbackUser.balance || fallbackUser?.ownerId?.balance || 0,
+      );
+      updateCachedBalance(currentBalance + numericAmount);
+    };
+
+    const updateLatestHistoryBilling = (data) => {
+      queryClient.setQueryData(["latestHistory"], (oldData) => {
+        if (!oldData || oldData?._id !== data?.historyId) {
+          return oldData;
+        }
+
+        return {
+          ...oldData,
+          billedAmount: data?.billedAmount ?? oldData.billedAmount,
+          lastKnownPrice: data?.price ?? oldData.lastKnownPrice,
+          lastKnownEnergy: data?.energy ?? oldData.lastKnownEnergy,
+        };
+      });
+    };
+
+    const invalidateChargeState = () => {
+      queryClient.invalidateQueries({ queryKey: ["ME"] });
+      queryClient.invalidateQueries({ queryKey: ["latestHistory"] });
+      queryClient.invalidateQueries({ queryKey: ["history"] });
+      queryClient.invalidateQueries({ queryKey: ["USERS_BIKE"] });
+      queryClient.invalidateQueries({ queryKey: ["NOTIFICATIONS"] });
+    };
+
     const handleTransactionUpdate = (data) => {
       console.log("data", data);
       Alert.alert("Thông báo", data?.message || "Giao dịch đã được cập nhật.");
@@ -138,61 +233,50 @@ const RootNavigator = () => {
 
       const amount = Number(transaction?.amount ?? data?.amount ?? 0);
       if (transactionStatus === "completed" && amount > 0) {
-        const currentMeData = queryClient.getQueryData(["ME"]);
-        const fallbackUser =
-          currentMeData?.user || useAuthStore.getState().user;
-
-        if (!fallbackUser) {
-          queryClient.invalidateQueries({ queryKey: ["ME"] });
-          return;
-        }
-
-        const currentBalance = Number(
-          fallbackUser.balance || fallbackUser?.ownerId?.balance || 0,
-        );
-        const nextBalance = currentBalance + amount;
-
-        queryClient.setQueryData(["ME"], (oldData) => {
-          const currentUser = oldData?.user || fallbackUser;
-
-          return {
-            ...(oldData || {}),
-            user: {
-              ...currentUser,
-              balance: nextBalance,
-              ownerId: currentUser?.ownerId
-                ? {
-                    ...currentUser.ownerId,
-                    balance: nextBalance,
-                  }
-                : currentUser?.ownerId,
-            },
-          };
-        });
-
-        useAuthStore.setState((state) => ({
-          user: state.user
-            ? {
-                ...state.user,
-                balance: nextBalance,
-                ownerId: state.user.ownerId
-                  ? {
-                      ...state.user.ownerId,
-                      balance: nextBalance,
-                    }
-                  : state.user.ownerId,
-              }
-            : state.user,
-        }));
-
+        applyBalanceDelta(amount);
         queryClient.invalidateQueries({ queryKey: ["ME"] });
       }
     };
 
+    const handleChargeBillingUpdate = (data) => {
+      updateLatestHistoryBilling(data);
+
+      if (data?.balance !== undefined && data?.balance !== null) {
+        updateCachedBalance(data.balance);
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["ME"] });
+      }
+
+      if (data?.type === "charge_debit") {
+        return;
+      }
+
+      if (data?.type === "low_balance") {
+        Alert.alert(
+          "Thông báo",
+          data?.message ||
+            "Số dư tài khoản sạc của bạn sắp hết. Vui lòng nạp thêm.",
+        );
+        invalidateChargeState();
+        return;
+      }
+
+      if (data?.type === "auto_stopped") {
+        Alert.alert(
+          "Thông báo",
+          data?.message ||
+            "Tài khoản sạc của bạn đã hết tiền. Hệ thống đã tự động ngắt sạc.",
+        );
+        invalidateChargeState();
+      }
+    };
+
     socket.on("transaction_update", handleTransactionUpdate);
+    socket.on("charge_billing_update", handleChargeBillingUpdate);
 
     return () => {
       socket.off("transaction_update", handleTransactionUpdate);
+      socket.off("charge_billing_update", handleChargeBillingUpdate);
     };
   }, [queryClient]);
 

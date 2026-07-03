@@ -5,10 +5,18 @@ import { Colors } from "../../constants/color";
 import { vietnamDate, vietnamTime } from "../../utils/time";
 import WaveChart from "../WaveChart";
 
-const ChargingStatusComponent = ({ chargingStartTime, onStopCharging, isStopping }) => {
+const ChargingStatusComponent = ({
+  chargingStartTime,
+  initialEnergyKwh,
+  onStopCharging,
+  isStopping,
+}) => {
   return (
     <View style={styles.container}>
-      <WaveChart chargingStartTime={chargingStartTime} />
+      <WaveChart
+        chargingStartTime={chargingStartTime}
+        initialEnergyKwh={initialEnergyKwh}
+      />
       {/* Bento Grid Info */}
       <View style={styles.bentoGrid}>
         {/* Thông tin thời gian */}

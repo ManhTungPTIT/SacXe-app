@@ -121,12 +121,12 @@ const buildChartGeometry = (values, width) => {
 
 
 
-const WaveChart = ({ chargingStartTime }) => {
+const WaveChart = ({ chargingStartTime, initialEnergyKwh = 0 }) => {
   const socketContext = useContext(SocketContext);
   const socket = socketContext?.socket;
   const { width } = useWindowDimensions();
   const [telemetryData, setTelemetryData] = useState([]);
-  const [energy, setEnergy] = useState(0);
+  const [energy, setEnergy] = useState(() => toFiniteNumber(initialEnergyKwh));
   const [elapsedTime, setElapsedTime] = useState("00:00:00");
 
   useEffect(() => {
@@ -154,6 +154,11 @@ const WaveChart = ({ chargingStartTime }) => {
     const intervalId = setInterval(updateTime, 1000);
     return () => clearInterval(intervalId);
   }, [chargingStartTime]);
+
+  useEffect(() => {
+    const nextEnergy = toFiniteNumber(initialEnergyKwh);
+    setEnergy((prev) => Math.max(prev, nextEnergy));
+  }, [initialEnergyKwh]);
 
   const chartWidth = Math.min(Math.max(width - 80, 240), 540);
   const chartData = telemetryData.length ? telemetryData : EMPTY_CHART_DATA;
@@ -185,11 +190,21 @@ const WaveChart = ({ chargingStartTime }) => {
     if (!socket) return;
 
     const handleWave = (value) => {
-      const nextEnergy = Number(value?.energy);
-      const nextPower = toFiniteNumber(value?.power);
+      if (
+        value?.energy !== undefined &&
+        value?.energy !== null &&
+        value?.energy !== ""
+      ) {
+        const nextEnergy = Number(value.energy);
 
-      if (Number.isFinite(nextEnergy)) {
-        setEnergy(nextEnergy / 1000);
+        if (Number.isFinite(nextEnergy)) {
+          setEnergy((prev) => Math.max(prev, nextEnergy / 1000));
+        }
+      }
+
+      const nextPower = Number(value?.power);
+      if (!Number.isFinite(nextPower)) {
+        return;
       }
 
       setTelemetryData((prev) => {
@@ -301,7 +316,7 @@ const WaveChart = ({ chargingStartTime }) => {
 
       <View style={styles.metricsRow}>
         <View style={styles.metricCard}>
-          <Text style={styles.metricLabel}>Điện năng đã dùng</Text>
+          <Text style={styles.metricLabel}>Điện năng tiêu thụ</Text>
           <Text style={styles.metricValue}>{formatEnergy(energy)} kWh</Text>
         </View>
 

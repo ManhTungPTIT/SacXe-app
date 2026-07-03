@@ -93,6 +93,16 @@ const LatestHistory = ({ history, navigation }) => {
   const socketContext = useContext(SocketContext);
   const socket = socketContext?.socket;
   const queryClient = useQueryClient();
+  const baseEnergy = hasDuration
+    ? Number(history?.energy) || 0
+    : Number(history?.lastKnownEnergy ?? history?.energy ?? 0) || 0;
+  const basePrice = hasDuration
+    ? Number(history?.price) || 0
+    : Math.max(
+        Number(history?.lastKnownPrice) || 0,
+        Number(history?.billedAmount) || 0,
+        Number(history?.price) || 0,
+      );
 
   const handleEmptyPress = () => {
     if (navigation) {
@@ -100,16 +110,16 @@ const LatestHistory = ({ history, navigation }) => {
     }
   };
 
-  const [realtimeEnergy, setRealtimeEnergy] = useState(history?.energy || 0);
-  const [isLive, setIsLive] = useState((history?.energy || 0) > 0);
+  const [realtimeEnergy, setRealtimeEnergy] = useState(baseEnergy);
+  const [isLive, setIsLive] = useState(baseEnergy > 0);
   const [currentTime, setCurrentTime] = useState(Date.now());
-  const lastInvalidatedEnergyStepRef = useRef(getEnergyStep(history?.energy));
+  const lastInvalidatedEnergyStepRef = useRef(getEnergyStep(baseEnergy));
 
   useEffect(() => {
-    setRealtimeEnergy(history?.energy || 0);
-    lastInvalidatedEnergyStepRef.current = getEnergyStep(history?.energy);
-    setIsLive((history?.energy || 0) > 0);
-  }, [history?._id, history?.energy]);
+    setRealtimeEnergy(baseEnergy);
+    lastInvalidatedEnergyStepRef.current = getEnergyStep(baseEnergy);
+    setIsLive(baseEnergy > 0);
+  }, [history?._id, baseEnergy]);
 
   useEffect(() => {
     if (!socket || !history || hasDuration) return;
@@ -139,11 +149,11 @@ const LatestHistory = ({ history, navigation }) => {
     return () => clearInterval(intervalId);
   }, [history?._id, hasDuration, chargingStartTime]);
 
-  // Refresh API cost every 0.2 kWh step while charging.
-  const lastFetchedEnergy = history?.energy || 0;
+  // Refresh active-session data when the displayed energy step advances.
+  const lastFetchedEnergy = baseEnergy;
   const displayPrice = hasDuration
     ? history?.price
-    : Math.max(Number(history?.price) || 0, calculatePrice(realtimeEnergy));
+    : Math.max(basePrice, calculatePrice(realtimeEnergy));
   const displayDuration = hasDuration
     ? history?.totalTime
     : getElapsedDuration(chargingStartTime, currentTime);
