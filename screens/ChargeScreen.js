@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -20,6 +20,7 @@ import { useHistory } from "../queries/history.query";
 import { Colors } from "../constants/color";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
+import { useFocusEffect } from "@react-navigation/native";
 
 const ChargeScreen = ({ route, navigation }) => {
   const queryClient = useQueryClient();
@@ -38,8 +39,12 @@ const ChargeScreen = ({ route, navigation }) => {
     data: bike,
     isLoading: isLoadingBikeData,
     isError,
+    refetch: refetchBike,
   } = useBike.useGetMyBike();
-  const { data: latestHistory } = useHistory.useGetLatestHistory();
+  const {
+    data: latestHistory,
+    refetch: refetchLatestHistory,
+  } = useHistory.useGetLatestHistory();
   const terminateChargeMutation = useChargeQuery.useTerminate();
   const {
     data: eChargeDevices,
@@ -53,6 +58,17 @@ const ChargeScreen = ({ route, navigation }) => {
   const chargingStartTime = latestHistory?.startTime || latestHistory?.createdAt;
   const initialEnergyKwh =
     Number(latestHistory?.lastKnownEnergy ?? latestHistory?.energy ?? 0) || 0;
+  const hasFinalizedLatestHistory = Boolean(latestHistory?.totalTime);
+  const isChargingSessionActive = Boolean(
+    bike?.bike?.isCharging && !hasFinalizedLatestHistory,
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      refetchBike();
+      refetchLatestHistory();
+    }, [refetchBike, refetchLatestHistory]),
+  );
 
   useEffect(() => {
     queryClient.setQueryData(["SCANNED_DEVICE_CODE"], deviceCode);
@@ -114,29 +130,62 @@ const ChargeScreen = ({ route, navigation }) => {
 
   const isStopping = terminateChargeMutation.isLoading || terminateChargeMutation.isPending;
 
+  const syncStoppedChargeState = () => {
+    const activeDeviceCode = deviceCode || latestHistory?.deviceId?.deviceCode;
+
+    queryClient.setQueryData(["USERS_BIKE"], (oldData) => {
+      if (!oldData?.bike) {
+        return oldData;
+      }
+
+      return {
+        ...oldData,
+        bike: {
+          ...oldData.bike,
+          isCharging: false,
+        },
+      };
+    });
+    queryClient.invalidateQueries({ queryKey: ["USERS_BIKE"] });
+    queryClient.invalidateQueries({ queryKey: ["latestHistory"] });
+
+    if (activeDeviceCode) {
+      queryClient.invalidateQueries({ queryKey: ["E_CHARGE_DEVICE", String(activeDeviceCode)] });
+      setdeviceCode(String(activeDeviceCode));
+      setIsScanned(true);
+      setPowerId(null);
+    } else {
+      setDevices([]);
+      setIsScanned(false);
+      setdeviceCode(null);
+      setPowerId(null);
+    }
+  };
+
   const executeStopCharging = () => {
     terminateChargeMutation.mutate(
       {},
       {
         onSuccess: (data) => {
-          const activeDeviceCode = deviceCode || latestHistory?.deviceId?.deviceCode;
-          queryClient.invalidateQueries({ queryKey: ["USERS_BIKE"] });
-          queryClient.invalidateQueries({ queryKey: ["latestHistory"] });
+          syncStoppedChargeState();
 
           setToastMessage("Dừng sạc xe thành công!");
           setToastVisible(true);
+        },
+        onError: (error) => {
+          const errorMessage = error?.response?.data?.message || "";
 
-          if (activeDeviceCode) {
-            queryClient.invalidateQueries({ queryKey: ["E_CHARGE_DEVICE", String(activeDeviceCode)] });
-            setdeviceCode(String(activeDeviceCode));
-            setIsScanned(true);
-            setPowerId(null);
-          } else {
-            setDevices([]);
-            setIsScanned(false);
-            setdeviceCode(null);
-            setPowerId(null);
+          if (errorMessage.includes("Xe chưa đang")) {
+            syncStoppedChargeState();
+            setToastMessage("Phiên sạc đã được cập nhật.");
+            setToastVisible(true);
+            return;
           }
+
+          Alert.alert(
+            "Thông báo",
+            errorMessage || "Không thể dừng sạc. Vui lòng thử lại.",
+          );
         },
       },
     );
@@ -180,7 +229,7 @@ const ChargeScreen = ({ route, navigation }) => {
                 <Text style={styles.screenTitle}>Phiên sạc của bạn</Text>
               </View>
 
-              {bike?.bike?.isCharging ? (
+              {isChargingSessionActive ? (
                 <>
                   <ChargingStatusComponent
                     chargingStartTime={chargingStartTime}

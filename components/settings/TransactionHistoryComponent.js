@@ -98,7 +98,7 @@ const TransactionHistoryComponent = ({
                       >
                         <View style={styles.transactionHeader}>
                           <Text style={styles.transactionTitle}>
-                            Giao dịch #{index + 1}
+                            Nạp tài khoản sạc #{index + 1}
                           </Text>
                           <View
                             style={[styles.statusBadge, statusMeta.badgeStyle]}

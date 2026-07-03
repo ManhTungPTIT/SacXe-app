@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { ActivityIndicator, View, StyleSheet, Alert } from "react-native";
 import { useAuthStore } from "../stores/auth.store";
@@ -10,8 +10,17 @@ import FeedbackScreen from "../screens/FeedbackScreen";
 import { socket } from "../services/socket.service";
 import { useHistory } from "../queries/history.query";
 import { Colors } from "../constants/color";
+import ToastNotification from "../components/ToastNotification";
 
 const Stack = createNativeStackNavigator();
+
+const normalizeId = (value) => {
+  if (value === undefined || value === null) {
+    return "";
+  }
+
+  return String(value);
+};
 
 const RootNavigator = () => {
   const queryClient = useQueryClient();
@@ -20,6 +29,19 @@ const RootNavigator = () => {
   const initialize = useAuthStore((state) => state.initialize);
   const userId = useAuthStore((state) => state.user?._id);
   const { data: latestHistory } = useHistory.useGetLatestHistory();
+  const serverStopAlertsRef = useRef(new Set());
+  const deviceStatusAlertsRef = useRef(new Set());
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastTitle, setToastTitle] = useState("Thông báo");
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState("success");
+  const [toastDuration, setToastDuration] = useState(4000);
+
+  // Clear alert dedup khi phiên sạc thay đổi để tránh suppress alerts cho phiên mới
+  useEffect(() => {
+    serverStopAlertsRef.current.clear();
+    deviceStatusAlertsRef.current.clear();
+  }, [latestHistory?._id]);
 
   // Khởi tạo auth state khi mở app
   useEffect(() => {
@@ -192,8 +214,15 @@ const RootNavigator = () => {
     };
 
     const updateLatestHistoryBilling = (data) => {
+      const incomingHistoryId = normalizeId(data?.historyId);
+
       queryClient.setQueryData(["latestHistory"], (oldData) => {
-        if (!oldData || oldData?._id !== data?.historyId) {
+        const cachedHistoryId = normalizeId(oldData?._id);
+
+        if (
+          !oldData ||
+          (incomingHistoryId && cachedHistoryId !== incomingHistoryId)
+        ) {
           return oldData;
         }
 
@@ -202,6 +231,10 @@ const RootNavigator = () => {
           billedAmount: data?.billedAmount ?? oldData.billedAmount,
           lastKnownPrice: data?.price ?? oldData.lastKnownPrice,
           lastKnownEnergy: data?.energy ?? oldData.lastKnownEnergy,
+          price: data?.isFinal ? (data?.price ?? oldData.price) : oldData.price,
+          energy: data?.isFinal ? (data?.energy ?? oldData.energy) : oldData.energy,
+          totalTime: data?.totalTime ?? oldData.totalTime,
+          stopReason: data?.stopReason ?? oldData.stopReason,
         };
       });
     };
@@ -212,6 +245,47 @@ const RootNavigator = () => {
       queryClient.invalidateQueries({ queryKey: ["history"] });
       queryClient.invalidateQueries({ queryKey: ["USERS_BIKE"] });
       queryClient.invalidateQueries({ queryKey: ["NOTIFICATIONS"] });
+      queryClient.invalidateQueries({ queryKey: ["E_CHARGE_DEVICE"] });
+    };
+
+    const updateCachedBikeChargingState = (isCharging) => {
+      queryClient.setQueryData(["USERS_BIKE"], (oldData) => {
+        if (!oldData?.bike) {
+          return oldData;
+        }
+
+        return {
+          ...oldData,
+          bike: {
+            ...oldData.bike,
+            isCharging,
+          },
+        };
+      });
+    };
+
+    const getChargeEventKey = (data, fallback) => {
+      const historyId = normalizeId(data?.historyId);
+      const eventType = normalizeId(data?.type || fallback);
+      if (historyId) {
+        return [historyId, eventType].join(":");
+      }
+
+      return [
+        fallback,
+        eventType,
+        normalizeId(data?.deviceCode ?? data?.deviceId ?? data?.device_id),
+        normalizeId(data?.powerIndex ?? data?.powerId ?? data?.id),
+        normalizeId(data?.stopReason),
+      ].join(":");
+    };
+
+    const showHeadsUpNotification = ({ title, message, type, duration }) => {
+      setToastTitle(title || "Thông báo");
+      setToastMessage(message || "");
+      setToastType(type || "success");
+      setToastDuration(duration || 4000);
+      setToastVisible(true);
     };
 
     const handleTransactionUpdate = (data) => {
@@ -247,6 +321,37 @@ const RootNavigator = () => {
         queryClient.invalidateQueries({ queryKey: ["ME"] });
       }
 
+      const isAutoStopping = data?.type === "auto_stopping";
+      const isAutoStopped = data?.type === "auto_stopped";
+      const isBalanceAutoStop =
+        isAutoStopping ||
+        isAutoStopped ||
+        data?.stopReason === "insufficient_balance";
+
+      if (isBalanceAutoStop) {
+        if (isAutoStopped) {
+          updateCachedBikeChargingState(false);
+          invalidateChargeState();
+        }
+
+        const alertKey = getChargeEventKey(data, "server-stop");
+        if (!serverStopAlertsRef.current.has(alertKey)) {
+          serverStopAlertsRef.current.add(alertKey);
+          showHeadsUpNotification({
+            title:
+              isAutoStopped
+                ? "Phiên sạc đã dừng"
+                : "Phiên sạc đang dừng",
+            message:
+              data?.message ||
+              "Số dư tài khoản sạc của bạn đã xuống dưới ngưỡng cho phép. Hệ thống đã tự động ngắt sạc.",
+            type: "warning",
+            duration: 12000,
+          });
+        }
+        return;
+      }
+
       if (data?.type === "charge_debit") {
         return;
       }
@@ -258,25 +363,65 @@ const RootNavigator = () => {
             "Số dư tài khoản sạc của bạn sắp hết. Vui lòng nạp thêm.",
         );
         invalidateChargeState();
+      }
+    };
+
+    const handleChargeDeviceStatus = (data) => {
+      const statusState = normalizeId(data?.state).toLowerCase();
+
+      if (statusState !== "offline") {
         return;
       }
 
-      if (data?.type === "auto_stopped") {
-        Alert.alert(
-          "Thông báo",
-          data?.message ||
-            "Tài khoản sạc của bạn đã hết tiền. Hệ thống đã tự động ngắt sạc.",
-        );
-        invalidateChargeState();
+      const activeHistory = queryClient.getQueryData(["latestHistory"]);
+      if (!activeHistory || activeHistory?.totalTime) {
+        return;
       }
+
+      const activeDeviceCode = normalizeId(
+        activeHistory?.deviceId?.deviceCode ??
+          activeHistory?.deviceCode ??
+          activeHistory?.deviceId,
+      );
+      const statusDeviceCode = normalizeId(
+        data?.deviceCode ?? data?.deviceId ?? data?.device_id,
+      );
+
+      if (
+        activeDeviceCode &&
+        statusDeviceCode &&
+        activeDeviceCode !== statusDeviceCode
+      ) {
+        return;
+      }
+
+      const alertKey = [
+        "device-status",
+        statusDeviceCode || activeDeviceCode,
+        statusState,
+        normalizeId(data?.reason),
+      ].join(":");
+
+      if (deviceStatusAlertsRef.current.has(alertKey)) {
+        return;
+      }
+
+      deviceStatusAlertsRef.current.add(alertKey);
+      queryClient.invalidateQueries({ queryKey: ["E_CHARGE_DEVICE"] });
+      Alert.alert(
+        "Thông báo",
+        "Trụ sạc đang mất tín hiệu. Phiên sạc sẽ được cập nhật khi hệ thống nhận lại dữ liệu từ thiết bị.",
+      );
     };
 
     socket.on("transaction_update", handleTransactionUpdate);
     socket.on("charge_billing_update", handleChargeBillingUpdate);
+    socket.on("charge_device_status", handleChargeDeviceStatus);
 
     return () => {
       socket.off("transaction_update", handleTransactionUpdate);
       socket.off("charge_billing_update", handleChargeBillingUpdate);
+      socket.off("charge_device_status", handleChargeDeviceStatus);
     };
   }, [queryClient]);
 
@@ -290,21 +435,31 @@ const RootNavigator = () => {
   }
 
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-        contentStyle: styles.container,
-      }}
-    >
-      {isAuthenticated ? (
-        <>
-          <Stack.Screen name="Main" component={AppNavigator} />
-          <Stack.Screen name="Feedback" component={FeedbackScreen} />
-        </>
-      ) : (
-        <Stack.Screen name="Auth" component={AuthNavigator} />
-      )}
-    </Stack.Navigator>
+    <>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
+          contentStyle: styles.container,
+        }}
+      >
+        {isAuthenticated ? (
+          <>
+            <Stack.Screen name="Main" component={AppNavigator} />
+            <Stack.Screen name="Feedback" component={FeedbackScreen} />
+          </>
+        ) : (
+          <Stack.Screen name="Auth" component={AuthNavigator} />
+        )}
+      </Stack.Navigator>
+      <ToastNotification
+        visible={toastVisible}
+        title={toastTitle}
+        message={toastMessage}
+        type={toastType}
+        duration={toastDuration}
+        onDismiss={() => setToastVisible(false)}
+      />
+    </>
   );
 };
 

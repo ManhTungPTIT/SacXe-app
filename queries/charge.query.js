@@ -23,6 +23,11 @@ export const useChargeQuery = {
         queryClient.invalidateQueries(["CURRENT_CHARGE_SESSION"]);
       },
       onError: (error) => {
+        const errorMessage = error?.response?.data?.message || "";
+        if (errorMessage.includes("Xe chưa đang")) {
+          return;
+        }
+
         console.error("Error terminating charge session:", error);
       },
     });

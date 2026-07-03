@@ -128,6 +128,7 @@ const WaveChart = ({ chargingStartTime, initialEnergyKwh = 0 }) => {
   const [telemetryData, setTelemetryData] = useState([]);
   const [energy, setEnergy] = useState(() => toFiniteNumber(initialEnergyKwh));
   const [elapsedTime, setElapsedTime] = useState("00:00:00");
+  const [isRelayOn, setIsRelayOn] = useState(false);
 
   useEffect(() => {
     if (!chargingStartTime) return;
@@ -167,7 +168,7 @@ const WaveChart = ({ chargingStartTime, initialEnergyKwh = 0 }) => {
     [chartData, chartWidth],
   );
 
-  const isLive = telemetryData.length > 0;
+  const isLive = isRelayOn;
   const currentPower = telemetryData[telemetryData.length - 1] || 0;
   const peakPower = telemetryData.length ? Math.max(...telemetryData) : 0;
   const minPower = telemetryData.length ? Math.min(...telemetryData) : 0;
@@ -190,6 +191,10 @@ const WaveChart = ({ chargingStartTime, initialEnergyKwh = 0 }) => {
     if (!socket) return;
 
     const handleWave = (value) => {
+      if (value?.relay !== undefined && value?.relay !== null) {
+        setIsRelayOn(Boolean(Number(value.relay)));
+      }
+
       if (
         value?.energy !== undefined &&
         value?.energy !== null &&
@@ -205,6 +210,10 @@ const WaveChart = ({ chargingStartTime, initialEnergyKwh = 0 }) => {
       const nextPower = Number(value?.power);
       if (!Number.isFinite(nextPower)) {
         return;
+      }
+
+      if (value?.relay === undefined || value?.relay === null) {
+        setIsRelayOn(nextPower > 0);
       }
 
       setTelemetryData((prev) => {

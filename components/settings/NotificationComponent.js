@@ -56,6 +56,18 @@ const getNotificationMeta = (title = "") => {
     };
   }
 
+  if (
+    normalizedTitle.includes("dừng") ||
+    normalizedTitle.includes("ngắt") ||
+    normalizedTitle.includes("dung")
+  ) {
+    return {
+      icon: "alert-circle",
+      color: Colors.errorTextDark,
+      iconWrapperStyle: styles.notificationIconError,
+    };
+  }
+
   return {
     icon: "notifications",
     color: Colors.primary,
@@ -355,7 +367,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.successBgLight,
   },
   notificationIconWarning: {
-    backgroundColor: Colors.warningBg,
+    backgroundColor: Colors.warningBg || Colors.whiteTranslucent20, // Fallback if warningBg is not in Colors
+  },
+  notificationIconError: {
+    backgroundColor: Colors.errorBgLight2,
   },
   notificationIconDefault: {
     backgroundColor: Colors.cardBgGreen,
