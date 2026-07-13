@@ -9,6 +9,7 @@ import ChargeScreen from "../screens/ChargeScreen";
 import HistoryScreen from "../screens/HistoryScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import QrScanScreen from "../screens/QrScanScreen";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const Tab = createBottomTabNavigator();
 
@@ -29,6 +30,8 @@ const FloatingScanButton = ({ onPress, accessibilityState }) => {
 };
 
 const AppNavigator = () => {
+  const inset = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -65,9 +68,9 @@ const AppNavigator = () => {
           backgroundColor: Colors.background,
           borderTopColor: Colors.primary,
           borderTopWidth: 1.5,
-          paddingBottom: 10,
+          paddingBottom: inset.bottom + 10,
           paddingTop: 8,
-          height: 72,
+          height: 72 + inset.bottom,
           shadowColor: Colors.black,
           shadowOffset: { width: 0, height: -4 },
           shadowOpacity: 0.05,

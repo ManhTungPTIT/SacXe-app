@@ -352,6 +352,25 @@ const RootNavigator = () => {
         return;
       }
 
+      if (data?.type === "charge_full") {
+        updateCachedBikeChargingState(false);
+        invalidateChargeState();
+
+        const alertKey = getChargeEventKey(data, "charge-full");
+        if (!serverStopAlertsRef.current.has(alertKey)) {
+          serverStopAlertsRef.current.add(alertKey);
+          showHeadsUpNotification({
+            title: "Xe đã sạc đầy",
+            message:
+              data?.message ||
+              "Xe của bạn đã được sạc đầy. Hệ thống đã tự động ngắt sạc.",
+            type: "success",
+            duration: 12000,
+          });
+        }
+        return;
+      }
+
       if (data?.type === "charge_debit") {
         return;
       }

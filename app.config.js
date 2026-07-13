@@ -22,6 +22,8 @@ export default ({ config }) => ({
   extra: {
     ...(config.extra ?? {}),
     apiUrl: "https://enovo.slink.ai.vn",
+    // apiUrl: "https://enovo.slink.ai.vn",
+    // apiUrl: "http://192.168.1.13:6868",
     googleMapsApiKey: normalizedGoogleMapsApiKey,
     isAndroidMapEnabled,
     apiGoogleMapUrl:
