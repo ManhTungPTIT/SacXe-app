@@ -90,5 +90,12 @@ export const Colors = {
   greenTranslucent45: "rgba(14, 23, 18, 0.45)", // Translucent green overlay background
   whiteTranslucent05: "rgba(255, 255, 255, 0.05)", // Very translucent white
   blackTranslucent90: "rgba(0, 0, 0, 0.9)",      // Dark translucent black background
+  whiteTranslucent70: "rgba(255, 255, 255, 0.7)", // Sub text on dark/broken card
+
+  // Broken outlet (grayscale tone: xám / đen / trắng)
+  brokenCardBg: "#3A3D42",       // Charcoal gray card for a broken outlet
+  brokenCardBorder: "#2C2F34",   // Darker charcoal border
+  brokenIconBg: "rgba(255, 255, 255, 0.14)", // Icon wrap on broken card
+  brokenIcon: "#C7C7CC",         // Light gray icon on broken card
 };
 

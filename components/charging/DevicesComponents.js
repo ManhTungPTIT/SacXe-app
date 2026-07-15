@@ -32,8 +32,39 @@ const DevicesComponents = ({
     (state) => state.triggerNotificationPermission,
   );
   const userId = user?._id;
+  const isDeviceBroken = (device) => device?.isBroken === true;
+  const isDeviceNoPower = (device) => {
+    const normalizedStatus = String(
+      device?.powerStatus || device?.electricStatus || device?.status || "",
+    )
+      .trim()
+      .toLowerCase();
+
+    return (
+      device?.hasPower === false ||
+      device?.isPowerOn === false ||
+      device?.isPowered === false ||
+      device?.powerAvailable === false ||
+      device?.electricityAvailable === false ||
+      device?.isOnline === false ||
+      [
+        "no_power",
+        "power_off",
+        "power-outage",
+        "power_outage",
+        "offline",
+        "mat_dien",
+        "mất điện",
+      ].includes(normalizedStatus)
+    );
+  };
   const totalOutlets = devices.length;
-  const availableOutlets = devices.filter((device) => !device?.isUsing).length;
+  const noPowerOutlets = devices.filter(isDeviceNoPower).length;
+  const isStationNoPower = totalOutlets > 0 && noPowerOutlets === totalOutlets;
+  const availableOutlets = devices.filter(
+    (device) =>
+      !device?.isUsing && !isDeviceBroken(device) && !isDeviceNoPower(device),
+  ).length;
   const deviceLabel = deviceCode ? `Trụ ${deviceCode}` : "Trụ sạc đã quét";
   const selectedOutletIndex = selectedPowerOutlet
     ? devices.findIndex((device) => device?._id === selectedPowerOutlet?._id) + 1
@@ -130,10 +161,43 @@ const DevicesComponents = ({
         <View style={styles.headerTextBlock}>
           <Text style={styles.title}>Chọn ô sạc xe</Text>
           <Text style={styles.subtitle} numberOfLines={1}>
-            {deviceLabel} - {availableOutlets}/{totalOutlets} ô sạc có thể sử dụng
+            {isStationNoPower
+              ? `${deviceLabel} - Thiết bị đang không có điện`
+              : `${deviceLabel} - ${availableOutlets}/${totalOutlets} ô sạc có thể sử dụng`}
           </Text>
         </View>
       </View>
+
+      {noPowerOutlets > 0 && (
+        <View
+          style={[
+            styles.powerNotice,
+            isStationNoPower
+              ? styles.powerNoticeCritical
+              : styles.powerNoticeWarning,
+          ]}
+        >
+          <View style={styles.powerNoticeIconWrap}>
+            <Ionicons
+              name="flash-off-outline"
+              size={22}
+              color={Colors.warningOrange}
+            />
+          </View>
+          <View style={styles.powerNoticeTextBlock}>
+            <Text style={styles.powerNoticeTitle}>
+              {isStationNoPower
+                ? "Thiết bị đang không có điện"
+                : "Một số ô sạc không có điện"}
+            </Text>
+            <Text style={styles.powerNoticeMessage}>
+              {isStationNoPower
+                ? "Hiện chưa thể bắt đầu phiên sạc tại trụ này. Vui lòng kiểm tra nguồn điện hoặc chọn trụ sạc khác."
+                : `${noPowerOutlets}/${totalOutlets} ô sạc đang mất điện và tạm thời không thể sử dụng.`}
+            </Text>
+          </View>
+        </View>
+      )}
 
       <View style={styles.legendRow}>
         <View style={styles.legendItem}>
@@ -144,10 +208,71 @@ const DevicesComponents = ({
           <View style={[styles.legendDot, styles.legendDotBusy]} />
           <Text style={styles.legendText}>Đang dùng</Text>
         </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, styles.legendDotBroken]} />
+          <Text style={styles.legendText}>Hỏng</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, styles.legendDotNoPower]} />
+          <Text style={styles.legendText}>Không có điện</Text>
+        </View>
       </View>
       <View style={styles.listContainer}>
         {devices.map((device, index) => {
-          const isAvailable = !device?.isUsing;
+          const isNoPower = isDeviceNoPower(device);
+          const isBroken = isDeviceBroken(device);
+          const isAvailable = !isNoPower && !isBroken && !device?.isUsing;
+
+          const cardStyle = isNoPower
+            ? styles.deviceCardNoPower
+            : isBroken
+              ? styles.deviceCardBroken
+              : isAvailable
+                ? styles.deviceCardAvailable
+                : styles.deviceCardDisabled;
+          const nameStyle = isNoPower
+            ? styles.textNoPower
+            : isBroken
+              ? styles.textBroken
+              : isAvailable
+                ? styles.textAvailable
+                : styles.textDisabled;
+          const iconWrapStyle = isNoPower
+            ? styles.outletIconWrapNoPower
+            : isBroken
+              ? styles.outletIconWrapBroken
+              : isAvailable
+                ? styles.outletIconWrapAvailable
+                : styles.outletIconWrapDisabled;
+          const statusStyle = isNoPower
+            ? styles.textNoPowerSub
+            : isBroken
+              ? styles.textBrokenSub
+              : isAvailable
+                ? styles.textAvailableSub
+                : styles.textDisabled;
+
+          let iconName = "lock-closed-outline";
+          let iconColor = Colors.inactive;
+          if (isNoPower) {
+            iconName = "flash-off-outline";
+            iconColor = Colors.warningOrange;
+          } else if (isBroken) {
+            iconName = "construct-outline";
+            iconColor = Colors.brokenIcon;
+          } else if (isAvailable) {
+            iconName = "flash-outline";
+            iconColor = Colors.primary;
+          }
+
+          let statusLabel = "Đang có xe sạc";
+          if (isNoPower) {
+            statusLabel = "Thiết bị đang không có điện";
+          } else if (isBroken) {
+            statusLabel = "Ổ sạc đang hỏng";
+          } else if (isAvailable) {
+            statusLabel = "Sẵn sàng để sử dụng";
+          }
 
           return (
             <TouchableOpacity
@@ -156,50 +281,26 @@ const DevicesComponents = ({
               disabled={!isAvailable}
               activeOpacity={isAvailable ? 0.78 : 1}
               accessibilityRole="button"
-              accessibilityLabel={`Ổ cắm thứ ${index + 1}`}
+              accessibilityLabel={
+                isNoPower
+                  ? `Ổ cắm thứ ${index + 1} đang không có điện`
+                  : isBroken
+                    ? `Ổ cắm thứ ${index + 1} đang hỏng`
+                    : `Ổ cắm thứ ${index + 1}`
+              }
               accessibilityState={{ disabled: !isAvailable }}
-              style={[
-                styles.deviceCard,
-                isAvailable
-                  ? styles.deviceCardAvailable
-                  : styles.deviceCardDisabled,
-              ]}
+              style={[styles.deviceCard, cardStyle]}
             >
               <View style={styles.deviceCardTopRow}>
-                <Text
-                  style={[
-                    styles.deviceName,
-                    isAvailable
-                      ? styles.textAvailable
-                      : styles.textDisabled,
-                  ]}
-                >
+                <Text style={[styles.deviceName, nameStyle]}>
                   Ô sạc {index + 1}
                 </Text>
-                <View
-                  style={[
-                    styles.outletIconWrap,
-                    isAvailable
-                      ? styles.outletIconWrapAvailable
-                      : styles.outletIconWrapDisabled,
-                  ]}
-                >
-                  <Ionicons
-                    name={isAvailable ? "flash-outline" : "lock-closed-outline"}
-                    size={17}
-                    color={isAvailable ? Colors.primary : Colors.inactive}
-                  />
+                <View style={[styles.outletIconWrap, iconWrapStyle]}>
+                  <Ionicons name={iconName} size={17} color={iconColor} />
                 </View>
               </View>
-              <Text
-                style={[
-                  styles.deviceStatus,
-                  isAvailable
-                    ? styles.textAvailableSub
-                    : styles.textDisabled,
-                ]}
-              >
-                {isAvailable ? "Sẵn sàng để sử dụng" : "Đang có xe sạc"}
+              <Text style={[styles.deviceStatus, statusStyle]}>
+                {statusLabel}
               </Text>
             </TouchableOpacity>
           );
@@ -348,6 +449,7 @@ const styles = StyleSheet.create({
   },
   legendRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: 14,
     marginBottom: 12,
@@ -368,10 +470,56 @@ const styles = StyleSheet.create({
   legendDotBusy: {
     backgroundColor: "#B8BEC5",
   },
+  legendDotBroken: {
+    backgroundColor: Colors.brokenCardBg,
+  },
+  legendDotNoPower: {
+    backgroundColor: Colors.warningOrange,
+  },
   legendText: {
     fontSize: 12,
     fontWeight: "600",
     color: Colors.textSecondary,
+  },
+  powerNotice: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+    gap: 12,
+  },
+  powerNoticeCritical: {
+    backgroundColor: "#FFF7ED",
+    borderColor: "#FDBA74",
+  },
+  powerNoticeWarning: {
+    backgroundColor: "#FFFBEB",
+    borderColor: "#FDE68A",
+  },
+  powerNoticeIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  powerNoticeTextBlock: {
+    flex: 1,
+  },
+  powerNoticeTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: Colors.textPrimaryDark,
+    marginBottom: 4,
+  },
+  powerNoticeMessage: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.textSecondaryDark,
+    lineHeight: 19,
   },
   listContainer: {
     flexDirection: "row",
@@ -403,6 +551,20 @@ const styles = StyleSheet.create({
     shadowOpacity: 0,
     transform: [{ translateY: 0 }],
   },
+  deviceCardBroken: {
+    backgroundColor: Colors.brokenCardBg,
+    borderColor: Colors.brokenCardBorder,
+    elevation: 0,
+    shadowOpacity: 0,
+    transform: [{ translateY: 0 }],
+  },
+  deviceCardNoPower: {
+    backgroundColor: "#FFF7ED",
+    borderColor: "#FDBA74",
+    elevation: 0,
+    shadowOpacity: 0,
+    transform: [{ translateY: 0 }],
+  },
   deviceCardTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -422,6 +584,12 @@ const styles = StyleSheet.create({
   },
   outletIconWrapDisabled: {
     backgroundColor: "#E4E7EC",
+  },
+  outletIconWrapBroken: {
+    backgroundColor: Colors.brokenIconBg,
+  },
+  outletIconWrapNoPower: {
+    backgroundColor: Colors.white,
   },
   statusBadge: {
     borderRadius: 999,
@@ -463,6 +631,18 @@ const styles = StyleSheet.create({
   },
   textDisabled: {
     color: Colors.inactive,
+  },
+  textBroken: {
+    color: Colors.white,
+  },
+  textBrokenSub: {
+    color: Colors.whiteTranslucent70,
+  },
+  textNoPower: {
+    color: Colors.textPrimaryDark,
+  },
+  textNoPowerSub: {
+    color: Colors.textSecondaryDark,
   },
   cardActionRow: {
     flexDirection: "row",

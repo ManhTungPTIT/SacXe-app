@@ -16,6 +16,17 @@ const eChargeDeviceApi = {
       },
     });
   },
+  claimDevice: async ({ deviceCode }) => {
+    return await api.post("/api/e-charge-device/claim", { deviceCode });
+  },
+  getMyDevices: async () => {
+    return await api.get("/api/e-charge-device/my-devices");
+  },
+  unclaimDevice: async ({ deviceCode }) => {
+    return await api.delete("/api/e-charge-device/claim", {
+      data: { deviceCode },
+    });
+  },
 };
 
 export default eChargeDeviceApi;

@@ -12,6 +12,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../constants/color";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useEChargeDeviceQuery } from "../queries/eChargeDevice.query";
 
 const normalizeScannedCode = (rawData) => {
   const value = rawData?.trim();
@@ -47,9 +48,11 @@ const normalizeScannedCode = (rawData) => {
   return value;
 };
 
-const QrScanScreen = ({ navigation }) => {
+const QrScanScreen = ({ navigation, route }) => {
   const scannedRef = useRef(false);
   const [permission, requestPermission] = useCameraPermissions();
+  const mode = route?.params?.mode;
+  const claimDeviceMutation = useEChargeDeviceQuery.useClaimDevice();
 
   const openCameraSettings = useCallback(async () => {
     try {
@@ -159,12 +162,44 @@ const QrScanScreen = ({ navigation }) => {
       }
 
       scannedRef.current = true;
+
+      // Chế độ thêm thiết bị của người dùng (claim). Chỉ thêm được nếu
+      // thiết bị có isHouse: true (backend kiểm tra và trả lỗi nếu không).
+      if (mode === "claim") {
+        claimDeviceMutation.mutate(
+          { deviceCode: scannedDeviceCode },
+          {
+            onSuccess: () => {
+              Alert.alert(
+                "Thành công",
+                "Đã thêm thiết bị vào tài khoản của bạn.",
+                [{ text: "OK", onPress: () => navigation.navigate("Charge") }],
+              );
+            },
+            onError: (error) => {
+              const message =
+                error?.response?.data?.message ||
+                "Không thể thêm thiết bị. Vui lòng thử lại.";
+              Alert.alert("Thông báo", message, [
+                {
+                  text: "OK",
+                  onPress: () => {
+                    scannedRef.current = false;
+                  },
+                },
+              ]);
+            },
+          },
+        );
+        return;
+      }
+
       navigation.navigate("Charge", {
         scannedDeviceCode,
         scanToken: Date.now(),
       });
     },
-    [navigation],
+    [navigation, mode, claimDeviceMutation],
   );
 
   if (!permission?.granted) {
