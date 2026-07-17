@@ -62,6 +62,7 @@ const InitiateChargeComponent = ({
       setdeviceCode={setdeviceCode}
       setPowerId={setPowerId}
       deviceId={deviceId}
+      deviceAddress={devices?.address }
       onChargeStarted={onChargeStarted}
     />
   ) : (

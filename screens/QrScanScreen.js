@@ -13,7 +13,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../constants/color";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useEChargeDeviceQuery } from "../queries/eChargeDevice.query";
+import eChargeDeviceApi from "../api/eChargeDevice.api";
+import claimScanDecision from "../utils/claimScanDecision";
 
+const { getClaimScanDecision } = claimScanDecision;
+
+//từ mã qr ra mã thiết bị
 const normalizeScannedCode = (rawData) => {
   const value = rawData?.trim();
 
@@ -65,6 +70,7 @@ const QrScanScreen = ({ navigation, route }) => {
     }
   }, []);
 
+  //luồng xử lý khi người dùng không cấp quyền dùng camera
   const ensureCameraPermission = useCallback(
     async (options = {}) => {
       const { showBlockedAlert = true } = options;
@@ -123,7 +129,9 @@ const QrScanScreen = ({ navigation, route }) => {
     [openCameraSettings, permission, requestPermission],
   );
 
+  //luồng người dùng xin quyền camera ở máy chưa được cấp
   const handlePermissionAction = useCallback(() => {
+    //mở thẳng phần cài đặt để bật quyền thủ công
     if (permission && permission.canAskAgain === false) {
       openCameraSettings();
       return;
@@ -146,8 +154,33 @@ const QrScanScreen = ({ navigation, route }) => {
     }, [ensureCameraPermission, permission?.granted]),
   );
 
+  const navigateToScannedDevice = useCallback(
+    (scannedDeviceCode) => {
+      navigation.navigate("Charge", {
+        scannedDeviceCode,
+        scanToken: Date.now(),
+      });
+    },
+    [navigation],
+  );
+
+  const showInvalidQrAlert = useCallback(() => {
+    Alert.alert(
+      "Th\u00f4ng b\u00e1o",
+      "M\u00e3 QR kh\u00f4ng h\u1ee3p l\u1ec7. Vui l\u00f2ng th\u1eed qu\u00e9t l\u1ea1i m\u00e3 QR.",
+      [
+        {
+          text: "OK",
+          onPress: () => {
+            scannedRef.current = false;
+          },
+        },
+      ],
+    );
+  }, []);
+
   const handleBarcodeScanned = useCallback(
-    ({ data }) => {
+    async ({ data }) => {
       if (scannedRef.current) {
         return;
       }
@@ -155,32 +188,58 @@ const QrScanScreen = ({ navigation, route }) => {
       const scannedDeviceCode = normalizeScannedCode(data);
       if (!scannedDeviceCode) {
         Alert.alert(
-          "Thông báo",
-          "Mã QR không hợp lệ. Vui lòng thử quét lại mã QR.",
+          "Th\u00f4ng b\u00e1o",
+          "M\u00e3 QR kh\u00f4ng h\u1ee3p l\u1ec7. Vui l\u00f2ng th\u1eed qu\u00e9t l\u1ea1i m\u00e3 QR.",
         );
         return;
       }
 
       scannedRef.current = true;
 
-      // Chế độ thêm thiết bị của người dùng (claim). Chỉ thêm được nếu
-      // thiết bị có isHouse: true (backend kiểm tra và trả lỗi nếu không).
       if (mode === "claim") {
+        let deviceResponse;
+
+        try {
+          deviceResponse = await eChargeDeviceApi.getDevice({
+            deviceCode: scannedDeviceCode,
+          });
+        } catch (error) {
+          showInvalidQrAlert();
+          return;
+        }
+
+        const decision = getClaimScanDecision(deviceResponse);
+
+        if (decision.type === "invalid") {
+          showInvalidQrAlert();
+          return;
+        }
+
+        if (decision.type === "singleCharge") {
+          Alert.alert("Th\u00f4ng b\u00e1o", decision.message, [
+            {
+              text: "OK",
+              onPress: () => navigateToScannedDevice(scannedDeviceCode),
+            },
+          ]);
+          return;
+        }
+
         claimDeviceMutation.mutate(
           { deviceCode: scannedDeviceCode },
           {
             onSuccess: () => {
               Alert.alert(
-                "Thành công",
-                "Đã thêm thiết bị vào tài khoản của bạn.",
+                "Th\u00e0nh c\u00f4ng",
+                "\u0110\u00e3 th\u00eam thi\u1ebft b\u1ecb v\u00e0o t\u00e0i kho\u1ea3n c\u1ee7a b\u1ea1n.",
                 [{ text: "OK", onPress: () => navigation.navigate("Charge") }],
               );
             },
             onError: (error) => {
               const message =
                 error?.response?.data?.message ||
-                "Không thể thêm thiết bị. Vui lòng thử lại.";
-              Alert.alert("Thông báo", message, [
+                "Kh\u00f4ng th\u1ec3 th\u00eam thi\u1ebft b\u1ecb. Vui l\u00f2ng th\u1eed l\u1ea1i.";
+              Alert.alert("Th\u00f4ng b\u00e1o", message, [
                 {
                   text: "OK",
                   onPress: () => {
@@ -194,14 +253,16 @@ const QrScanScreen = ({ navigation, route }) => {
         return;
       }
 
-      navigation.navigate("Charge", {
-        scannedDeviceCode,
-        scanToken: Date.now(),
-      });
+      navigateToScannedDevice(scannedDeviceCode);
     },
-    [navigation, mode, claimDeviceMutation],
+    [
+      navigation,
+      mode,
+      claimDeviceMutation,
+      navigateToScannedDevice,
+      showInvalidQrAlert,
+    ],
   );
-
   if (!permission?.granted) {
     const isPermissionBlocked = permission && permission.canAskAgain === false;
 

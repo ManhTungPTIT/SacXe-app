@@ -388,7 +388,15 @@ const RootNavigator = () => {
     const handleChargeDeviceStatus = (data) => {
       const statusState = normalizeId(data?.state).toLowerCase();
 
-      if (statusState !== "offline") {
+      if (statusState !== "offline" && statusState !== "online") {
+        return;
+      }
+
+      // Ổ sạc đổi trạng thái khả dụng (mất/có lại bản tin) -> refetch danh sách
+      // ổ để mọi màn hình đang xem cập nhật realtime.
+      queryClient.invalidateQueries({ queryKey: ["E_CHARGE_DEVICE"] });
+
+      if (statusState === "online") {
         return;
       }
 
@@ -426,7 +434,6 @@ const RootNavigator = () => {
       }
 
       deviceStatusAlertsRef.current.add(alertKey);
-      queryClient.invalidateQueries({ queryKey: ["E_CHARGE_DEVICE"] });
       Alert.alert(
         "Thông báo",
         "Trụ sạc đang mất tín hiệu. Phiên sạc sẽ được cập nhật khi hệ thống nhận lại dữ liệu từ thiết bị.",
