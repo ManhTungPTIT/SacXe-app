@@ -5,28 +5,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { SocketContext } from "../../providers/SocketProvider";
 import { useQueryClient } from "@tanstack/react-query";
 import BatteryCharging from "./BatteryCharging";
+import { formatPrice } from "../../utils/pricing";
+
+// Khi năng lượng realtime tăng thêm mức này thì làm mới giá/số dư từ backend.
+const ENERGY_REFRESH_STEP_KWH = 0.02;
 
 const formatEnergy = (value) => {
   const energy = Number(value) || 0;
   return Number.isInteger(energy) ? energy : energy.toFixed(3);
-};
-
-const formatPrice = (value) => {
-  const price = Number(value) || 0;
-  return price.toLocaleString("vi-VN");
-};
-
-const PRICE_PER_KWH = 3000;
-const PRICE_UPDATE_STEP_KWH = 0.001;
-
-const getEnergyStep = (value) => {
-  const energy = Number(value) || 0;
-  return Math.floor((energy + Number.EPSILON) / PRICE_UPDATE_STEP_KWH);
-};
-
-const calculatePrice = (energy) => {
-  const steppedEnergy = getEnergyStep(energy) * PRICE_UPDATE_STEP_KWH;
-  return Math.round(steppedEnergy * PRICE_PER_KWH);
 };
 
 const getElapsedDuration = (startTime, currentTime) => {
@@ -90,6 +76,8 @@ const LatestHistory = ({ history, navigation }) => {
   const chargingStartTime = history?.startTime || history?.createdAt;
   const startTimeText = formatStartTime(chargingStartTime);
   const hasDuration = Boolean(history?.totalTime);
+  // Nhà dân (isHouse): điện miễn phí — hiển thị "Miễn phí" thay cho số tiền.
+  const isHouse = Boolean(history?.deviceId?.isHouse);
   const socketContext = useContext(SocketContext);
   const socket = socketContext?.socket;
   const queryClient = useQueryClient();
@@ -113,11 +101,11 @@ const LatestHistory = ({ history, navigation }) => {
   const [realtimeEnergy, setRealtimeEnergy] = useState(baseEnergy);
   const [isLive, setIsLive] = useState(baseEnergy > 0);
   const [currentTime, setCurrentTime] = useState(Date.now());
-  const lastInvalidatedEnergyStepRef = useRef(getEnergyStep(baseEnergy));
+  const lastInvalidatedEnergyRef = useRef(baseEnergy);
 
   useEffect(() => {
     setRealtimeEnergy(baseEnergy);
-    lastInvalidatedEnergyStepRef.current = getEnergyStep(baseEnergy);
+    lastInvalidatedEnergyRef.current = baseEnergy;
     setIsLive(baseEnergy > 0);
   }, [history?._id, baseEnergy]);
 
@@ -149,28 +137,28 @@ const LatestHistory = ({ history, navigation }) => {
     return () => clearInterval(intervalId);
   }, [history?._id, hasDuration, chargingStartTime]);
 
-  // Refresh active-session data when the displayed energy step advances.
+  // Giá hiển thị lấy trực tiếp từ backend (đã tính theo khung giờ), không tính
+  // lại ở client để tránh lệch số.
   const lastFetchedEnergy = baseEnergy;
-  const displayPrice = hasDuration
-    ? history?.price
-    : Math.max(basePrice, calculatePrice(realtimeEnergy));
+  const displayPrice = hasDuration ? history?.price : basePrice;
   const displayDuration = hasDuration
     ? history?.totalTime
     : getElapsedDuration(chargingStartTime, currentTime);
 
+  // Khi năng lượng realtime vượt mốc bước, làm mới latestHistory (giá) và ME
+  // (số dư ví) để hiển thị khớp với số backend đã trừ.
   useEffect(() => {
     if (hasDuration) return;
 
-    const realtimeEnergyStep = getEnergyStep(realtimeEnergy);
-    const lastFetchedEnergyStep = getEnergyStep(lastFetchedEnergy);
-    const lastInvalidatedEnergyStep = Math.max(
-      lastInvalidatedEnergyStepRef.current,
-      lastFetchedEnergyStep,
+    const reference = Math.max(
+      lastInvalidatedEnergyRef.current,
+      lastFetchedEnergy,
     );
 
-    if (realtimeEnergyStep > lastInvalidatedEnergyStep) {
-      lastInvalidatedEnergyStepRef.current = realtimeEnergyStep;
+    if (realtimeEnergy - reference >= ENERGY_REFRESH_STEP_KWH) {
+      lastInvalidatedEnergyRef.current = realtimeEnergy;
       queryClient.invalidateQueries({ queryKey: ["latestHistory"] });
+      queryClient.invalidateQueries({ queryKey: ["ME"] });
     }
   }, [realtimeEnergy, lastFetchedEnergy, hasDuration, queryClient]);
 
@@ -227,7 +215,7 @@ const LatestHistory = ({ history, navigation }) => {
               <View style={styles.metricCard}>
                 <Text style={styles.metricLabel}>Chi phí</Text>
                 <Text style={styles.metricValue}>
-                  {formatPrice(displayPrice)} VND
+                  {isHouse ? "Quý khách tự thanh toán" : `${formatPrice(displayPrice)} VND`}
                 </Text>
               </View>
             </View>

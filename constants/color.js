@@ -37,6 +37,7 @@ export const Colors = {
   textPlaceholder: "#7A8087",  // Input placeholder text gray
   danger: "#FF3B30",           // Danger / Delete red
   infoBlue: "#1F6C9F",         // Blue color for info/links
+  primaryBlue: "#1A73E8",      // Blue accent (nút vị trí trên map, nav button)
   bgGreenTint: "#F7FBF8",      // Very light green tint background
   bgGrayLight: "#F3F4F6",      // Light gray background (Tailwind bg-gray-100 style)
   borderMuted: "#E5E7EB",      // Light gray border (Tailwind border-gray-200 style)

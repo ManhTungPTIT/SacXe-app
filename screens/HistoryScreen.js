@@ -33,18 +33,8 @@ const formatEnergy = (value) => {
   })} kWh`;
 };
 
-const PRICE_PER_KWH = 3000;
-const PRICE_UPDATE_STEP_KWH = 0.001;
-
-const getEnergyStep = (value) => {
-  const energy = Number(value) || 0;
-  return Math.floor((energy + Number.EPSILON) / PRICE_UPDATE_STEP_KWH);
-};
-
-const calculatePrice = (energy) => {
-  const steppedEnergy = getEnergyStep(energy) * PRICE_UPDATE_STEP_KWH;
-  return Math.round(steppedEnergy * PRICE_PER_KWH);
-};
+// Khi năng lượng realtime tăng thêm mức này thì làm mới giá/số dư từ backend.
+const ENERGY_REFRESH_STEP_KWH = 0.02;
 
 const isChargingHistory = (history) => !history?.totalTime;
 
@@ -147,13 +137,11 @@ const HistoryScreen = ({ navigation }) => {
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [realtimeEnergy, setRealtimeEnergy] = useState(activeHistoryEnergy);
   const [isLive, setIsLive] = useState((activeHistoryEnergy || 0) > 0);
-  const lastInvalidatedEnergyStepRef = useRef(
-    getEnergyStep(activeHistoryEnergy),
-  );
+  const lastInvalidatedEnergyRef = useRef(activeHistoryEnergy);
 
   useEffect(() => {
     setRealtimeEnergy(activeHistoryEnergy);
-    lastInvalidatedEnergyStepRef.current = getEnergyStep(activeHistoryEnergy);
+    lastInvalidatedEnergyRef.current = activeHistoryEnergy;
     setIsLive((activeHistoryEnergy || 0) > 0);
   }, [activeHistoryId, activeHistoryEnergy]);
 
@@ -190,17 +178,16 @@ const HistoryScreen = ({ navigation }) => {
   useEffect(() => {
     if (!activeHistoryId) return;
 
-    const realtimeEnergyStep = getEnergyStep(realtimeEnergy);
-    const lastFetchedEnergyStep = getEnergyStep(activeHistoryEnergy);
-    const lastInvalidatedEnergyStep = Math.max(
-      lastInvalidatedEnergyStepRef.current,
-      lastFetchedEnergyStep,
+    const reference = Math.max(
+      lastInvalidatedEnergyRef.current,
+      activeHistoryEnergy,
     );
 
-    if (realtimeEnergyStep > lastInvalidatedEnergyStep) {
-      lastInvalidatedEnergyStepRef.current = realtimeEnergyStep;
+    if (realtimeEnergy - reference >= ENERGY_REFRESH_STEP_KWH) {
+      lastInvalidatedEnergyRef.current = realtimeEnergy;
       queryClient.invalidateQueries({ queryKey: ["history"] });
       queryClient.invalidateQueries({ queryKey: ["latestHistory"] });
+      queryClient.invalidateQueries({ queryKey: ["ME"] });
     }
   }, [activeHistoryId, realtimeEnergy, activeHistoryEnergy, queryClient]);
 
@@ -217,10 +204,8 @@ const HistoryScreen = ({ navigation }) => {
       return history?.price;
     }
 
-    return Math.max(
-      getHistoryBasePrice(history),
-      calculatePrice(getDisplayEnergy(history)),
-    );
+    // Giá phiên đang chạy lấy từ backend (đã tính theo khung giờ).
+    return getHistoryBasePrice(history);
   };
 
   const activeDisplayEnergy = activeHistory ? getDisplayEnergy(activeHistory) : 0;

@@ -1,5 +1,5 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Easing, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import Svg, {
   Circle,
   Defs,
@@ -9,10 +9,8 @@ import Svg, {
   Stop,
 } from "react-native-svg";
 import { Colors } from "../constants/color";
-import { SocketContext } from "../providers/SocketProvider";
 import BatteryCharging from "./charging/BatteryCharging";
 
-const MAX_POINTS = 28;
 const CHART_HEIGHT = 140;
 const CHART_PADDING = {
   top: 18,
@@ -121,14 +119,19 @@ const buildChartGeometry = (values, width) => {
 
 
 
-const WaveChart = ({ chargingStartTime, initialEnergyKwh = 0 }) => {
-  const socketContext = useContext(SocketContext);
-  const socket = socketContext?.socket;
+const WaveChart = ({ chargingStartTime, telemetry }) => {
   const { width } = useWindowDimensions();
-  const [telemetryData, setTelemetryData] = useState([]);
-  const [energy, setEnergy] = useState(() => toFiniteNumber(initialEnergyKwh));
   const [elapsedTime, setElapsedTime] = useState("00:00:00");
-  const [isRelayOn, setIsRelayOn] = useState(false);
+
+  const {
+    powerSeries = [],
+    energyKwh = 0,
+    isRelayOn = false,
+    currentPower = 0,
+    peakPower = 0,
+    minPower = 0,
+    averagePower = 0,
+  } = telemetry || {};
 
   useEffect(() => {
     if (!chargingStartTime) return;
@@ -156,26 +159,14 @@ const WaveChart = ({ chargingStartTime, initialEnergyKwh = 0 }) => {
     return () => clearInterval(intervalId);
   }, [chargingStartTime]);
 
-  useEffect(() => {
-    const nextEnergy = toFiniteNumber(initialEnergyKwh);
-    setEnergy((prev) => Math.max(prev, nextEnergy));
-  }, [initialEnergyKwh]);
-
   const chartWidth = Math.min(Math.max(width - 80, 240), 540);
-  const chartData = telemetryData.length ? telemetryData : EMPTY_CHART_DATA;
+  const chartData = powerSeries.length ? powerSeries : EMPTY_CHART_DATA;
   const chartGeometry = useMemo(
     () => buildChartGeometry(chartData, chartWidth),
     [chartData, chartWidth],
   );
 
   const isLive = isRelayOn;
-  const currentPower = telemetryData[telemetryData.length - 1] || 0;
-  const peakPower = telemetryData.length ? Math.max(...telemetryData) : 0;
-  const minPower = telemetryData.length ? Math.min(...telemetryData) : 0;
-  const averagePower = telemetryData.length
-    ? telemetryData.reduce((total, value) => total + value, 0) /
-    telemetryData.length
-    : 0;
   const currentPowerParts = getPowerParts(currentPower);
   const scaleMaxPower = isLive ? peakPower : 0;
   const activePoint =
@@ -186,53 +177,6 @@ const WaveChart = ({ chargingStartTime, initialEnergyKwh = 0 }) => {
       (chartGeometry.plotHeight / (GRID_LINE_COUNT - 1)) * index
     );
   });
-
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleWave = (value) => {
-      if (value?.relay !== undefined && value?.relay !== null) {
-        setIsRelayOn(Boolean(Number(value.relay)));
-      }
-
-      if (
-        value?.energy !== undefined &&
-        value?.energy !== null &&
-        value?.energy !== ""
-      ) {
-        const nextEnergy = Number(value.energy);
-
-        if (Number.isFinite(nextEnergy)) {
-          setEnergy((prev) => Math.max(prev, nextEnergy / 1000));
-        }
-      }
-
-      const nextPower = Number(value?.power);
-      if (!Number.isFinite(nextPower)) {
-        return;
-      }
-
-      if (value?.relay === undefined || value?.relay === null) {
-        setIsRelayOn(nextPower > 0);
-      }
-
-      setTelemetryData((prev) => {
-        const nextData = [...prev, nextPower];
-
-        if (nextData.length > MAX_POINTS) {
-          nextData.shift();
-        }
-
-        return nextData;
-      });
-    };
-
-    socket.on("wave_data", handleWave);
-
-    return () => {
-      socket.off("wave_data", handleWave);
-    };
-  }, [socket]);
 
   return (
     <View style={styles.card}>
@@ -326,7 +270,7 @@ const WaveChart = ({ chargingStartTime, initialEnergyKwh = 0 }) => {
       <View style={styles.metricsRow}>
         <View style={styles.metricCard}>
           <Text style={styles.metricLabel}>Điện năng tiêu thụ</Text>
-          <Text style={styles.metricValue}>{formatEnergy(energy)} kWh</Text>
+          <Text style={styles.metricValue}>{formatEnergy(energyKwh)} kWh</Text>
         </View>
 
         <View style={styles.metricCard}>

@@ -22,6 +22,7 @@ const DevicesComponents = ({
   setPowerId,
   deviceId,
   deviceAddress,
+  deviceIsHouse,
   setDevices,
   onChargeStarted,
 }) => {
@@ -33,10 +34,10 @@ const DevicesComponents = ({
     (state) => state.triggerNotificationPermission,
   );
   const userId = user?._id;
-  // Hỏng (isBroken, cần admin gỡ) và không khả dụng (isUnavailable, tự gỡ khi
-  // có telemetry trở lại) là hai trạng thái hiển thị riêng; hỏng ưu tiên hơn.
+  // Hỏng (isBroken): admin đánh dấu/gỡ, hiển thị "Ổ đang bảo trì", không bấm
+  // được. isUnavailable (mất điện tạm/mất tín hiệu) không còn hiển thị riêng
+  // — gộp vào trạng thái "Có thể sử dụng" bình thường, không chặn bấm.
   const isDeviceBroken = (device) => device?.isBroken === true;
-  const isDeviceUnavailable = (device) => device?.isUnavailable === true;
   const isDeviceNoPower = (device) => {
     const normalizedStatus = String(
       device?.powerStatus || device?.electricStatus || device?.status || "",
@@ -69,10 +70,16 @@ const DevicesComponents = ({
     (device) =>
       !device?.isUsing &&
       !isDeviceBroken(device) &&
-      !isDeviceUnavailable(device) &&
       !isDeviceNoPower(device),
   ).length;
   const deviceLabel = deviceCode ? `Trụ ${deviceCode}` : "Trụ sạc đã quét";
+  const deviceAddressText = String(deviceAddress || "").trim();
+  const isHouseDevice = deviceIsHouse === true || deviceIsHouse === "true";
+  const stationTitle = isHouseDevice
+    ? "Nh\u00e0 c\u1ee7a b\u1ea1n"
+    : deviceAddressText
+      ? `C\u00f4ng c\u1ed9ng - ${deviceAddressText}`
+      : "C\u00f4ng c\u1ed9ng";
   const selectedOutletIndex = selectedPowerOutlet
     ? devices.findIndex((device) => device?._id === selectedPowerOutlet?._id) + 1
     : null;
@@ -166,7 +173,7 @@ const DevicesComponents = ({
           <Ionicons name="arrow-back" size={22} color={Colors.textDark} />
         </TouchableOpacity>
         <View style={styles.headerTextBlock}>
-          <Text style={styles.title}>Chọn ô sạc xe</Text>
+          <Text style={styles.title}>{stationTitle}</Text>
           <Text style={styles.subtitle} numberOfLines={1}>
             {isStationNoPower
               ? `${deviceLabel} - Thiết bị đang không có điện`
@@ -216,71 +223,51 @@ const DevicesComponents = ({
           <Text style={styles.legendText}>Đang dùng</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, styles.legendDotUnavailable]} />
-          <Text style={styles.legendText}>{"Kh\u00f4ng kh\u1ea3 d\u1ee5ng"}</Text>
-        </View>
-        <View style={styles.legendItem}>
           <View style={[styles.legendDot, styles.legendDotBroken]} />
-          <Text style={styles.legendText}>Hỏng</Text>
+          <Text style={styles.legendText}>Đang bảo trì</Text>
         </View>
       </View>
       <View style={styles.listContainer}>
         {devices.map((device, index) => {
           const isBroken = isDeviceBroken(device);
-          const isUnavailable = !isBroken && isDeviceUnavailable(device);
-          const isNoPower =
-            !isBroken && !isUnavailable && isDeviceNoPower(device);
-          const isAvailable =
-            !isBroken && !isUnavailable && !isNoPower && !device?.isUsing;
-          // Ổ mất kết nối vẫn cho bấm thử sạc: backend chỉ chặn ổ hỏng, còn
-          // watchdog telemetry sẽ tự hủy phiên nếu thiết bị vẫn im lặng.
-          const isPressable = isAvailable || isUnavailable;
+          const isNoPower = !isBroken && isDeviceNoPower(device);
+          const isAvailable = !isBroken && !isNoPower && !device?.isUsing;
+          const isPressable = isAvailable;
 
           const cardStyle = isBroken
             ? styles.deviceCardBroken
-            : isUnavailable
-              ? styles.deviceCardUnavailable
-              : isNoPower
-                ? styles.deviceCardNoPower
-                : isAvailable
-                  ? styles.deviceCardAvailable
-                  : styles.deviceCardDisabled;
+            : isNoPower
+              ? styles.deviceCardNoPower
+              : isAvailable
+                ? styles.deviceCardAvailable
+                : styles.deviceCardDisabled;
           const nameStyle = isBroken
             ? styles.textBroken
-            : isUnavailable
-              ? styles.textUnavailable
-              : isNoPower
-                ? styles.textNoPower
-                : isAvailable
-                  ? styles.textAvailable
-                  : styles.textDisabled;
+            : isNoPower
+              ? styles.textNoPower
+              : isAvailable
+                ? styles.textAvailable
+                : styles.textDisabled;
           const iconWrapStyle = isBroken
             ? styles.outletIconWrapBroken
-            : isUnavailable
-              ? styles.outletIconWrapUnavailable
-              : isNoPower
-                ? styles.outletIconWrapNoPower
-                : isAvailable
-                  ? styles.outletIconWrapAvailable
-                  : styles.outletIconWrapDisabled;
+            : isNoPower
+              ? styles.outletIconWrapNoPower
+              : isAvailable
+                ? styles.outletIconWrapAvailable
+                : styles.outletIconWrapDisabled;
           const statusStyle = isBroken
             ? styles.textBrokenSub
-            : isUnavailable
-              ? styles.textUnavailableSub
-              : isNoPower
-                ? styles.textNoPowerSub
-                : isAvailable
-                  ? styles.textAvailableSub
-                  : styles.textDisabled;
+            : isNoPower
+              ? styles.textNoPowerSub
+              : isAvailable
+                ? styles.textAvailableSub
+                : styles.textDisabled;
 
           let iconName = "lock-closed-outline";
           let iconColor = Colors.inactive;
           if (isBroken) {
             iconName = "construct-outline";
             iconColor = "#9CA3AF";
-          } else if (isUnavailable) {
-            iconName = "cloud-offline-outline";
-            iconColor = Colors.warningOrange;
           } else if (isNoPower) {
             iconName = "flash-off-outline";
             iconColor = Colors.warningOrange;
@@ -289,13 +276,11 @@ const DevicesComponents = ({
             iconColor = Colors.primary;
           }
 
-          let statusLabel = "\u0110ang c\u00f3 xe s\u1ea1c";
+          let statusLabel = "Đang có xe sạc";
           if (isBroken) {
-            statusLabel = "\u1ed4 h\u1ecfng";
-          } else if (isUnavailable) {
-            statusLabel = "\u1ed4 kh\u00f4ng kh\u1ea3 d\u1ee5ng";
+            statusLabel = "Ổ đang bảo trì";
           } else if (isNoPower) {
-            statusLabel = "Thi\u1ebft b\u1ecb \u0111ang kh\u00f4ng c\u00f3 \u0111i\u1ec7n";
+            statusLabel = "Thiết bị đang không có điện";
           } else if (isAvailable) {
             statusLabel = "Sẵn sàng để sử dụng";
           }
@@ -309,12 +294,10 @@ const DevicesComponents = ({
               accessibilityRole="button"
               accessibilityLabel={
                 isBroken
-                  ? `\u1ed4 c\u1eafm th\u1ee9 ${index + 1} b\u1ecb h\u1ecfng`
-                  : isUnavailable
-                    ? `\u1ed4 c\u1eafm th\u1ee9 ${index + 1} kh\u00f4ng kh\u1ea3 d\u1ee5ng`
-                    : isNoPower
-                      ? `\u1ed4 c\u1eafm th\u1ee9 ${index + 1} \u0111ang kh\u00f4ng c\u00f3 \u0111i\u1ec7n`
-                      : `\u1ed4 c\u1eafm th\u1ee9 ${index + 1}`
+                  ? `Ổ cắm thứ ${index + 1} đang bảo trì`
+                  : isNoPower
+                    ? `Ổ cắm thứ ${index + 1} đang không có điện`
+                    : `Ổ cắm thứ ${index + 1}`
               }
               accessibilityState={{ disabled: !isPressable }}
               style={[styles.deviceCard, cardStyle]}
@@ -537,9 +520,6 @@ const styles = StyleSheet.create({
   legendDotBusy: {
     backgroundColor: "#B8BEC5",
   },
-  legendDotUnavailable: {
-    backgroundColor: Colors.warningOrange,
-  },
   legendDotBroken: {
     backgroundColor: "#374151",
   },
@@ -621,13 +601,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0,
     transform: [{ translateY: 0 }],
   },
-  deviceCardUnavailable: {
-    backgroundColor: "#FFF7ED",
-    borderColor: "#FDBA74",
-    elevation: 0,
-    shadowOpacity: 0,
-    transform: [{ translateY: 0 }],
-  },
   deviceCardBroken: {
     backgroundColor: "#374151",
     borderColor: "#1F2937",
@@ -661,11 +634,6 @@ const styles = StyleSheet.create({
   },
   outletIconWrapDisabled: {
     backgroundColor: "#E4E7EC",
-  },
-  outletIconWrapUnavailable: {
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#FDBA74",
   },
   outletIconWrapBroken: {
     backgroundColor: "#1F2937",
@@ -713,12 +681,6 @@ const styles = StyleSheet.create({
   },
   textDisabled: {
     color: Colors.inactive,
-  },
-  textUnavailable: {
-    color: Colors.textPrimaryDark,
-  },
-  textUnavailableSub: {
-    color: Colors.textSecondaryDark,
   },
   textBroken: {
     color: "#E5E7EB",

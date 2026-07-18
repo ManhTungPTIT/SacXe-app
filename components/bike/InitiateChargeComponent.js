@@ -9,6 +9,7 @@ import {
 import { Colors } from "../../constants/color";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import AntDesign from "@expo/vector-icons/AntDesign";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import DevicesComponents from "../charging/DevicesComponents";
 import { useEChargeDeviceQuery } from "../../queries/eChargeDevice.query";
 
@@ -53,21 +54,26 @@ const InitiateChargeComponent = ({
     );
   };
 
-  return devices?.powerOutlets?.length > 0 ? (
+  const selectedDevice =
+    devices?.eChargeDevices || devices?.device || devices?.data || devices;
+  const powerOutlets = selectedDevice?.powerOutlets || devices?.powerOutlets || [];
+
+  return powerOutlets.length > 0 ? (
     <DevicesComponents
       navigation={navigation}
-      devices={devices.powerOutlets}
+      devices={powerOutlets}
       setDevices={setDevices}
       deviceCode={deviceCode}
       setdeviceCode={setdeviceCode}
       setPowerId={setPowerId}
       deviceId={deviceId}
-      deviceAddress={devices?.address }
+      deviceAddress={selectedDevice?.address || devices?.address}
+      deviceIsHouse={selectedDevice?.isHouse ?? devices?.isHouse}
       onChargeStarted={onChargeStarted}
     />
   ) : (
     <View style={styles.container}>
-      <View style={styles.contentContainer}>
+      {/* <View style={styles.contentContainer}>
         
         <Text style={styles.title}>Bắt đầu phiên sạc</Text>
         <Text style={styles.description}>
@@ -79,21 +85,16 @@ const InitiateChargeComponent = ({
             onPress={onScanQrPress}
             activeOpacity={0.8}
           >
-            <Text style={styles.scanButtonText}>Quét mã QR ngay</Text>
+            <View style={styles.scanButtonIcon}>
+              <Ionicons name="qr-code" size={22} color={Colors.primary} />
+            </View>
+            <Text style={styles.scanButtonText}>{"Qu\u00e9t QR \u0111\u1ec3 b\u1eaft \u0111\u1ea7u"}</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </View> */}
       <View style={styles.myDeviceSection}>
         <View style={styles.myDeviceHeader}>
           <Text style={styles.myDeviceSectionTitle}>Thiết bị của bạn</Text>
-          <TouchableOpacity
-            style={styles.addDeviceButton}
-            onPress={() => navigation.navigate("ScanQR", { mode: "claim" })}
-            activeOpacity={0.8}
-          >
-            <AntDesign name="plus" size={16} color={Colors.primary} />
-            <Text style={styles.addDeviceButtonText}>Thêm</Text>
-          </TouchableOpacity>
         </View>
 
         {isLoadingMyDevices ? (
@@ -154,7 +155,8 @@ const InitiateChargeComponent = ({
 const styles = StyleSheet.create({
   container: {
     width: "100%",
-    marginVertical: 32,
+    marginTop: 10,
+    marginBottom: 32,
     gap: 24,
   },
   contentContainer: {
@@ -189,15 +191,35 @@ const styles = StyleSheet.create({
   },
   scanButton: {
     backgroundColor: Colors.primary,
-    paddingVertical: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
     borderRadius: 12,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
     width: "100%",
+    borderWidth: 1,
+    borderColor: Colors.borderGreenLight,
+    shadowColor: Colors.shadowGreen,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  scanButtonIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: Colors.white,
+    alignItems: "center",
+    justifyContent: "center",
   },
   scanButtonText: {
     color: Colors.white,
-    fontWeight: "700",
-    fontSize: 16,
+    fontWeight: "800",
+    fontSize: 17,
+    letterSpacing: 0,
   },
   warningBox: {
     flexDirection: "row",
@@ -232,21 +254,6 @@ const styles = StyleSheet.create({
     color: Colors.textPrimaryDark,
     fontSize: 16,
     fontWeight: "800",
-  },
-  addDeviceButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: Colors.primary,
-  },
-  addDeviceButtonText: {
-    color: Colors.primary,
-    fontWeight: "700",
-    fontSize: 14,
   },
   myDeviceEmptyText: {
     color: Colors.textSecondary,

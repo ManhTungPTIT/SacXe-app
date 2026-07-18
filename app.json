@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "Enovo",
-    "slug": "enovo-mobile",
+    "name": "Sạc Xe Đê",
+    "slug": "Sac-Xe-De",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo_white_background_500.png",
+    "icon": "./assets/logo-sac-xe-de-tu-anh.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash_transparent_background_500.png",
+      "image": "./assets/logo-sac-xe-de-tu-anh.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -25,7 +25,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo_white_background_500.png",
+        "foregroundImage": "./assets/logo-sac-xe-de-tu-anh.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
@@ -45,18 +45,24 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/logo_white_background_500.png"
+          "icon": "./assets/logo-sac-xe-de-tu-anh.png"
         }
       ]
     ],
     "notification": {
-      "icon": "./assets/logo_white_background_500.png",
+      "icon": "./assets/logo-sac-xe-de-tu-anh.png",
       "color": "#ffffff"
     },
     "extra": {
       "eas": {
-        "projectId": "6a2034ed-4060-490d-a2f2-5b6774baa3b8"
-      }
-    }
+        "projectId": "549591e2-d911-4403-bed9-2975feda19b9"
+      },
+      "apiUrl": "http://192.168.1.13:6868",
+      "googleMapsApiKey": "AIzaSyCe5Ft06NdRvyQKi3opWZmJYMr5LxHndb8",
+      "isAndroidMapEnabled": true,
+      "apiGoogleMapUrl": "https://www.google.com/maps/dir/?api=1&destination={lat},{lng}",
+      "apiAppleMapUrl": "http://maps.apple.com/?daddr={lat},{lng}&dirflg=d"
+    },
+    "owner": "manhtung"
   }
 }

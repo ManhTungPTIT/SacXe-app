@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import BikeRegistration from "../components/bike/BikeRegistration";
 import { useBike } from "../queries/bike.query";
+import { useAuth } from "../queries/auth.query";
 import ToastNotification from "../components/ToastNotification";
 import InitiateChargeComponent from "../components/bike/InitiateChargeComponent";
 import ChargingStatusComponent from "../components/charging/ChargingStatusComponent";
@@ -45,6 +46,8 @@ const ChargeScreen = ({ route, navigation }) => {
     data: latestHistory,
     refetch: refetchLatestHistory,
   } = useHistory.useGetLatestHistory();
+  const { data: userData } = useAuth.useGetMe();
+  const walletBalance = userData?.user?.balance;
   const terminateChargeMutation = useChargeQuery.useTerminate();
   const {
     data: eChargeDevices,
@@ -62,6 +65,14 @@ const ChargeScreen = ({ route, navigation }) => {
   const isChargingSessionActive = Boolean(
     bike?.bike?.isCharging && !hasFinalizedLatestHistory,
   );
+  const isStopping =
+    terminateChargeMutation.isLoading || terminateChargeMutation.isPending;
+  // Giữ màn hình ở trạng thái "đang sạc" trong lúc chính nút Dừng sạc còn chờ
+  // API — nếu không, một refetch nền không liên quan (vd. latestHistory tự
+  // invalidate theo năng lượng realtime ở LatestHistory.js) có thể thấy
+  // History đã totalTime (backend ghi DB giữa chừng, trước khi HTTP response
+  // trả về) và chuyển màn sớm, trước khi mutation của nút bấm kịp resolve.
+  const displayChargingSession = isChargingSessionActive || isStopping;
 
   useFocusEffect(
     useCallback(() => {
@@ -127,8 +138,6 @@ const ChargeScreen = ({ route, navigation }) => {
       </View>
     );
   }
-
-  const isStopping = terminateChargeMutation.isLoading || terminateChargeMutation.isPending;
 
   const syncStoppedChargeState = () => {
     const activeDeviceCode = deviceCode || latestHistory?.deviceId?.deviceCode;
@@ -229,11 +238,14 @@ const ChargeScreen = ({ route, navigation }) => {
                 <Text style={styles.screenTitle}>Phiên sạc của bạn</Text>
               </View>
 
-              {isChargingSessionActive ? (
+              {displayChargingSession ? (
                 <>
                   <ChargingStatusComponent
                     chargingStartTime={chargingStartTime}
                     initialEnergyKwh={initialEnergyKwh}
+                    latestHistory={latestHistory}
+                    bike={bike?.bike}
+                    balance={walletBalance}
                     onStopCharging={handleStopCharging}
                     isStopping={isStopping}
                   />

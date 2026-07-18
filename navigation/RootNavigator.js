@@ -436,7 +436,7 @@ const RootNavigator = () => {
       deviceStatusAlertsRef.current.add(alertKey);
       Alert.alert(
         "Thông báo",
-        "Trụ sạc đang mất tín hiệu. Phiên sạc sẽ được cập nhật khi hệ thống nhận lại dữ liệu từ thiết bị.",
+        "Không có thiết bị sử dụng. Vui lòng cắm thiết bị của bạn vào ổ sạc",
       );
     };
 

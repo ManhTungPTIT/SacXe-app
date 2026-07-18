@@ -21,7 +21,7 @@ const getClaimScanDecision = (response) => {
     return { type: "invalid" };
   }
 
-  if (device?.isHouse === true) {
+  if (device?.isHouse === true || device?.isHouse === "true") {
     return { type: "claim" };
   }
 

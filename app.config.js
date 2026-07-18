@@ -9,8 +9,11 @@ const isAndroidMapEnabled =
 
 export default ({ config }) => ({
   ...config, // kế thừa toàn bộ app.json
-  android: {
+ 
+  android:
+   {
     ...(config.android ?? {}),
+    package: "com.company.sacxede",
     config: {
       ...(config.android?.config ?? {}),
       googleMaps: {
@@ -22,12 +25,13 @@ export default ({ config }) => ({
   extra: {
     ...(config.extra ?? {}),
    
-    // apiUrl: "https://enovo.slink.ai.vn",
-     apiUrl: "http://192.168.1.13:6868",
+    apiUrl: "https://enovo.slink.ai.vn",
+    // apiUrl: "http://192.168.1.13:6868",
     googleMapsApiKey: normalizedGoogleMapsApiKey,
     isAndroidMapEnabled,
     apiGoogleMapUrl:
       "https://www.google.com/maps/dir/?api=1&destination={lat},{lng}",
     apiAppleMapUrl: "http://maps.apple.com/?daddr={lat},{lng}&dirflg=d",
   },
+  
 });
