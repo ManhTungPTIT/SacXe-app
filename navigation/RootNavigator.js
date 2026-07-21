@@ -20,6 +20,8 @@ import ToastNotification from "../components/ToastNotification";
 import {
   sendLocalNotification,
   URGENT_VIBRATION_PATTERN,
+  wasChargeDeviceMissingRecently,
+  wasChargeStoppedManuallyRecently,
 } from "../services/notification.service";
 
 // Rung + phát local notification cho các cảnh báo CẦN người dùng xử lý ngay
@@ -389,6 +391,13 @@ const RootNavigator = () => {
         updateCachedBikeChargingState(false);
         invalidateChargeState();
 
+        if (
+          wasChargeDeviceMissingRecently() ||
+          wasChargeStoppedManuallyRecently()
+        ) {
+          return;
+        }
+
         const alertKey = getChargeEventKey(data, "charge-full");
         if (!serverStopAlertsRef.current.has(alertKey)) {
           serverStopAlertsRef.current.add(alertKey);
@@ -501,7 +510,9 @@ const RootNavigator = () => {
       markChargeSessionStoppedLocally();
       const message = "Không có thiết bị sử dụng. Vui lòng cắm thiết bị của bạn vào ổ sạc";
       Alert.alert("Thông báo", message);
-      triggerUrgentAlert("Thông báo", message);
+      if (!wasChargeDeviceMissingRecently()) {
+        triggerUrgentAlert("Thông báo", message);
+      }
     };
 
     socket.on("transaction_update", handleTransactionUpdate);

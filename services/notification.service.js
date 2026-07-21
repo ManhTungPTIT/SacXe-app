@@ -13,6 +13,8 @@ const LOCAL_CHARGE_NOTIFICATION_ID = "enovo_charge_alert";
 let isChargeDeviceCheckInProgress = false;
 let pendingChargeStartedNotification = null;
 let chargeNotificationNotBefore = 0;
+let chargeDeviceMissingUntil = 0;
+let manualChargeStopUntil = 0;
 
 const CHARGE_NOTIFICATION_DELAY_MS = 2000;
 
@@ -21,6 +23,7 @@ export const setChargeDeviceCheckInProgress = (isChecking) => {
   if (isChecking) {
     pendingChargeStartedNotification = null;
     chargeNotificationNotBefore = 0;
+    chargeDeviceMissingUntil = 0;
   }
 };
 
@@ -32,9 +35,18 @@ const isChargeStartedNotification = (notification) => {
   ).toLowerCase();
   return (
     text.includes("đang sạc") ||
+    text.includes("bắt đầu sạc") ||
     text.includes("bắt đầu phiên sạc") ||
     text.includes("sạc xe thành công")
   );
+};
+
+const isChargeFullNotification = (notification) => {
+  const content = notification?.request?.content;
+  const text = (
+    String(content?.title || "") + " " + String(content?.body || "")
+  ).toLowerCase();
+  return text.includes("sạc đầy") || text.includes("đã đầy");
 };
 
 const scheduleChargeNotificationContent = async (content, delayMs) => {
@@ -56,9 +68,47 @@ const scheduleChargeNotificationContent = async (content, delayMs) => {
 export const confirmChargeDeviceCheck = async () => {
   isChargeDeviceCheckInProgress = false;
   chargeNotificationNotBefore = Date.now() + CHARGE_NOTIFICATION_DELAY_MS;
+  chargeDeviceMissingUntil = 0;
   const content = pendingChargeStartedNotification;
   pendingChargeStartedNotification = null;
   await scheduleChargeNotificationContent(content, CHARGE_NOTIFICATION_DELAY_MS);
+};
+
+export const wasChargeDeviceMissingRecently = () =>
+  chargeDeviceMissingUntil > Date.now();
+
+export const wasChargeStoppedManuallyRecently = () =>
+  manualChargeStopUntil > Date.now();
+
+export const beginManualChargeStop = () => {
+  manualChargeStopUntil = Date.now() + 30 * 1000;
+};
+
+export const completeManualChargeStop = async () => {
+  manualChargeStopUntil = Date.now() + 30 * 1000;
+  await scheduleChargeNotificationContent(
+    {
+      title: "Đã dừng sạc xe",
+      body: "Phiên sạc xe của bạn đã được dừng.",
+    },
+    0,
+  );
+};
+
+export const cancelManualChargeStop = () => {
+  manualChargeStopUntil = 0;
+};
+
+export const markChargeDeviceMissing = async () => {
+  cancelPendingChargeNotification();
+  chargeDeviceMissingUntil = Date.now() + 30 * 1000;
+  await scheduleChargeNotificationContent(
+    {
+      title: "Không phát hiện thiết bị",
+      body: "Vui lòng cắm thiết bị của bạn vào ổ sạc.",
+    },
+    0,
+  );
 };
 
 export const cancelPendingChargeNotification = () => {
@@ -71,7 +121,13 @@ export const cancelPendingChargeNotification = () => {
 Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
     let shouldSuppress = false;
-    if (isChargeStartedNotification(notification)) {
+    if (
+      (wasChargeDeviceMissingRecently() ||
+        wasChargeStoppedManuallyRecently()) &&
+      isChargeFullNotification(notification)
+    ) {
+      shouldSuppress = true;
+    } else if (isChargeStartedNotification(notification)) {
       const content = notification?.request?.content;
       if (isChargeDeviceCheckInProgress) {
         pendingChargeStartedNotification = content;

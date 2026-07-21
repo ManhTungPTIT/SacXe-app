@@ -9,7 +9,7 @@ import {
   Image,
   Platform,
 } from "react-native";
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import Constants from "expo-constants";
 import { Colors } from "../constants/color";
@@ -57,7 +57,19 @@ const MapComponent = ({
     maxHeight: 120,
   });
 
-  const formattedMarkers = (eChargeDevices?.allDevices || []).map((device) => ({
+  const initialCameraPosition = useMemo(
+    () => ({
+      coordinates: {
+        latitude: location?.latitude,
+        longitude: location?.longitude,
+      },
+      zoom: 13,
+    }),
+    [location?.latitude, location?.longitude],
+  );
+
+  const formattedMarkers = useMemo(
+    () => (eChargeDevices?.allDevices || []).map((device) => ({
     id: device.deviceCode,
     coordinates: {
       latitude: Number(device.latitude),
@@ -65,7 +77,9 @@ const MapComponent = ({
     },
     title: `${device.deviceCode} (Trống ${device.availableSlots} chỗ)`,
     icon: chargeIcon,
-  }));
+    })),
+    [chargeIcon, eChargeDevices?.allDevices],
+  );
 
   const handleMarkerClick = (marker) => {
     const device = eChargeDevices?.allDevices?.find(
@@ -103,19 +117,17 @@ const MapComponent = ({
           ref={mapRef}
           style={styles.map}
           colorScheme="LIGHT"
-          cameraPosition={{
-            coordinates: {
-              latitude: location.latitude,
-              longitude: location.longitude,
-            },
-            zoom: 13,
-          }}
+          cameraPosition={initialCameraPosition}
           markers={formattedMarkers}
           properties={{
             isMyLocationEnabled: true,
           }}
           uiSettings={{
             myLocationButtonEnabled: false,
+            scrollGesturesEnabled: true,
+            zoomGesturesEnabled: true,
+            rotationGesturesEnabled: true,
+            tiltGesturesEnabled: true,
           }}
           onMarkerClick={handleMarkerClick}
         />
@@ -125,13 +137,7 @@ const MapComponent = ({
         <AppleMaps.View
           ref={mapRef}
           style={styles.map}
-          cameraPosition={{
-            coordinates: {
-              latitude: location.latitude,
-              longitude: location.longitude,
-            },
-            zoom: 13,
-          }}
+          cameraPosition={initialCameraPosition}
           annotations={formattedMarkers}
           properties={{
             isMyLocationEnabled: true,

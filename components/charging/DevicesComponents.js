@@ -17,6 +17,7 @@ import {
 } from "../../services/notification.service";
 import { Colors } from "../../constants/color";
 import { useAuthStore } from "../../stores/auth.store";
+import ChargingDeviceCheck from "./ChargingDeviceCheck";
 
 const DevicesComponents = ({
   navigation,
@@ -165,6 +166,17 @@ const DevicesComponents = ({
 
     handleInitiateCharge(selectedPowerOutlet._id);
   };
+
+  // Hiển thị màn tìm thiết bị ngay khi request initiate bắt đầu. Giữ component
+  // này mounted để các callback onSuccess/onError của mutation vẫn được chạy.
+  if (isStarting) {
+    return (
+      <ChargingDeviceCheck
+        deviceCode={deviceCode}
+        powerIndex={selectedPowerOutlet?.index}
+      />
+    );
+  }
 
   return (
     <View style={styles.container}>

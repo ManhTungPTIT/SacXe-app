@@ -25,8 +25,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useFocusEffect } from "@react-navigation/native";
 import { socket } from "../services/socket.service";
 import {
+  beginManualChargeStop,
+  cancelManualChargeStop,
   cancelPendingChargeNotification,
+  completeManualChargeStop,
   confirmChargeDeviceCheck,
+  markChargeDeviceMissing,
   setChargeDeviceCheckInProgress,
 } from "../services/notification.service";
 
@@ -263,19 +267,48 @@ const ChargeScreen = ({ route, navigation }) => {
               : outlet;
           };
 
-          const updateOutlets = (value) =>
-            Array.isArray(value) ? value.map(releaseOutlet) : value;
-
-          return {
-            ...oldData,
-            powerOutlets: updateOutlets(oldData.powerOutlets),
-            data: oldData.data
-              ? {
-                  ...oldData.data,
-                  powerOutlets: updateOutlets(oldData.data.powerOutlets),
-                }
-              : oldData.data,
+          // Ổ có thể nằm ở nhiều path tuỳ shape response — InitiateChargeComponent
+          // đọc theo thứ tự: .eChargeDevices / .device / .data / top-level
+          // .powerOutlets. Trước đây chỉ patch top-level + .data.powerOutlets nên
+          // với shape .eChargeDevices/.device thì patch TRƯỢT -> ổ giữ "Đang có
+          // xe sạc" tới khi refetch xong (đúng cái "đợi"). Patch cả các path này
+          // để ổ đổi "Sẵn sàng để sử dụng" NGAY.
+          const releaseOutletsIn = (node) => {
+            if (!node || typeof node !== "object") return node;
+            if (!Array.isArray(node.powerOutlets)) return node;
+            return {
+              ...node,
+              powerOutlets: node.powerOutlets.map(releaseOutlet),
+            };
           };
+
+          let next = releaseOutletsIn(oldData);
+          if (next.eChargeDevices) {
+            next = {
+              ...next,
+              eChargeDevices: releaseOutletsIn(next.eChargeDevices),
+            };
+          }
+          if (next.device) {
+            next = { ...next, device: releaseOutletsIn(next.device) };
+          }
+          if (next.data && typeof next.data === "object") {
+            let nextData = releaseOutletsIn(next.data);
+            if (nextData.eChargeDevices) {
+              nextData = {
+                ...nextData,
+                eChargeDevices: releaseOutletsIn(nextData.eChargeDevices),
+              };
+            }
+            if (nextData.device) {
+              nextData = {
+                ...nextData,
+                device: releaseOutletsIn(nextData.device),
+              };
+            }
+            next = { ...next, data: nextData };
+          }
+          return next;
         },
       );
     }
@@ -339,7 +372,7 @@ const ChargeScreen = ({ route, navigation }) => {
     const finishWithoutDevice = ({ deferBackendConfirm = false } = {}) => {
       if (finished) return;
       finished = true;
-      cancelPendingChargeNotification();
+      markChargeDeviceMissing().catch(() => {});
       noDeviceConfirmedRef.current = true;
       setIsConfirmedSessionPendingSync(false);
       setDeviceCheck(null);
@@ -475,11 +508,13 @@ const ChargeScreen = ({ route, navigation }) => {
   }
 
   const executeStopCharging = () => {
+    beginManualChargeStop();
     terminateChargeMutation.mutate(
       {},
       {
         onSuccess: (data) => {
           syncStoppedChargeState();
+          completeManualChargeStop().catch(() => {});
 
           setToastType("success");
           setToastMessage("Dừng sạc xe thành công!");
@@ -490,12 +525,14 @@ const ChargeScreen = ({ route, navigation }) => {
 
           if (errorMessage.includes("Xe chưa đang")) {
             syncStoppedChargeState();
+            completeManualChargeStop().catch(() => {});
             setToastType("success");
             setToastMessage("Phiên sạc đã được cập nhật.");
             setToastVisible(true);
             return;
           }
 
+          cancelManualChargeStop();
           Alert.alert(
             "Thông báo",
             errorMessage || "Không thể dừng sạc. Vui lòng thử lại.",
@@ -583,10 +620,18 @@ const ChargeScreen = ({ route, navigation }) => {
                     navigation.navigate("ScanQR", params)
                   }
                   onChargeStarted={(charge) => {
+                    // Bật thành công (gói ack lệnh success=1) -> vào màn TÌM
+                    // THIẾT BỊ và chờ gói KIỂM TRA (code, ~4s sau). Backend:
+                    //  - code=0 (có thiết bị): đẩy wave_data(power) -> màn tìm
+                    //    thiết bị thấy power>0 -> vào phiên sạc + hiển thị W.
+                    //  - code=1 (không có): finalize no_device ->
+                    //    charge_billing_update -> màn tìm thiết bị thoát về màn
+                    //    chọn ổ.
                     noDeviceConfirmedRef.current = false;
                     setChargeDeviceCheckInProgress(true);
                     setConfirmedChargingStartTime(null);
                     setIsConfirmedSessionPendingSync(false);
+                    setInitialChargingTelemetry(null);
                     queryClient.setQueryData(["USERS_BIKE"], (current) => ({
                       ...(current || {}),
                       bike: charge?.bike || {

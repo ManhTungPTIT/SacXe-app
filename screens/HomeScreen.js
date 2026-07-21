@@ -136,6 +136,8 @@ const HomeScreen = ({ navigation }) => {
             style={styles.scrollView}
             contentContainerStyle={styles.container}
             showsVerticalScrollIndicator={false}
+            nestedScrollEnabled
+            keyboardShouldPersistTaps="handled"
           >
             <View style={styles.mapSection}>
               <View style={styles.mapHeaderSection}>
