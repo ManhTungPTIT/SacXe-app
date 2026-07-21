@@ -44,28 +44,27 @@
     },
     "plugins": [
       "expo-secure-store",
-      [
+        [
         "expo-notifications",
         {
-          "icon": "./assets/notification-icon.png",
+          "icon": "./assets/logo-sac-xe-de-tu-anh.png",
           "color": "#31C861"
         }
       ]
     ],
     "notification": {
-      "icon": "./assets/notification-icon.png",
+      "icon": "./assets/logo-sac-xe-de-tu-anh.png",
       "color": "#31C861"
     },
     "extra": {
       "eas": {
-        "projectId": "549591e2-d911-4403-bed9-2975feda19b9"
+        "projectId": "85252f67-afb1-4e73-9242-4f9aa4aaaca5"
       },
       "apiUrl": "http://192.168.1.13:6868",
-      "googleMapsApiKey": "AIzaSyCe5Ft06NdRvyQKi3opWZmJYMr5LxHndb8",
+      "googleMapsApiKey": "AIzaSyDIGUTSaUL8RY6xt_2EusWZtvZYGC_AQA4",
       "isAndroidMapEnabled": true,
       "apiGoogleMapUrl": "https://www.google.com/maps/dir/?api=1&destination={lat},{lng}",
       "apiAppleMapUrl": "http://maps.apple.com/?daddr={lat},{lng}&dirflg=d"
-    },
-    "owner": "manhtung"
+    }
   }
 }

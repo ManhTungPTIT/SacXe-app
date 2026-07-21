@@ -11,6 +11,10 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useChargeQuery } from "../../queries/charge.query";
 import { socket } from "../../services/socket.service";
+import {
+  cancelPendingChargeNotification,
+  setChargeDeviceCheckInProgress,
+} from "../../services/notification.service";
 import { Colors } from "../../constants/color";
 import { useAuthStore } from "../../stores/auth.store";
 
@@ -93,10 +97,12 @@ const DevicesComponents = ({
 
   const handleInitiateCharge = (powerId) => {
     setPowerId(powerId);
+    setChargeDeviceCheckInProgress(true);
     initiateChargeMutation.mutate(
       { deviceId, powerId },
       {
         onError: (error) => {
+          cancelPendingChargeNotification();
           const errorMessage =
             error.response?.data?.message ||
             "Đã xảy ra lỗi khi bắt đầu phiên sạc.";

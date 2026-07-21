@@ -24,6 +24,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFocusEffect } from "@react-navigation/native";
 import { socket } from "../services/socket.service";
+import {
+  cancelPendingChargeNotification,
+  confirmChargeDeviceCheck,
+  setChargeDeviceCheckInProgress,
+} from "../services/notification.service";
 
 // Phần cứng gửi telemetry mỗi ~5s (xem comment TELEMETRY_TIMEOUT_MS ở
 // backend/src/configs/mqtt.config.js) — backend tự cho phép trễ tới 15000ms
@@ -54,6 +59,10 @@ const ChargeScreen = ({ route, navigation }) => {
   const [toastType, setToastType] = useState("success");
   const [deviceCheck, setDeviceCheck] = useState(null);
   const [initialChargingTelemetry, setInitialChargingTelemetry] = useState(null);
+  const [confirmedChargingStartTime, setConfirmedChargingStartTime] = useState(null);
+  // Keep the charging session visible while bike/history syncs after detection.
+  const [isConfirmedSessionPendingSync, setIsConfirmedSessionPendingSync] =
+    useState(false);
   // Chặn màn "đang sạc" hiện ra dù chỉ 1 nhịp khi vừa kết luận không có thiết
   // bị: setDeviceCheck(null) áp dụng ngay, nhưng cache bike.isCharging=false
   // (set qua queryClient trong syncStoppedChargeState) có thể lan tới re-render
@@ -92,6 +101,8 @@ const ChargeScreen = ({ route, navigation }) => {
     selectedChargeDevice?.isHouse === "true";
   const deviceId = selectedChargeDevice?._id || null;
   const chargingStartTime = latestHistory?.startTime || latestHistory?.createdAt;
+  const displayedChargingStartTime =
+    confirmedChargingStartTime || chargingStartTime;
   const initialEnergyKwh =
     Number(latestHistory?.lastKnownEnergy ?? latestHistory?.energy ?? 0) || 0;
   const hasFinalizedLatestHistory = Boolean(
@@ -108,7 +119,18 @@ const ChargeScreen = ({ route, navigation }) => {
   // History đã totalTime (backend ghi DB giữa chừng, trước khi HTTP response
   // trả về) và chuyển màn sớm, trước khi mutation của nút bấm kịp resolve.
   const displayChargingSession =
-    !noDeviceConfirmedRef.current && (isChargingSessionActive || isStopping);
+    !noDeviceConfirmedRef.current &&
+    (isConfirmedSessionPendingSync || isChargingSessionActive || isStopping);
+
+  useEffect(() => {
+    if (isConfirmedSessionPendingSync && isChargingSessionActive) {
+      setIsConfirmedSessionPendingSync(false);
+    }
+  }, [isConfirmedSessionPendingSync, isChargingSessionActive]);
+
+  useEffect(() => {
+    return () => cancelPendingChargeNotification();
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -199,6 +221,9 @@ const ChargeScreen = ({ route, navigation }) => {
   }, [navigation, route?.params?.isUpdating]);
 
   const syncStoppedChargeState = ({ deferBackendConfirm = false } = {}) => {
+    cancelPendingChargeNotification();
+    setIsConfirmedSessionPendingSync(false);
+    setConfirmedChargingStartTime(null);
     const activeDeviceCode = deviceCode || latestHistory?.deviceId?.deviceCode;
     const activePowerId =
       powerId || latestHistory?.powerId?._id || latestHistory?.powerId;
@@ -297,7 +322,10 @@ const ChargeScreen = ({ route, navigation }) => {
       // Nếu không, UI sẽ vào phiên sạc rồi lập tức bị đẩy ra ngoài.
       if (finished || terminationStarted) return;
       finished = true;
+      confirmChargeDeviceCheck().catch(() => {});
       setInitialChargingTelemetry(telemetry || null);
+      setConfirmedChargingStartTime(Date.now());
+      setIsConfirmedSessionPendingSync(true);
       setDeviceCheck(null);
       queryClient.invalidateQueries({ queryKey: ["USERS_BIKE"] });
       queryClient.invalidateQueries({ queryKey: ["latestHistory"] });
@@ -311,7 +339,9 @@ const ChargeScreen = ({ route, navigation }) => {
     const finishWithoutDevice = ({ deferBackendConfirm = false } = {}) => {
       if (finished) return;
       finished = true;
+      cancelPendingChargeNotification();
       noDeviceConfirmedRef.current = true;
+      setIsConfirmedSessionPendingSync(false);
       setDeviceCheck(null);
       syncStoppedChargeState({ deferBackendConfirm });
       setToastType("warning");
@@ -525,7 +555,7 @@ const ChargeScreen = ({ route, navigation }) => {
               ) : displayChargingSession ? (
                 <>
                   <ChargingStatusComponent
-                    chargingStartTime={chargingStartTime}
+                    chargingStartTime={displayedChargingStartTime}
                     initialEnergyKwh={initialEnergyKwh}
                     latestHistory={latestHistory}
                     bike={bike?.bike}
@@ -554,6 +584,9 @@ const ChargeScreen = ({ route, navigation }) => {
                   }
                   onChargeStarted={(charge) => {
                     noDeviceConfirmedRef.current = false;
+                    setChargeDeviceCheckInProgress(true);
+                    setConfirmedChargingStartTime(null);
+                    setIsConfirmedSessionPendingSync(false);
                     queryClient.setQueryData(["USERS_BIKE"], (current) => ({
                       ...(current || {}),
                       bike: charge?.bike || {

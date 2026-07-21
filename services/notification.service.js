@@ -10,13 +10,86 @@ export const CHARGE_ALERTS_CHANNEL_ID = "charge_alerts";
 export const URGENT_VIBRATION_PATTERN = [0, 400, 200, 400, 200, 400];
 const LOCAL_CHARGE_NOTIFICATION_ID = "enovo_charge_alert";
 
+let isChargeDeviceCheckInProgress = false;
+let pendingChargeStartedNotification = null;
+let chargeNotificationNotBefore = 0;
+
+const CHARGE_NOTIFICATION_DELAY_MS = 2000;
+
+export const setChargeDeviceCheckInProgress = (isChecking) => {
+  isChargeDeviceCheckInProgress = Boolean(isChecking);
+  if (isChecking) {
+    pendingChargeStartedNotification = null;
+    chargeNotificationNotBefore = 0;
+  }
+};
+
+const isChargeStartedNotification = (notification) => {
+
+  const content = notification?.request?.content;
+  const text = (
+    String(content?.title || "") + " " + String(content?.body || "")
+  ).toLowerCase();
+  return (
+    text.includes("đang sạc") ||
+    text.includes("bắt đầu phiên sạc") ||
+    text.includes("sạc xe thành công")
+  );
+};
+
+const scheduleChargeNotificationContent = async (content, delayMs) => {
+  if (!content) return;
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: content.title,
+      body: content.body,
+      data: content.data || {},
+      sound: content.sound || "default",
+    },
+    trigger: {
+      seconds: Math.max(1, Math.ceil(delayMs / 1000)),
+      channelId: CHARGE_ALERTS_CHANNEL_ID,
+    },
+  });
+};
+
+export const confirmChargeDeviceCheck = async () => {
+  isChargeDeviceCheckInProgress = false;
+  chargeNotificationNotBefore = Date.now() + CHARGE_NOTIFICATION_DELAY_MS;
+  const content = pendingChargeStartedNotification;
+  pendingChargeStartedNotification = null;
+  await scheduleChargeNotificationContent(content, CHARGE_NOTIFICATION_DELAY_MS);
+};
+
+export const cancelPendingChargeNotification = () => {
+  isChargeDeviceCheckInProgress = false;
+  pendingChargeStartedNotification = null;
+  chargeNotificationNotBefore = 0;
+};
+
 // Cấu hình cách hiển thị notification khi app đang mở
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true, // Hiện alert
-    shouldPlaySound: true, // Phát âm thanh
-    shouldSetBadge: true, // Hiện badge trên icon app
-  }),
+  handleNotification: async (notification) => {
+    let shouldSuppress = false;
+    if (isChargeStartedNotification(notification)) {
+      const content = notification?.request?.content;
+      if (isChargeDeviceCheckInProgress) {
+        pendingChargeStartedNotification = content;
+        shouldSuppress = true;
+      } else if (chargeNotificationNotBefore > Date.now()) {
+        await scheduleChargeNotificationContent(
+          content,
+          chargeNotificationNotBefore - Date.now(),
+        );
+        shouldSuppress = true;
+      }
+    }
+    return {
+      shouldShowAlert: !shouldSuppress,
+      shouldPlaySound: !shouldSuppress,
+      shouldSetBadge: !shouldSuppress,
+    };
+  },
 });
 
 export async function registerForPushNotificationsAsync() {
