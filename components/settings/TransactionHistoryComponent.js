@@ -140,7 +140,7 @@ const TransactionHistoryComponent = ({
                 <View style={styles.emptyCard}>
                   <Text style={styles.emptyTitle}>Chưa có giao dịch nào</Text>
                   <Text style={styles.emptySubtitle}>
-                    Các giao dịch nạp tiền sẽ hiển thị tại đây.
+                    Các giao dịch nạp sẽ hiển thị tại đây.
                   </Text>
                 </View>
               )}

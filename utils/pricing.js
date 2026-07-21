@@ -10,7 +10,16 @@
 //   - Cao điểm  : 09:30 → 11:30 và 17:00 → 20:00
 //   - Bình thường: các khoảng còn lại
 
-// Bảng giá (đồng/kWh) theo cấp điện áp — phải khớp backend (src/utils/pricing.js).
+// Chế độ tính giá — PHẢI khớp thủ công với PRICING_MODE ở backend
+// (backend/src/utils/pricing.js, đổi qua env PRICING_MODE=tou). Không đọc từ
+// env ở đây vì FE build-time còn BE là runtime, dễ lệch nhau nếu tự động.
+export const PRICING_MODE = "flat";
+
+// Giá phẳng (đồng/kWh) khi PRICING_MODE = 'flat'.
+export const FLAT_RATE_VND = 6000;
+
+// Bảng giá (đồng/kWh) theo cấp điện áp — chỉ dùng khi PRICING_MODE = 'tou',
+// phải khớp backend (src/utils/pricing.js).
 export const RATE_TABLE = {
   UNDER_6KV: { normal: 1987, offPeak: 1300, peak: 3640 },
   FROM_6_TO_UNDER_22KV: { normal: 1899, offPeak: 1234, peak: 3508 },
@@ -63,10 +72,16 @@ const getRateTable = (voltageLevel = ACTIVE_VOLTAGE_LEVEL) =>
   RATE_TABLE[voltageLevel] || RATE_TABLE[ACTIVE_VOLTAGE_LEVEL];
 
 // Thông tin đơn giá đang áp dụng: { period, label, rate } — dùng để hiển thị.
+// period: null khi PRICING_MODE = 'flat' (không có khung giờ) — UI dựa vào
+// đây để ẩn badge khung giờ.
 export const getCurrentRateInfo = (
   date = new Date(),
   voltageLevel = ACTIVE_VOLTAGE_LEVEL,
 ) => {
+  if (PRICING_MODE === "flat") {
+    return { period: null, label: null, rate: FLAT_RATE_VND };
+  }
+
   const period = getPeriodAtTime(date);
   return {
     period,

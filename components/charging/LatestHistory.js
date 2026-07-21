@@ -75,7 +75,9 @@ const formatStartTime = (startTime) => {
 const LatestHistory = ({ history, navigation }) => {
   const chargingStartTime = history?.startTime || history?.createdAt;
   const startTimeText = formatStartTime(chargingStartTime);
-  const hasDuration = Boolean(history?.totalTime);
+  const hasDuration = Boolean(
+    history?.totalTime || history?.clientSessionStopped,
+  );
   // Nhà dân (isHouse): điện miễn phí — hiển thị "Miễn phí" thay cho số tiền.
   const isHouse = Boolean(history?.deviceId?.isHouse);
   const socketContext = useContext(SocketContext);
@@ -94,7 +96,7 @@ const LatestHistory = ({ history, navigation }) => {
 
   const handleEmptyPress = () => {
     if (navigation) {
-      navigation.navigate("Charge");
+      navigation.navigate("Charge", { resetChargeFlowToken: Date.now() });
     }
   };
 

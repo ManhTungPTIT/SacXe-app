@@ -16,16 +16,7 @@ export const bikeApi = {
     });
   },
   getMyBike: async () => {
-    try {
-      const response = await api.get("/api/bike/my-bike");
-      return response;
-    } catch (error) {
-      console.error("API: getMyBike error:", {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message,
-      });
-      throw error;
-    }
+    const response = await api.get("/api/bike/my-bike");
+    return response;
   },
 };

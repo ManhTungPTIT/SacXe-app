@@ -20,9 +20,10 @@ const ChargingStatusComponent = ({
   balance,
   onStopCharging,
   isStopping,
+  initialTelemetry,
 }) => {
   // Một nguồn telemetry duy nhất cho cả biểu đồ và thẻ chi phí/kỹ thuật.
-  const telemetry = useChargingTelemetry(initialEnergyKwh);
+  const telemetry = useChargingTelemetry(initialEnergyKwh, initialTelemetry);
 
   // Giá tiền là do backend tính (theo khung giờ). Khi năng lượng tăng đủ một
   // bước, làm mới latestHistory (giá) và ME (số dư ví) để hiển thị khớp backend.

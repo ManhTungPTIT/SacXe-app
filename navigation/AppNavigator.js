@@ -16,11 +16,15 @@ import HistoryScreen from "../screens/HistoryScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import QrScanScreen from "../screens/QrScanScreen";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useHistory } from "../queries/history.query";
 
 const Tab = createBottomTabNavigator();
 const TAB_BAR_TOP_PADDING = 4;
 const TAB_BAR_BOTTOM_PADDING = 0;
-const TAB_BAR_ICON_SIZE = 28;
+const TAB_BAR_ICON_SIZE = 22;
+const SCAN_ICON_SIZE = 24;
+const TAB_LABEL_FONT_SIZE = 11;
+const TAB_LABEL_LINE_HEIGHT = 14;
 const TAB_BAR_HEIGHT = 68;
 const TAB_LABELS = {
   Home: "Trang chủ",
@@ -30,11 +34,16 @@ const TAB_LABELS = {
   Settings: "Tài khoản",
 };
 
-const FloatingScanButton = ({ onPress, accessibilityState }) => {
+const FloatingScanButton = ({ onPress, accessibilityState, hideHint = false }) => {
   const isFocused = accessibilityState?.selected;
   const hintOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    if (hideHint) {
+      hintOpacity.setValue(0);
+      return undefined;
+    }
+
     const hintAnimation = Animated.loop(
       Animated.sequence([
         Animated.timing(hintOpacity, {
@@ -42,20 +51,10 @@ const FloatingScanButton = ({ onPress, accessibilityState }) => {
           duration: 250,
           useNativeDriver: true,
         }),
-        Animated.timing(hintOpacity, {
-          toValue: 0.45,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(hintOpacity, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.delay(1800),
+        Animated.delay(3000),
         Animated.timing(hintOpacity, {
           toValue: 0,
-          duration: 300,
+          duration: 250,
           useNativeDriver: true,
         }),
         Animated.delay(5000),
@@ -64,7 +63,7 @@ const FloatingScanButton = ({ onPress, accessibilityState }) => {
 
     hintAnimation.start();
     return () => hintAnimation.stop();
-  }, [hintOpacity]);
+  }, [hideHint, hintOpacity]);
 
   return (
     <TouchableOpacity
@@ -72,14 +71,32 @@ const FloatingScanButton = ({ onPress, accessibilityState }) => {
       onPress={onPress}
       style={styles.scanButtonWrapper}
     >
-      <Animated.View style={[styles.scanHint, { opacity: hintOpacity }]}>
-        <Text style={styles.scanHintText} numberOfLines={1}>
-          {"Qu\u00e9t QR \u0111\u1ec3 b\u1eaft \u0111\u1ea7u"}
-        </Text>
-        <Ionicons name="arrow-down" size={15} color={Colors.white} />
-      </Animated.View>
+      {/* renderToHardwareTextureAndroid: scanHintBubble bên trong có
+          elevation (đổ bóng Android) — khi opacity của View cha này được
+          animate (useNativeDriver), lớp bóng đổ render tách rời khỏi nội
+          dung nên xuất hiện một vệt đen ngay trước lúc hiện/ẩn. Prop này ép
+          cả nội dung lẫn bóng đổ dựng thành 1 texture duy nhất để cùng mờ
+          dần theo opacity, hết vệt đen. */}
+      {!hideHint && (
+        <Animated.View
+          style={[styles.scanHint, { opacity: hintOpacity }]}
+          renderToHardwareTextureAndroid
+        >
+        <View style={styles.scanHintBubble}>
+          <Text style={styles.scanHintText} numberOfLines={1}>
+            {"Qu\u00e9t QR trên trụ sạc"}
+          </Text>
+        </View>
+        <View style={styles.scanHintTailBorder} />
+        <View style={styles.scanHintTailFill} />
+        </Animated.View>
+      )}
       <View style={[styles.scanButton, isFocused && styles.scanButtonActive]}>
-        <Ionicons name="qr-code" size={30} color={Colors.white} />
+        <Ionicons
+          name="qr-code-outline"
+          size={SCAN_ICON_SIZE}
+          color={Colors.white}
+        />
       </View>
       <Text
         style={[
@@ -96,6 +113,12 @@ const FloatingScanButton = ({ onPress, accessibilityState }) => {
 const AppNavigator = () => {
   const inset = useSafeAreaInsets();
   const bottomSystemInset = inset.bottom;
+  const { data: latestHistory } = useHistory.useGetLatestHistory();
+  const isChargingSessionActive = Boolean(
+    latestHistory &&
+      !latestHistory.totalTime &&
+      !latestHistory.clientSessionStopped,
+  );
 
   return (
     <Tab.Navigator
@@ -104,13 +127,13 @@ const AppNavigator = () => {
           let iconName;
 
           if (route.name === "Home") {
-            iconName = focused ? "home" : "home-outline";
+            iconName = "home-outline";
           } else if (route.name === "Charge") {
-            iconName = focused ? "flash" : "flash-outline";
+            iconName = "flash-outline";
           } else if (route.name === "History") {
-            iconName = focused ? "time" : "time-outline";
+            iconName = "time-outline";
           } else if (route.name === "Settings") {
-            iconName = focused ? "settings" : "settings-outline";
+            iconName = "settings-outline";
           } else if (route.name === "ScanQR") {
             return null;
           } else if (route.name === "Feedback") {
@@ -130,9 +153,11 @@ const AppNavigator = () => {
         tabBarLabel: TAB_LABELS[route.name] ?? route.name,
         tabBarShowLabel: true,
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: "700",
+          fontSize: TAB_LABEL_FONT_SIZE,
+          lineHeight: TAB_LABEL_LINE_HEIGHT,
+          fontWeight: "600",
           marginTop: 2,
+          includeFontPadding: false,
         },
         headerShown: false,
         tabBarStyle: {
@@ -160,6 +185,7 @@ const AppNavigator = () => {
           tabBarButton: (props) => (
             <FloatingScanButton
               {...props}
+              hideHint={isChargingSessionActive}
               onPress={() =>
                 navigation.navigate("ScanQR", { mode: "claim" })
               }
@@ -167,7 +193,10 @@ const AppNavigator = () => {
           ),
           tabBarLabel: "",
           tabBarAccessibilityLabel: "Quet ma QR",
-          unmountOnBlur: true,
+          // Không dùng unmountOnBlur nữa: QrScanScreen tự gỡ camera theo
+          // useIsFocused() khi mất focus — mượt hơn trên Android so với để
+          // Tab.Navigator huỷ nguyên màn (từng gây flash đen thoáng qua khi
+          // SurfaceView của camera bị huỷ không đồng bộ với lúc đổi tab).
         })}
       />
       <Tab.Screen name="History" component={HistoryScreen} />
@@ -179,38 +208,68 @@ const AppNavigator = () => {
 
 const styles = StyleSheet.create({
   scanButtonWrapper: {
-    top: -18,
+    top: -24,
     justifyContent: "center",
     alignItems: "center",
   },
   scanHint: {
     position: "absolute",
-    bottom: 96,
-    width: 184,
-    flexDirection: "row",
+    bottom: 80,
+    width: 170,
+    height: 49,
+    alignItems: "center",
+  },
+  scanHintBubble: {
+    width: "100%",
+    height: 34,
     alignItems: "center",
     justifyContent: "center",
-    gap: 5,
-    paddingVertical: 6,
     paddingHorizontal: 12,
-    borderRadius: 999,
-    backgroundColor: Colors.primary,
+    borderRadius: 17,
+    borderWidth: 2,
+    borderColor: Colors.primary,
+    backgroundColor: Colors.white,
     shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.14,
     shadowRadius: 4,
     elevation: 4,
   },
+  scanHintTailBorder: {
+    position: "absolute",
+    top: 32,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 11,
+    borderRightWidth: 11,
+    borderTopWidth: 15,
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+    borderTopColor: Colors.primary,
+  },
+  scanHintTailFill: {
+    position: "absolute",
+    top: 32,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 8,
+    borderRightWidth: 8,
+    borderTopWidth: 11,
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+    borderTopColor: Colors.white,
+  },
   scanHintText: {
-    color: Colors.white,
+    color: Colors.primary,
     fontSize: 12,
     fontWeight: "800",
     textAlign: "center",
   },
   scanButton: {
-    width: 72,
-    height: 72,
+    width: 68,
+    height: 68,
     borderRadius: 36,
+    transform: [{ translateY: -6 }],
     backgroundColor: Colors.primary,
     justifyContent: "center",
     alignItems: "center",
@@ -223,13 +282,15 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   scanButtonActive: {
-    transform: [{ scale: 1.04 }],
+    transform: [{ translateY: -6 }, { scale: 1.04 }],
   },
   scanButtonLabel: {
-    marginTop: 2,
+    marginTop: -4,
     color: Colors.inactive,
-    fontSize: 11,
-    fontWeight: "700",
+    fontSize: TAB_LABEL_FONT_SIZE,
+    lineHeight: TAB_LABEL_LINE_HEIGHT,
+    fontWeight: "600",
+    includeFontPadding: false,
   },
   scanButtonLabelActive: {
     color: Colors.primary,

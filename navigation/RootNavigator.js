@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { ActivityIndicator, View, StyleSheet, Alert } from "react-native";
+import {
+  ActivityIndicator,
+  View,
+  StyleSheet,
+  Alert,
+  Vibration,
+} from "react-native";
 import { useAuthStore } from "../stores/auth.store";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -11,6 +17,19 @@ import { socket } from "../services/socket.service";
 import { useHistory } from "../queries/history.query";
 import { Colors } from "../constants/color";
 import ToastNotification from "../components/ToastNotification";
+import {
+  sendLocalNotification,
+  URGENT_VIBRATION_PATTERN,
+} from "../services/notification.service";
+
+// Rung + phát local notification cho các cảnh báo CẦN người dùng xử lý ngay
+// (hết tiền, lỗi phần cứng, quên cắm sạc...) — khác với Toast/Alert thường
+// (chỉ hiện chữ, không rung/kêu). Không dùng cho "sạc đầy" (tin tốt, không
+// cần xử lý gấp).
+const triggerUrgentAlert = (title, message) => {
+  Vibration.vibrate(URGENT_VIBRATION_PATTERN);
+  sendLocalNotification(title, message).catch(() => {});
+};
 
 const Stack = createNativeStackNavigator();
 
@@ -35,7 +54,7 @@ const RootNavigator = () => {
   const [toastTitle, setToastTitle] = useState("Thông báo");
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState("success");
-  const [toastDuration, setToastDuration] = useState(4000);
+  const [toastDuration, setToastDuration] = useState(5000);
 
   // Clear alert dedup khi phiên sạc thay đổi để tránh suppress alerts cho phiên mới
   useEffect(() => {
@@ -53,7 +72,7 @@ const RootNavigator = () => {
       socket.connect();
       // join vào room của user để nhận thông báo
       if (userId) {
-        if (latestHistory?._id && !latestHistory?.totalTime) {
+        if (latestHistory?._id && !latestHistory?.totalTime && !latestHistory?.clientSessionStopped) {
           socket.emit(
             "telemetry_data",
             `user_${userId}_${latestHistory.deviceId?.deviceCode}_${latestHistory.powerId?.index}`,
@@ -75,7 +94,7 @@ const RootNavigator = () => {
     }
 
     const joinRooms = () => {
-      if (latestHistory?._id && !latestHistory?.totalTime) {
+      if (latestHistory?._id && !latestHistory?.totalTime && !latestHistory?.clientSessionStopped) {
         socket.emit(
           "telemetry_data",
           `user_${userId}_${latestHistory.deviceId?.deviceCode}_${latestHistory.powerId?.index}`,
@@ -264,6 +283,20 @@ const RootNavigator = () => {
       });
     };
 
+    const markChargeSessionStoppedLocally = () => {
+      updateCachedBikeChargingState(false);
+      queryClient.setQueryData(["latestHistory"], (oldData) => {
+        if (!oldData || oldData.totalTime) {
+          return oldData;
+        }
+
+        return {
+          ...oldData,
+          clientSessionStopped: true,
+        };
+      });
+    };
+
     const getChargeEventKey = (data, fallback) => {
       const historyId = normalizeId(data?.historyId);
       const eventType = normalizeId(data?.type || fallback);
@@ -284,7 +317,7 @@ const RootNavigator = () => {
       setToastTitle(title || "Thông báo");
       setToastMessage(message || "");
       setToastType(type || "success");
-      setToastDuration(duration || 4000);
+      setToastDuration(duration || 5000);
       setToastVisible(true);
     };
 
@@ -337,17 +370,17 @@ const RootNavigator = () => {
         const alertKey = getChargeEventKey(data, "server-stop");
         if (!serverStopAlertsRef.current.has(alertKey)) {
           serverStopAlertsRef.current.add(alertKey);
+          const title = isAutoStopped ? "Phiên sạc đã dừng" : "Phiên sạc đang dừng";
+          const message =
+            data?.message ||
+            "Số dư tài khoản sạc của bạn đã xuống dưới ngưỡng cho phép. Hệ thống đã tự động ngắt sạc.";
           showHeadsUpNotification({
-            title:
-              isAutoStopped
-                ? "Phiên sạc đã dừng"
-                : "Phiên sạc đang dừng",
-            message:
-              data?.message ||
-              "Số dư tài khoản sạc của bạn đã xuống dưới ngưỡng cho phép. Hệ thống đã tự động ngắt sạc.",
+            title,
+            message,
             type: "warning",
-            duration: 12000,
+            duration: 5000,
           });
+          triggerUrgentAlert(title, message);
         }
         return;
       }
@@ -365,7 +398,7 @@ const RootNavigator = () => {
               data?.message ||
               "Xe của bạn đã được sạc đầy. Hệ thống đã tự động ngắt sạc.",
             type: "success",
-            duration: 12000,
+            duration: 5000,
           });
         }
         return;
@@ -376,11 +409,11 @@ const RootNavigator = () => {
       }
 
       if (data?.type === "low_balance") {
-        Alert.alert(
-          "Thông báo",
+        const message =
           data?.message ||
-            "Số dư tài khoản sạc của bạn sắp hết. Vui lòng nạp thêm.",
-        );
+          "Số dư tài khoản sạc của bạn sắp hết. Vui lòng nạp thêm.";
+        Alert.alert("Thông báo", message);
+        triggerUrgentAlert("Thông báo", message);
         invalidateChargeState();
       }
     };
@@ -400,8 +433,25 @@ const RootNavigator = () => {
         return;
       }
 
+      // charge_device_status "offline" dùng chung cho nhiều tình huống ở
+      // backend (xem charge.service.js): chỉ "no_signal" | "signal_lost"
+      // (từ handleDeviceSignalLost, có huỷ phiên thật) mới đáng báo "không
+      // có thiết bị". "no electric" (1 gói telemetry lẻ báo power=0 — kể cả
+      // gói ĐẦU lúc vừa bật sạc, trước khi xe kéo dòng thật, hoàn toàn bình
+      // thường) và "maintenance" (quét cả trụ offline) KHÔNG huỷ phiên ở
+      // backend — báo nhầm sẽ đá văng phiên đang sạc thật ra ngoài ngay sau
+      // khi vừa bật.
+      const statusReason = normalizeId(data?.reason);
+      if (statusReason !== "no_signal" && statusReason !== "signal_lost") {
+        return;
+      }
+
       const activeHistory = queryClient.getQueryData(["latestHistory"]);
-      if (!activeHistory || activeHistory?.totalTime) {
+      if (
+        !activeHistory ||
+        activeHistory?.totalTime ||
+        activeHistory?.clientSessionStopped
+      ) {
         return;
       }
 
@@ -422,6 +472,20 @@ const RootNavigator = () => {
         return;
       }
 
+      // Trụ nhiều ổ: khớp thêm powerIndex để không đá phiên đang sạc ở ổ A
+      // khi ổ B (khác) trên cùng trụ mất tín hiệu.
+      const activePowerIndex = normalizeId(
+        activeHistory?.powerId?.index ?? activeHistory?.powerIndex,
+      );
+      const statusPowerIndex = normalizeId(data?.powerIndex);
+      if (
+        activePowerIndex &&
+        statusPowerIndex &&
+        activePowerIndex !== statusPowerIndex
+      ) {
+        return;
+      }
+
       const alertKey = [
         "device-status",
         statusDeviceCode || activeDeviceCode,
@@ -434,10 +498,10 @@ const RootNavigator = () => {
       }
 
       deviceStatusAlertsRef.current.add(alertKey);
-      Alert.alert(
-        "Thông báo",
-        "Không có thiết bị sử dụng. Vui lòng cắm thiết bị của bạn vào ổ sạc",
-      );
+      markChargeSessionStoppedLocally();
+      const message = "Không có thiết bị sử dụng. Vui lòng cắm thiết bị của bạn vào ổ sạc";
+      Alert.alert("Thông báo", message);
+      triggerUrgentAlert("Thông báo", message);
     };
 
     socket.on("transaction_update", handleTransactionUpdate);

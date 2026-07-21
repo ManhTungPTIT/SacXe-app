@@ -3,6 +3,13 @@ import * as Device from "expo-device";
 import { Platform } from "react-native";
 import Constants from "expo-constants";
 
+// Channel Android + pattern rung dùng riêng cho cảnh báo cần xử lý ngay (hết
+// tiền, lỗi phần cứng, quên cắm sạc...) — khác biệt với thông báo thường để
+// người dùng nhận ra ngay là cần xử lý.
+export const CHARGE_ALERTS_CHANNEL_ID = "charge_alerts";
+export const URGENT_VIBRATION_PATTERN = [0, 400, 200, 400, 200, 400];
+const LOCAL_CHARGE_NOTIFICATION_ID = "enovo_charge_alert";
+
 // Cấu hình cách hiển thị notification khi app đang mở
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -13,9 +20,6 @@ Notifications.setNotificationHandler({
 });
 
 export async function registerForPushNotificationsAsync() {
-  // Tạm thời bỏ qua việc lấy push token khi chưa cấu hình Firebase để tránh lỗi console
-  return null;
-
   let token = null;
 
   // Bước 1: Kiểm tra thiết bị vật lý (không phải emulator)
@@ -40,7 +44,23 @@ export async function registerForPushNotificationsAsync() {
     return null;
   }
 
-  // Bước 5: Lấy Expo Push Token
+  // Bước 5: Cấu hình channel cho Android — không cần push token/Firebase, nên
+  // vẫn chạy được để local notification (âm thanh/rung cảnh báo phiên sạc)
+  // hoạt động ngay cả khi chưa bật push thật.
+  if (Platform.OS === "android") {
+    await Notifications.setNotificationChannelAsync(CHARGE_ALERTS_CHANNEL_ID, {
+      name: "Cảnh báo phiên sạc",
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: URGENT_VIBRATION_PATTERN,
+      lightColor: "#FF231F7C",
+      sound: "default",
+    });
+  }
+
+  // Bước 6: Lấy Expo Push Token thật. Yêu cầu google-services.json (Android/
+  // FCM V1) + APNs (iOS) đã cấu hình và build lại app — đây là token backend
+  // dùng để đẩy push khi app ở nền hoặc đã tắt hẳn (rung theo channel
+  // charge_alerts đã tạo ở trên).
   try {
     const projectId = Constants.expoConfig?.extra?.eas?.projectId;
     token = (
@@ -51,17 +71,6 @@ export async function registerForPushNotificationsAsync() {
   } catch (error) {
     console.error("Lỗi khi lấy push token:", error);
     return null;
-  }
-
-  // Bước 6: Cấu hình channel cho Android
-  if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync("default", {
-      name: "Thông báo mặc định",
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: "#FF231F7C",
-      sound: "default",
-    });
   }
 
   return token;
@@ -76,13 +85,19 @@ export function addNotificationResponseReceivedListener(callback) {
 }
 
 export async function sendLocalNotification(title, body, data = {}) {
+  await Notifications.dismissAllNotificationsAsync();
   await Notifications.scheduleNotificationAsync({
+    identifier: LOCAL_CHARGE_NOTIFICATION_ID,
     content: {
       title: title,
       body: body,
       data: data,
       sound: "default",
+      color: "#31C861",
     },
-    trigger: null, // null = gửi ngay lập tức
+    // channelId -> gửi ngay lập tức, đồng thời trên Android đi đúng qua
+    // channel "charge_alerts" (âm thanh + vibrationPattern riêng); iOS bỏ
+    // qua channelId, không ảnh hưởng.
+    trigger: { channelId: CHARGE_ALERTS_CHANNEL_ID },
   });
 }

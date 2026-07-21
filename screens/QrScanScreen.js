@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../constants/color";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -18,9 +18,24 @@ import claimScanDecision from "../utils/claimScanDecision";
 
 const { getClaimScanDecision } = claimScanDecision;
 
+const cleanScannedValue = (candidate) => {
+  if (candidate === undefined || candidate === null) return null;
+
+  let value = String(candidate).replace(/^\uFEFF/, "").trim();
+  if (!value) return null;
+
+  try {
+    value = decodeURIComponent(value).trim();
+  } catch {
+    // QR có ký tự % không hoàn chỉnh vẫn được xử lý như chuỗi thường.
+  }
+
+  return value.replace(/^['"]|['"]$/g, "").trim() || null;
+};
+
 //từ mã qr ra mã thiết bị
 const normalizeScannedCode = (rawData) => {
-  const value = rawData?.trim();
+  const value = cleanScannedValue(rawData);
 
   if (!value) {
     return null;
@@ -33,11 +48,19 @@ const normalizeScannedCode = (rawData) => {
       return parsed.trim();
     }
 
+    const payload = parsed?.data && typeof parsed.data === "object"
+      ? parsed.data
+      : parsed;
     const fromObject =
-      parsed?.deviceCode || parsed?.device_code || parsed?.code;
+      payload?.deviceCode ||
+      payload?.device_code ||
+      payload?.deviceId ||
+      payload?.device_id ||
+      payload?.code ||
+      payload?.id;
 
     if (fromObject) {
-      return String(fromObject).trim();
+      return cleanScannedValue(fromObject);
     }
   } catch (error) {
     // Ignore parse errors and fallback to regex/plain text.
@@ -47,14 +70,20 @@ const normalizeScannedCode = (rawData) => {
     /[?&](?:deviceCode|device_code|code)=([^&#]+)/i,
   );
   if (queryMatch?.[1]) {
-    return decodeURIComponent(queryMatch[1]).trim();
+    return cleanScannedValue(queryMatch[1]);
   }
+
+  // Hỗ trợ QR chứa URL/path hoặc câu chữ có kèm mã trụ, ví dụ
+  // https://example.vn/charge/plug_94FB9C.
+  const embeddedDeviceCode = value.match(/plug_[a-z0-9_-]+/i)?.[0];
+  if (embeddedDeviceCode) return embeddedDeviceCode;
 
   return value;
 };
 
 const QrScanScreen = ({ navigation, route }) => {
   const scannedRef = useRef(false);
+  const isFocused = useIsFocused();
   const [permission, requestPermission] = useCameraPermissions();
   const mode = route?.params?.mode;
   const claimDeviceMutation = useEChargeDeviceQuery.useClaimDevice();
@@ -204,7 +233,24 @@ const QrScanScreen = ({ navigation, route }) => {
             deviceCode: scannedDeviceCode,
           });
         } catch (error) {
-          showInvalidQrAlert();
+          const status = error?.response?.status;
+          if (status === 404 || status === 400) {
+            showInvalidQrAlert();
+          } else {
+            Alert.alert(
+              "Không thể kiểm tra mã QR",
+              error?.response?.data?.message ||
+                "Không thể kết nối tới máy chủ. Vui lòng kiểm tra mạng và thử lại.",
+              [
+                {
+                  text: "OK",
+                  onPress: () => {
+                    scannedRef.current = false;
+                  },
+                },
+              ],
+            );
+          }
           return;
         }
 
@@ -216,12 +262,7 @@ const QrScanScreen = ({ navigation, route }) => {
         }
 
         if (decision.type === "singleCharge") {
-          Alert.alert("Th\u00f4ng b\u00e1o", decision.message, [
-            {
-              text: "OK",
-              onPress: () => navigateToScannedDevice(scannedDeviceCode),
-            },
-          ]);
+          navigateToScannedDevice(scannedDeviceCode);
           return;
         }
 
@@ -232,7 +273,13 @@ const QrScanScreen = ({ navigation, route }) => {
               Alert.alert(
                 "Th\u00e0nh c\u00f4ng",
                 "\u0110\u00e3 th\u00eam thi\u1ebft b\u1ecb v\u00e0o t\u00e0i kho\u1ea3n c\u1ee7a b\u1ea1n.",
-                [{ text: "OK", onPress: () => navigation.navigate("Charge") }],
+                [
+                  {
+                    text: "OK",
+                    onPress: () =>
+                      navigateToScannedDevice(scannedDeviceCode),
+                  },
+                ],
               );
             },
             onError: (error) => {
@@ -292,17 +339,29 @@ const QrScanScreen = ({ navigation, route }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        <CameraView
-          style={StyleSheet.absoluteFill}
-          facing="back"
-          barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-          onBarcodeScanned={handleBarcodeScanned}
-        />
+        {/* Chỉ render camera khi tab này đang focus. Trước đây camera bị gỡ
+            qua unmountOnBlur ở cấp Tab.Navigator (AppNavigator.js) — trên
+            Android, SurfaceView của camera bị hệ thống huỷ ở một nhịp khác
+            với lúc React Navigation đổi tab, tạo ra một khung hình đen (như
+            "bóng đen") thoáng qua ngay khi rời màn, đúng lúc guideText biến
+            mất theo camera. Tự gỡ camera ngay khi mất focus (đồng bộ với
+            focus state, không chờ Tab.Navigator huỷ toàn màn) tránh được
+            khung hình đen đó. */}
+        {isFocused && (
+          <>
+            <CameraView
+              style={StyleSheet.absoluteFill}
+              facing="back"
+              barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+              onBarcodeScanned={handleBarcodeScanned}
+            />
 
-        <View style={styles.overlay} pointerEvents="none">
-          <View style={styles.scanFrame} />
-          <Text style={styles.guideText}>Đưa mã QR vào khung để quét</Text>
-        </View>
+            <View style={styles.overlay} pointerEvents="none">
+              <View style={styles.scanFrame} />
+              <Text style={styles.guideText}>Quét mã Qr trên trụ sạc</Text>
+            </View>
+          </>
+        )}
 
         <TouchableOpacity
           style={styles.backButton}

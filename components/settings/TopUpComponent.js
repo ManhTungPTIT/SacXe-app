@@ -132,7 +132,7 @@ const TopUpComponent = ({
                     <Text style={styles.inputUnitLabel}>VND</Text>
                   </View>
                   <Text style={styles.noteText}>
-                    * Tiền trong tài khoản sạc không thể chuyển lại về tài khoản ngân hàng của bạn.
+                    * Số dư trong tài khoản sạc không thể chuyển lại về tài khoản ngân hàng của bạn.
                   </Text>
                 </View>
                 <View style={styles.modalButtons}>

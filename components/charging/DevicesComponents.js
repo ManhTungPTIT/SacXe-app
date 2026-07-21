@@ -131,8 +131,7 @@ const DevicesComponents = ({
             "telemetry_data",
             `user_${userId}_${data?.deviceCode}_${data?.powerIndex}`,
           );
-          setDevices(null);
-          onChargeStarted?.();
+          onChargeStarted?.(data);
         },
         onSettled: resetConfirmModal,
       },
@@ -232,7 +231,10 @@ const DevicesComponents = ({
           const isBroken = isDeviceBroken(device);
           const isNoPower = !isBroken && isDeviceNoPower(device);
           const isAvailable = !isBroken && !isNoPower && !device?.isUsing;
-          const isPressable = isAvailable;
+          // Ổ bảo trì vẫn bấm được để báo lý do (trước đây disabled hoàn
+          // toàn nên bấm vào không có phản hồi gì) — chỉ ổ khả dụng mới mở
+          // modal xác nhận sạc.
+          const isPressable = isAvailable || isBroken;
 
           const cardStyle = isBroken
             ? styles.deviceCardBroken
@@ -287,7 +289,16 @@ const DevicesComponents = ({
 
           return (
             <TouchableOpacity
-              onPress={() => handleOpenConfirmModal(device)}
+              onPress={() => {
+                if (isBroken) {
+                  Alert.alert(
+                    "Thông báo",
+                    "Ổ đang bảo trì, vui lòng chọn ổ sạc khác",
+                  );
+                  return;
+                }
+                handleOpenConfirmModal(device);
+              }}
               key={device._id}
               disabled={!isPressable}
               activeOpacity={isPressable ? 0.78 : 1}

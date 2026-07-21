@@ -1,6 +1,6 @@
 import "dotenv/config";
 
-const googleMapsApiKey = "AIzaSyCe5Ft06NdRvyQKi3opWZmJYMr5LxHndb8";
+const googleMapsApiKey = "AIzaSyDIGUTSaUL8RY6xt_2EusWZtvZYGC_AQA4";
 const normalizedGoogleMapsApiKey = googleMapsApiKey.trim();
 const googleMapsApiKeyPattern = /^AIza[0-9A-Za-z_-]{35}$/;
 const isAndroidMapEnabled =
@@ -13,7 +13,8 @@ export default ({ config }) => ({
   android:
    {
     ...(config.android ?? {}),
-    package: "com.company.sacxede",
+    // package kế thừa từ app.json: vn.ai.slink.enovo — phải khớp cặp
+    // (package + SHA-1) đã đăng ký cho Google Maps API key.
     config: {
       ...(config.android?.config ?? {}),
       googleMaps: {
@@ -25,8 +26,8 @@ export default ({ config }) => ({
   extra: {
     ...(config.extra ?? {}),
    
-    apiUrl: "https://enovo.slink.ai.vn",
-    // apiUrl: "http://192.168.1.13:6868",
+     //apiUrl: "https://enovo.slink.ai.vn",
+    apiUrl: "http://192.168.1.13:6868",
     googleMapsApiKey: normalizedGoogleMapsApiKey,
     isAndroidMapEnabled,
     apiGoogleMapUrl:

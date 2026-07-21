@@ -18,6 +18,14 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
+# Firebase: service account private key (bí mật THẬT — KHÔNG commit).
+# Lưu ý: google-services.json / GoogleService-Info.plist PHẢI được git track
+# thì EAS Build (cloud) mới nhận được (EAS chỉ upload file git track). API key
+# trong google-services.json không phải secret (ràng buộc theo package + SHA-1),
+# nên KHÔNG ignore 2 file config này.
+*-firebase-adminsdk-*.json
+firebase-service-account*.json
+
 # Metro
 .metro-health-check*
 
@@ -40,5 +48,8 @@ yarn-error.*
 /ios
 /android
 
+# EAS local signing credentials (eas-cli đọc từ đĩa, không cần commit)
+credentials.json
+debug.keystore
+
 .env
-app.json

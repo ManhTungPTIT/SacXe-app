@@ -63,6 +63,9 @@ const ChargingCostCard = ({
 
   const rateInfo = getCurrentRateInfo(now);
   const badgeStyle = PERIOD_BADGE_STYLE[rateInfo.period] || PERIOD_BADGE_STYLE.normal;
+  // Giá phẳng (PRICING_MODE = 'flat') không có khung giờ -> ẩn badge, chỉ
+  // hiện đơn giá.
+  const showPeriodBadge = Boolean(rateInfo.period);
 
   // Chi phí tạm tính do BACKEND tính (đã theo khung giờ) — lấy mức mới nhất.
   const displayPrice = Math.max(
@@ -84,16 +87,18 @@ const ChargingCostCard = ({
           color={Colors.primary}
         />
         <Text style={styles.title}>Chi phí phiên sạc</Text>
-        <View
-          style={[
-            styles.periodBadge,
-            { backgroundColor: badgeStyle.bg, borderColor: badgeStyle.border },
-          ]}
-        >
-          <Text style={[styles.periodBadgeText, { color: badgeStyle.text }]}>
-            {rateInfo.label}
-          </Text>
-        </View>
+        {showPeriodBadge && (
+          <View
+            style={[
+              styles.periodBadge,
+              { backgroundColor: badgeStyle.bg, borderColor: badgeStyle.border },
+            ]}
+          >
+            <Text style={[styles.periodBadgeText, { color: badgeStyle.text }]}>
+              {rateInfo.label}
+            </Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.mainRow}>

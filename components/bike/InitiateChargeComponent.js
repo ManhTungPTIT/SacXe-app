@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -10,9 +11,14 @@ import { Colors } from "../../constants/color";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import DevicesComponents from "../charging/DevicesComponents";
 import { useEChargeDeviceQuery } from "../../queries/eChargeDevice.query";
 
+// Màn bắt đầu sạc gồm 3 bước:
+// 1. Chọn loại trụ: công cộng (quét QR) / tại gia (trụ của tôi)
+// 2. Luồng theo loại đã chọn
+// 3. Chọn ổ sạc (DevicesComponents) — chung cho cả hai luồng
 const InitiateChargeComponent = ({
   navigation,
   devices,
@@ -22,14 +28,43 @@ const InitiateChargeComponent = ({
   setIsScanned,
   setPowerId,
   deviceId,
+  mode,
+  setMode,
+  openHomeDevicesToken,
   onScanQrPress,
   onChargeStarted,
 }) => {
+
   const { data: myDevicesData, isLoading: isLoadingMyDevices } =
     useEChargeDeviceQuery.useGetMyDevices();
   const unclaimDeviceMutation = useEChargeDeviceQuery.useUnclaimDevice();
 
-  const myDevices = myDevicesData?.devices || [];
+  // Chuẩn hóa response về mảng trước khi dùng length/map.
+  const myDeviceCandidates = [
+    myDevicesData,
+    myDevicesData?.devices,
+    myDevicesData?.devices?.devices,
+    myDevicesData?.eChargeDevices,
+    myDevicesData?.data,
+    myDevicesData?.data?.devices,
+    myDevicesData?.data?.eChargeDevices,
+    myDevicesData?.devices?.data,
+    myDevicesData?.devices?.docs,
+    myDevicesData?.items,
+  ];
+  const myDeviceArray = myDeviceCandidates.find(Array.isArray);
+  const singleMyDevice = myDeviceCandidates.find(
+    (candidate) => candidate?.deviceCode,
+  );
+  const myDevices =
+    myDeviceArray || (singleMyDevice ? [singleMyDevice] : []);
+
+  useEffect(() => {
+    if (!openHomeDevicesToken) return;
+
+    setMode("home");
+    navigation.setParams({ openHomeDevicesToken: undefined });
+  }, [navigation, openHomeDevicesToken]);
 
   const handleSelectMyDevice = (device) => {
     setDevices([]);
@@ -58,52 +93,149 @@ const InitiateChargeComponent = ({
     devices?.eChargeDevices || devices?.device || devices?.data || devices;
   const powerOutlets = selectedDevice?.powerOutlets || devices?.powerOutlets || [];
 
-  return powerOutlets.length > 0 ? (
-    <DevicesComponents
-      navigation={navigation}
-      devices={powerOutlets}
-      setDevices={setDevices}
-      deviceCode={deviceCode}
-      setdeviceCode={setdeviceCode}
-      setPowerId={setPowerId}
-      deviceId={deviceId}
-      deviceAddress={selectedDevice?.address || devices?.address}
-      deviceIsHouse={selectedDevice?.isHouse ?? devices?.isHouse}
-      onChargeStarted={onChargeStarted}
-    />
-  ) : (
-    <View style={styles.container}>
-      {/* <View style={styles.contentContainer}>
-        
-        <Text style={styles.title}>Bắt đầu phiên sạc</Text>
-        <Text style={styles.description}>
-          Vui lòng quét mã QR gắn trên trụ sạc để kích hoạt phiên sạc cho xe của bạn.
+  // Bước 3: đã có thiết bị (quét QR hoặc chọn trụ nhà) -> chọn ổ sạc
+  if (powerOutlets.length > 0) {
+    return (
+      <DevicesComponents
+        navigation={navigation}
+        devices={powerOutlets}
+        setDevices={setDevices}
+        deviceCode={deviceCode}
+        setdeviceCode={setdeviceCode}
+        setPowerId={setPowerId}
+        deviceId={deviceId}
+        deviceAddress={selectedDevice?.address || devices?.address}
+        deviceIsHouse={selectedDevice?.isHouse ?? devices?.isHouse}
+        onChargeStarted={onChargeStarted}
+      />
+    );
+  }
+
+  // Bước 1: màn chọn loại trụ sạc
+  if (mode === null) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.chooserTitle}>Bạn muốn sạc ở đâu?</Text>
+        <Text style={styles.chooserSubtitle}>
+          Chọn loại trụ sạc để bắt đầu phiên sạc cho xe của bạn.
         </Text>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.scanButton}
-            onPress={onScanQrPress}
-            activeOpacity={0.8}
-          >
-            <View style={styles.scanButtonIcon}>
-              <Ionicons name="qr-code" size={22} color={Colors.primary} />
-            </View>
-            <Text style={styles.scanButtonText}>{"Qu\u00e9t QR \u0111\u1ec3 b\u1eaft \u0111\u1ea7u"}</Text>
-          </TouchableOpacity>
-        </View>
-      </View> */}
+
+        <TouchableOpacity
+          style={styles.modeCard}
+          onPress={() => setMode("public")}
+          activeOpacity={0.85}
+        >
+          <View style={styles.modeIconWrap}>
+            <MaterialIcons name="ev-station" size={30} color={Colors.primary} />
+          </View>
+          <View style={styles.modeInfo}>
+            <Text style={styles.modeTitle}>Sạc trụ sạc công cộng</Text>
+            <Text style={styles.modeDescription}>
+              Quét mã QR tại trụ sạc ở chung cư, bãi xe...
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={22} color={Colors.textSecondary} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.modeCard}
+          onPress={() => setMode("home")}
+          activeOpacity={0.85}
+        >
+          <View style={styles.modeIconWrap}>
+            <MaterialCommunityIcons
+              name="home-lightning-bolt-outline"
+              size={30}
+              color={Colors.primary}
+            />
+          </View>
+          <View style={styles.modeInfo}>
+            <Text style={styles.modeTitle}>Sạc trụ sạc gia đình</Text>
+            <Text style={styles.modeDescription}>
+              Dùng thiết bị sạc của riêng bạn tại nhà.
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={22} color={Colors.textSecondary} />
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Nút quay lại màn chọn loại trụ (dùng chung cho bước 2)
+  const backButton = (
+    <TouchableOpacity
+      style={styles.backRow}
+      onPress={() => setMode(null)}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+    >
+      <Ionicons name="arrow-back" size={18} color={Colors.primary} />
+      <Text style={styles.backText}>Chọn loại trụ khác</Text>
+    </TouchableOpacity>
+  );
+
+  // Bước 2a: luồng trụ công cộng — quét QR
+  if (mode === "public") {
+    return (
+      <View style={styles.container}>
+        {backButton}
+        <Text style={styles.flowTitle}>Sạc trụ công cộng</Text>
+        <Text style={styles.flowDescription}>
+          Vui lòng quét mã QR gắn trên trụ sạc để kích hoạt phiên sạc cho xe của
+          bạn.
+        </Text>
+        <TouchableOpacity
+          style={styles.scanButton}
+          onPress={() => onScanQrPress({ mode: "charge" })}
+          activeOpacity={0.8}
+        >
+          <View style={styles.scanButtonIcon}>
+            <Ionicons name="qr-code" size={22} color={Colors.primary} />
+          </View>
+          <Text style={styles.scanButtonText}>Quét QR để bắt đầu</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Bước 2b: luồng trụ tại gia — danh sách trụ của tôi
+  return (
+    <View style={styles.container}>
+      {backButton}
       <View style={styles.myDeviceSection}>
         <View style={styles.myDeviceHeader}>
-          <Text style={styles.myDeviceSectionTitle}>Thiết bị của bạn</Text>
+          <Text style={styles.myDeviceSectionTitle}>Trụ sạc của bạn</Text>
+          {myDevices.length > 0 ? (
+            <TouchableOpacity
+              style={styles.addDeviceButton}
+              onPress={() => onScanQrPress({ mode: "claim" })}
+              activeOpacity={0.8}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="add" size={16} color={Colors.primary} />
+              <Text style={styles.addDeviceButtonText}>Thêm thiết bị</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
 
         {isLoadingMyDevices ? (
           <ActivityIndicator color={Colors.primary} style={{ marginTop: 12 }} />
         ) : myDevices.length === 0 ? (
-          <Text style={styles.myDeviceEmptyText}>
-            Bạn chưa có thiết bị nào. Quét mã QR trên thiết bị tại nhà để thêm
-            vào tài khoản.
-          </Text>
+          <>
+            <Text style={styles.myDeviceEmptyText}>
+              Bạn chưa có trụ sạc nào. Quét mã QR trên thiết bị tại nhà để thêm
+              vào tài khoản.
+            </Text>
+            <TouchableOpacity
+              style={styles.scanButton}
+              onPress={() => onScanQrPress({ mode: "claim" })}
+              activeOpacity={0.8}
+            >
+              <View style={styles.scanButtonIcon}>
+                <Ionicons name="qr-code" size={22} color={Colors.primary} />
+              </View>
+              <Text style={styles.scanButtonText}>Quét QR thiết bị</Text>
+            </TouchableOpacity>
+          </>
         ) : (
           myDevices.map((device) => (
             <TouchableOpacity
@@ -141,13 +273,6 @@ const InitiateChargeComponent = ({
           ))
         )}
       </View>
-      {/* <View style={styles.warningBox}>
-        <AntDesign name="warning" size={20} color={Colors.warning} />
-        <Text style={styles.warningText}>
-          Lưu ý: Bạn có 5 phút để kích hoạt phiên sạc sau khi đưa xe vào khu
-          vực. Quá thời gian quy định sẽ bị phạt!
-        </Text>
-      </View> */}
     </View>
   );
 };
@@ -157,37 +282,84 @@ const styles = StyleSheet.create({
     width: "100%",
     marginTop: 10,
     marginBottom: 32,
-    gap: 24,
+    gap: 16,
   },
-  contentContainer: {
-    display: "flex",
-    alignItems: "flex-start",
-    width: "100%",
-  },
-  iconWrap: {
-    padding: 16,
-    backgroundColor: Colors.cardBgLight,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 24,
-  },
-  title: {
+  chooserTitle: {
     fontWeight: "800",
-    fontSize: 28,
+    fontSize: 26,
     color: Colors.textDark,
-    lineHeight: 34,
-    marginBottom: 12,
+    lineHeight: 32,
+    marginTop: 14,
   },
-  description: {
+  chooserSubtitle: {
     color: Colors.textSecondary,
-    fontSize: 16,
-    lineHeight: 24,
-    textAlign: "left",
-    marginBottom: 32,
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 8,
   },
-  buttonContainer: {
+  modeCard: {
     width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    backgroundColor: Colors.bgGreenTint,
+    borderWidth: 1,
+    borderColor: Colors.borderGreenLight,
+    borderRadius: 16,
+    padding: 18,
+    shadowColor: Colors.shadowGreen,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  modeIconWrap: {
+    width: 54,
+    height: 54,
+    borderRadius: 14,
+    backgroundColor: Colors.white,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: Colors.successBorder,
+  },
+  modeInfo: {
+    flex: 1,
+  },
+  modeTitle: {
+    color: Colors.textPrimaryDark,
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  modeDescription: {
+    color: Colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 3,
+  },
+  backRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-start",
+    marginTop: 6,
+  },
+  backText: {
+    color: Colors.primary,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  flowTitle: {
+    fontWeight: "800",
+    fontSize: 24,
+    color: Colors.textDark,
+    lineHeight: 30,
+  },
+  flowDescription: {
+    color: Colors.textSecondary,
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 8,
   },
   scanButton: {
     backgroundColor: Colors.primary,
@@ -221,26 +393,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     letterSpacing: 0,
   },
-  warningBox: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-    width: "100%",
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: Colors.cardBgLight,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderLeftWidth: 4,
-    borderLeftColor: Colors.warning,
-  },
-  warningText: {
-    color: Colors.textSecondary,
-    textAlign: "left",
-    flexShrink: 1,
-    fontSize: 14,
-    lineHeight: 20,
-  },
   myDeviceSection: {
     width: "100%",
     gap: 12,
@@ -254,6 +406,22 @@ const styles = StyleSheet.create({
     color: Colors.textPrimaryDark,
     fontSize: 16,
     fontWeight: "800",
+  },
+  addDeviceButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: Colors.successBg,
+    borderWidth: 1,
+    borderColor: Colors.successBorder,
+    borderRadius: 999,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  addDeviceButtonText: {
+    color: Colors.primary,
+    fontSize: 13,
+    fontWeight: "700",
   },
   myDeviceEmptyText: {
     color: Colors.textSecondary,

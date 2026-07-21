@@ -13,15 +13,25 @@ const toFiniteNumber = (value, fallback = 0) => {
 // mọi thành phần trong phiên sạc (WaveChart, ChargingCostCard, ...). Đây là
 // nguồn sự thật duy nhất về công suất/năng lượng realtime, tránh việc nhiều nơi
 // tự subscribe rồi lệch số.
-export const useChargingTelemetry = (initialEnergyKwh = 0) => {
+export const useChargingTelemetry = (initialEnergyKwh = 0, initialTelemetry = null) => {
   const socketContext = useContext(SocketContext);
   const socket = socketContext?.socket;
 
-  const [powerSeries, setPowerSeries] = useState([]);
-  const [energyKwh, setEnergyKwh] = useState(() =>
-    toFiniteNumber(initialEnergyKwh),
+  const initialPower = Number(initialTelemetry?.power);
+  const [powerSeries, setPowerSeries] = useState(() =>
+    Number.isFinite(initialPower) ? [initialPower] : [],
   );
-  const [isRelayOn, setIsRelayOn] = useState(false);
+  const [energyKwh, setEnergyKwh] = useState(() =>
+    Math.max(
+      toFiniteNumber(initialEnergyKwh),
+      toFiniteNumber(initialTelemetry?.energy) / 1000,
+    ),
+  );
+  const [isRelayOn, setIsRelayOn] = useState(() =>
+    initialTelemetry?.relay !== undefined && initialTelemetry?.relay !== null
+      ? Boolean(Number(initialTelemetry.relay))
+      : Number.isFinite(initialPower) && initialPower > 0,
+  );
 
   // Năng lượng chỉ tăng: khi nhận giá trị mới từ DB (initialEnergyKwh) vẫn giữ
   // mức cao nhất để không bị tụt khi refetch.

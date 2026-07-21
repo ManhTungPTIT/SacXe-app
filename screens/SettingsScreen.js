@@ -441,7 +441,7 @@ const SettingsScreen = ({ navigation, route }) => {
                           <Text style={{ fontWeight: "700" }}>Lưu ý:</Text>{"\n"}
                           • Số dư chỉ được sử dụng để thanh toán dịch vụ sạc của Enovo.{"\n"}
                           • Không thể chuyển cho người dùng khác.{"\n"}
-                          • Tiền trong tài khoản sạc không thể chuyển lại về tài khoản ngân hàng của bạn.{"\n"}
+                          • Số dư trong tài khoản sạc không thể chuyển lại về tài khoản ngân hàng của bạn.{"\n"}
                           • Không thể quy đổi hoặc rút thành tiền mặt.{"\n"}
                           • Không dùng để thanh toán hàng hóa hoặc dịch vụ khác.{"\n"}
                           • Không phải ví điện tử và không có chức năng đầu tư hoặc sinh lãi.{"\n"}

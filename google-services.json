@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "650630606462",
+    "project_id": "sacxede",
+    "storage_bucket": "sacxede.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:650630606462:android:0e88fe8e61ded99f1d722f",
+        "android_client_info": {
+          "package_name": "vn.ai.slink.enovo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBlLoSinWiKxixhoSZXeGUlpvye9GE3qSY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

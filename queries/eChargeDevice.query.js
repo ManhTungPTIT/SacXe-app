@@ -63,9 +63,8 @@ export const useEChargeDeviceQuery = {
     const { mutate, ...rest } = useMutation({
       mutationFn: ({ deviceCode }) =>
         eChargeDeviceApi.claimDevice({ deviceCode }),
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: MY_DEVICES_KEY });
-      },
+      onSuccess: () =>
+        queryClient.invalidateQueries({ queryKey: MY_DEVICES_KEY }),
     });
     return { mutate, ...rest };
   },

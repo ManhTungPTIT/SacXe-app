@@ -30,11 +30,13 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "vn.ai.slink.enovo",
+      "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.CAMERA",
-        "android.permission.POST_NOTIFICATIONS"
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.VIBRATE"
       ]
     },
     "web": {
@@ -45,13 +47,14 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/logo-sac-xe-de-tu-anh.png"
+          "icon": "./assets/notification-icon.png",
+          "color": "#31C861"
         }
       ]
     ],
     "notification": {
-      "icon": "./assets/logo-sac-xe-de-tu-anh.png",
-      "color": "#ffffff"
+      "icon": "./assets/notification-icon.png",
+      "color": "#31C861"
     },
     "extra": {
       "eas": {

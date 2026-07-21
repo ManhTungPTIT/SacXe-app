@@ -18,7 +18,7 @@ const ToastNotification = ({
   title = "Thành công",
   message,
   onDismiss,
-  duration = 4000,
+  duration = 5000,
   type = "success",
 }) => {
   const insets = useSafeAreaInsets();
@@ -118,7 +118,7 @@ const ToastNotification = ({
       // Ensure it is hidden
       translateY.setValue(-150);
     }
-  }, [visible]);
+  }, [visible, duration, message]);
 
   if (!visible) return null;
 
