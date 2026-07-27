@@ -15,6 +15,9 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "vn.ai.slink.enovo",
+      "entitlements": {
+        "com.apple.developer.usernotifications.time-sensitive": true
+      },
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Ứng dụng sử dụng vị trí của bạn để hiển thị các thiết bị sạc gần đó và hỗ trợ chức năng bản đồ.",
         "NSCameraUsageDescription": "Ứng dụng sử dụng camera để quét mã QR khi tương tác với trụ sạc và cung cấp thông tin phản ảnh sự cố sạc.",

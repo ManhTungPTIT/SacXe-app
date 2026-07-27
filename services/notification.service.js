@@ -140,8 +140,12 @@ Notifications.setNotificationHandler({
         shouldSuppress = true;
       }
     }
+    // shouldShowAlert đã bị bỏ ở expo-notifications 0.32 (SDK 54) — thay bằng
+    // cặp shouldShowBanner/shouldShowList, nếu không iOS sẽ không hiện banner
+    // lúc app đang mở.
     return {
-      shouldShowAlert: !shouldSuppress,
+      shouldShowBanner: !shouldSuppress,
+      shouldShowList: !shouldSuppress,
       shouldPlaySound: !shouldSuppress,
       shouldSetBadge: !shouldSuppress,
     };
