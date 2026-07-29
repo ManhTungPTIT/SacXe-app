@@ -351,8 +351,17 @@ const RootNavigator = () => {
 
       const amount = Number(transaction?.amount ?? data?.amount ?? 0);
       if (transactionStatus === "completed" && amount > 0) {
+        // Cộng lạc quan để số dư nhảy ngay, không phải chờ round-trip HTTP.
         applyBalanceDelta(amount);
+      }
+
+      // Nạp lại VÔ ĐIỀU KIỆN khi giao dịch hoàn tất. Sự kiện đến từ namespace
+      // gốc đã bị lược bớt payload nên không có amount — trước đây cả hai lệnh
+      // invalidate đều nằm trong nhánh `amount > 0`, nên khi thiếu amount thì
+      // số dư chỉ được cập nhật lúc app quay lại foreground (refetchOnWindowFocus).
+      if (transactionStatus === "completed") {
         queryClient.invalidateQueries({ queryKey: ["ME"] });
+        queryClient.invalidateQueries({ queryKey: ["TRANSACTION_HISTORY"] });
       }
     };
 

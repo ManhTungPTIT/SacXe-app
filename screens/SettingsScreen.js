@@ -28,6 +28,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import ToastNotification from "../components/ToastNotification";
 import { socket } from "../services/socket.service";
 
+// Thời gian chờ hệ thống tự khớp trước khi trả quyền lại cho khách.
+//
+// Cờ autoCheckEnabled backend trả về chỉ là ảnh chụp tại thời điểm tạo QR, và
+// nó chỉ lật sang false sau AUTO_CHECK_FAILURE_THRESHOLD (mặc định 3) chu kỳ
+// lỗi liên tiếp của vòng lặp 20 giây — tức tới 60 giây. Màn QR đã mở rồi thì
+// không có cách nào biết API ngân hàng vừa chết, nên khách bị kẹt ở vòng xoay.
+// Hết 10 giây là chuyển sang giao diện báo thủ công, không chờ backend nữa.
+const AUTO_CHECK_WINDOW_MS = 10000;
+
 const SETTINGS_ACTIONS = [
   {
     key: "profile",
@@ -88,6 +97,8 @@ const SettingsScreen = ({ navigation, route }) => {
   // Backend báo API sao kê ngân hàng có đang khớp giao dịch được không.
   // Khớp được -> chỉ chờ; không khớp được -> khách tự báo "Tôi đã chuyển".
   const [autoCheckEnabled, setAutoCheckEnabled] = useState(true);
+  // Hết cửa sổ AUTO_CHECK_WINDOW_MS mà giao dịch chưa được cộng tiền.
+  const [autoWindowExpired, setAutoWindowExpired] = useState(false);
   const [logoutConfirmVisible, setLogoutConfirmVisible] = useState(false);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [myBikeModalVisible, setMyBikeModalVisible] = useState(false);
@@ -153,6 +164,22 @@ const SettingsScreen = ({ navigation, route }) => {
     return () => clearInterval(interval);
   }, [qrGenerated]);
 
+  // Đối soát tự động vẫn tiếp tục chạy ở backend sau khi cửa sổ này hết hạn —
+  // đây thuần tuý là đổi giao diện. Nếu API ngân hàng thực ra vẫn sống và khớp
+  // được ở giây thứ 25, socket vẫn bắn về và modal vẫn tự đóng như thường.
+  useEffect(() => {
+    if (!qrGenerated || !autoCheckEnabled) {
+      return;
+    }
+
+    const timer = setTimeout(
+      () => setAutoWindowExpired(true),
+      AUTO_CHECK_WINDOW_MS,
+    );
+
+    return () => clearTimeout(timer);
+  }, [qrGenerated, autoCheckEnabled]);
+
   // Giao dịch được cộng tiền (hệ thống tự khớp hoặc admin duyệt) trong lúc màn
   // QR đang mở: đóng màn lại, nếu không nó cứ quay vòng tới khi hết hạn.
   // RootNavigator đã lo phần cập nhật số dư và lịch sử.
@@ -217,6 +244,7 @@ const SettingsScreen = ({ navigation, route }) => {
     setTimeLeft(0);
     setPendingTransactionId(null);
     setAutoCheckEnabled(true);
+    setAutoWindowExpired(false);
   };
 
   const showToast = (message) => {
@@ -234,6 +262,8 @@ const SettingsScreen = ({ navigation, route }) => {
         setQrGenerated(data?.qrCodeUrl);
         setPendingTransactionId(data?.transactionId || null);
         setAutoCheckEnabled(Boolean(data?.autoCheckEnabled));
+        // Tạo QR mới thì cửa sổ chờ đếm lại từ đầu.
+        setAutoWindowExpired(false);
       },
       onError: (error) => {
         Alert.alert(
@@ -579,7 +609,7 @@ const SettingsScreen = ({ navigation, route }) => {
               handleConfirmTopUp={handleConfirmTopUp}
               qrGenerated={qrGenerated}
               timeLeft={timeLeft}
-              autoCheckEnabled={autoCheckEnabled}
+              autoCheckEnabled={autoCheckEnabled && !autoWindowExpired}
               handleClaimTransfer={handleClaimTransfer}
               handleCancelTransfer={handleCancelTransfer}
               isProcessingTransfer={isProcessingTransfer}
