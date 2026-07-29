@@ -26,6 +26,7 @@ import MyBikeComponent from "../components/bike/MyBikeComponent";
 import ProfileComponent from "../components/settings/ProfileComponent";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ToastNotification from "../components/ToastNotification";
+import { socket } from "../services/socket.service";
 
 const SETTINGS_ACTIONS = [
   {
@@ -70,6 +71,10 @@ const SettingsScreen = ({ navigation, route }) => {
   } = useBike.useGetMyBike();
 
   const generateQRMutation = useTransactionQuery.generateQR();
+  const claimTransactionMutation = useTransactionQuery.useClaimTransaction();
+  const cancelTransactionMutation = useTransactionQuery.useCancelTransaction();
+  const isProcessingTransfer =
+    claimTransactionMutation.isPending || cancelTransactionMutation.isPending;
 
   const [balanceInfoModalVisible, setBalanceInfoModalVisible] = useState(false);
   const [topUpModalVisible, setTopUpModalVisible] = useState(false);
@@ -79,6 +84,10 @@ const SettingsScreen = ({ navigation, route }) => {
   const [customAmount, setCustomAmount] = useState("");
   const [qrGenerated, setQrGenerated] = useState(null);
   const [timeLeft, setTimeLeft] = useState(0);
+  const [pendingTransactionId, setPendingTransactionId] = useState(null);
+  // Backend báo API sao kê ngân hàng có đang khớp giao dịch được không.
+  // Khớp được -> chỉ chờ; không khớp được -> khách tự báo "Tôi đã chuyển".
+  const [autoCheckEnabled, setAutoCheckEnabled] = useState(true);
   const [logoutConfirmVisible, setLogoutConfirmVisible] = useState(false);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [myBikeModalVisible, setMyBikeModalVisible] = useState(false);
@@ -144,6 +153,31 @@ const SettingsScreen = ({ navigation, route }) => {
     return () => clearInterval(interval);
   }, [qrGenerated]);
 
+  // Giao dịch được cộng tiền (hệ thống tự khớp hoặc admin duyệt) trong lúc màn
+  // QR đang mở: đóng màn lại, nếu không nó cứ quay vòng tới khi hết hạn.
+  // RootNavigator đã lo phần cập nhật số dư và lịch sử.
+  useEffect(() => {
+    if (!pendingTransactionId) return;
+
+    const handleTransactionCompleted = (payload) => {
+      if (payload?.status !== "completed") return;
+
+      const completedId = payload?.transaction?._id;
+      if (completedId && String(completedId) !== String(pendingTransactionId)) {
+        return;
+      }
+
+      handleCloseTopUpModal();
+      showToast("Nạp tiền thành công, số dư đã được cập nhật.");
+    };
+
+    socket.on("transaction_update", handleTransactionCompleted);
+
+    return () => {
+      socket.off("transaction_update", handleTransactionCompleted);
+    };
+  }, [pendingTransactionId]);
+
   useEffect(() => {
     if (route?.params?.openTopUp) {
       handleOpenTopUpModal();
@@ -181,6 +215,13 @@ const SettingsScreen = ({ navigation, route }) => {
     setCustomAmount("");
     setQrGenerated(null);
     setTimeLeft(0);
+    setPendingTransactionId(null);
+    setAutoCheckEnabled(true);
+  };
+
+  const showToast = (message) => {
+    setToastMessage(message);
+    setToastVisible(true);
   };
 
   const handleConfirmTopUp = () => {
@@ -191,6 +232,8 @@ const SettingsScreen = ({ navigation, route }) => {
     generateQRMutation.mutate(selectedAmount, {
       onSuccess: (data) => {
         setQrGenerated(data?.qrCodeUrl);
+        setPendingTransactionId(data?.transactionId || null);
+        setAutoCheckEnabled(Boolean(data?.autoCheckEnabled));
       },
       onError: (error) => {
         Alert.alert(
@@ -200,6 +243,69 @@ const SettingsScreen = ({ navigation, route }) => {
         console.error("Error generating QR code:", error);
       },
     });
+  };
+
+  // Khách đã chuyển khoản nhưng hệ thống chưa tự khớp được: gửi tín hiệu để
+  // admin thấy trên trang đối soát và cộng tiền thủ công.
+  const handleClaimTransfer = () => {
+    if (!pendingTransactionId) {
+      handleCloseTopUpModal();
+      return;
+    }
+
+    claimTransactionMutation.mutate(pendingTransactionId, {
+      onSuccess: () => {
+        handleCloseTopUpModal();
+        showToast(
+          "Đã gửi yêu cầu. Quản trị viên sẽ xác nhận và cộng tiền trong ít phút.",
+        );
+      },
+      onError: (error) => {
+        Alert.alert(
+          "Thông báo",
+          error?.response?.data?.message ||
+            "Không gửi được yêu cầu. Vui lòng thử lại.",
+        );
+      },
+    });
+  };
+
+  const handleCancelTransfer = () => {
+    if (!pendingTransactionId) {
+      handleCloseTopUpModal();
+      return;
+    }
+
+    // Giao dịch đã huỷ thì không cộng tiền được nữa, nên phải hỏi lại trước.
+    // "Chỉ đóng màn hình" là đường thoát cho khách đã chuyển tiền rồi: giữ
+    // giao dịch chờ hệ thống hoặc admin xử lý thay vì huỷ mất.
+    Alert.alert(
+      "Huỷ yêu cầu nạp tiền?",
+      "Nếu bạn đã chuyển khoản rồi thì ĐỪNG huỷ — giao dịch đã huỷ sẽ không được cộng tiền.",
+      [
+        { text: "Quay lại", style: "cancel" },
+        { text: "Chỉ đóng màn hình", onPress: handleCloseTopUpModal },
+        {
+          text: "Vẫn huỷ",
+          style: "destructive",
+          onPress: () => {
+            cancelTransactionMutation.mutate(pendingTransactionId, {
+              onSuccess: () => {
+                handleCloseTopUpModal();
+                showToast("Đã huỷ yêu cầu nạp tiền.");
+              },
+              onError: (error) => {
+                Alert.alert(
+                  "Thông báo",
+                  error?.response?.data?.message ||
+                    "Không huỷ được giao dịch. Vui lòng thử lại.",
+                );
+              },
+            });
+          },
+        },
+      ],
+    );
   };
 
   const handlePressNotification = (notification) => {
@@ -472,9 +578,11 @@ const SettingsScreen = ({ navigation, route }) => {
               setCustomAmount={setCustomAmount}
               handleConfirmTopUp={handleConfirmTopUp}
               qrGenerated={qrGenerated}
-              setQrGenerated={setQrGenerated}
               timeLeft={timeLeft}
-              setTimeLeft={setTimeLeft}
+              autoCheckEnabled={autoCheckEnabled}
+              handleClaimTransfer={handleClaimTransfer}
+              handleCancelTransfer={handleCancelTransfer}
+              isProcessingTransfer={isProcessingTransfer}
             />
 
             {/* Component lịch sử giao dịch */}

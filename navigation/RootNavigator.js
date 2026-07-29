@@ -105,14 +105,23 @@ const RootNavigator = () => {
       socket.emit("transaction_update", userId);
     };
 
+    // Trong lúc socket rớt, mọi sự kiện bắn tới room đều mất hẳn — socket.io
+    // không phát lại. Số dư đổi trong khoảng đó (admin duyệt giao dịch, phiên
+    // sạc trừ tiền) sẽ không bao giờ tới nơi. Nạp lại khi kết nối trở lại.
+    const resyncAfterReconnect = () => {
+      joinRooms();
+      queryClient.invalidateQueries({ queryKey: ["ME"] });
+      queryClient.invalidateQueries({ queryKey: ["TRANSACTION_HISTORY"] });
+    };
+
     // Join ngay + join lại mỗi lần reconnect
     joinRooms();
-    socket.on("connect", joinRooms);
+    socket.on("connect", resyncAfterReconnect);
 
     return () => {
-      socket.off("connect", joinRooms);
+      socket.off("connect", resyncAfterReconnect);
     };
-  }, [isAuthenticated, userId, latestHistory]);
+  }, [isAuthenticated, userId, latestHistory, queryClient]);
 
   useEffect(() => {
     const upsertTransactionHistory = (status, transaction) => {

@@ -26,7 +26,10 @@ export const useAuth = {
       queryKey: ["ME"],
       queryFn: () => authApi.getMe(),
       retry: 1, // Không retry nếu 401
-      refetchOnWindowFocus: false,
+      // "always" chứ không phải true: số dư là tiền, mở app lên phải là số mới
+      // nhất chứ không chờ hết staleTime. Chỉ tốn 1 request mỗi lần app quay
+      // lại foreground, và nó bù được mọi sự kiện socket bị lỡ lúc chạy nền.
+      refetchOnWindowFocus: "always",
       staleTime: 5 * 60 * 1000, // 5 phút
     });
     return { data, isLoading, isError, ...rest };

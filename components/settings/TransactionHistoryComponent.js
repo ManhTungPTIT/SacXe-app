@@ -45,6 +45,14 @@ const getStatusMeta = (status) => {
     };
   }
 
+  if (status === "cancelled") {
+    return {
+      label: "Đã huỷ",
+      badgeStyle: styles.statusCancelled,
+      textStyle: styles.statusCancelledText,
+    };
+  }
+
   return {
     label: "Thất bại",
     badgeStyle: styles.statusFailed,
@@ -254,6 +262,12 @@ const styles = StyleSheet.create({
   },
   statusFailedText: {
     color: Colors.errorText,
+  },
+  statusCancelled: {
+    backgroundColor: Colors.bgGrayLight,
+  },
+  statusCancelledText: {
+    color: Colors.textSecondary,
   },
   timeText: {
     fontSize: 12,

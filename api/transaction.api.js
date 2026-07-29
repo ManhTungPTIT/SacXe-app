@@ -6,6 +6,12 @@ export const transactionApi = {
       amount: amount,
     });
   },
+  claimTransaction: async (transactionId) => {
+    return api.post(`/api/payment/transactions/${transactionId}/claim`);
+  },
+  cancelTransaction: async (transactionId) => {
+    return api.post(`/api/payment/transactions/${transactionId}/cancel`);
+  },
   getTransactionHistory: async (status) => {
     return api.get("/api/payment/history", {
       params: { status },

@@ -68,6 +68,7 @@ export const Colors = {
   warningOrange: "#F57C00",    // Warning orange
   textSlateLight: "#94A3B8",   // Light slate gray text
   textDarkGray: "#0F172A",     // Dark gray text
+  dividerMuted: "#E8E8E8",     // Muted divider / nền nút phụ (Huỷ)
   infoBg: "#F4F9FD",           // Info box blue background
   infoBorder: "#E1F3FE",       // Info box blue border
 
