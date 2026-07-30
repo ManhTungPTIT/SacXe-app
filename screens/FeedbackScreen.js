@@ -123,7 +123,10 @@ const FeedbackScreen = ({ navigation }) => {
       const asset = result.assets[0];
       const imageData = {
         uri: asset.uri,
-        type: asset.type || "image/jpeg",
+        // asset.type là "image"/"video", KHÔNG phải MIME type. Gửi nó đi thì
+        // multer nhận file.mimetype = "image" và Google Drive từ chối vì MIME
+        // không hợp lệ — lỗi ném ra trước feedback.save() nên phản ánh mất luôn.
+        type: asset.mimeType || "image/jpeg",
         name: asset.fileName || `photo_${Date.now()}.jpg`,
       };
       setImage(imageData);
