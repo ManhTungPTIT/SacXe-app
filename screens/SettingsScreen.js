@@ -287,7 +287,7 @@ const SettingsScreen = ({ navigation, route }) => {
       onSuccess: () => {
         handleCloseTopUpModal();
         showToast(
-          "Đã gửi yêu cầu. Quản trị viên sẽ xác nhận và cộng tiền trong ít phút.",
+          "Cảm ơn bạn đã sử dụng hệ thống, tài khoản của bạn sẽ được cộng trong vòng 1 phút nữa.",
         );
       },
       onError: (error) => {
