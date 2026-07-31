@@ -44,7 +44,7 @@
     },
     "plugins": [
       "expo-secure-store",
-        [
+      [
         "expo-notifications",
         {
           "icon": "./assets/logo-sac-xe-de-tu-anh.png",
@@ -58,9 +58,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "6a2034ed-4060-490d-a2f2-5b6774baa3b8"
+        "projectId": "ef5c7cdf-d7da-4c19-8fec-05391489c2f6"
       },
-      "apiUrl": "http://192.168.1.13:6868",
+      "apiUrl": "https://enovo.slink.ai.vn",
       "googleMapsApiKey": "AIzaSyDIGUTSaUL8RY6xt_2EusWZtvZYGC_AQA4",
       "isAndroidMapEnabled": true,
       "apiGoogleMapUrl": "https://www.google.com/maps/dir/?api=1&destination={lat},{lng}",
