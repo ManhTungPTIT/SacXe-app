@@ -14,10 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "vn.ai.slink.enovo",
-      "entitlements": {
-        "com.apple.developer.usernotifications.time-sensitive": true
-      },
+      "bundleIdentifier": "de.sacxe",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Ứng dụng sử dụng vị trí của bạn để hiển thị các thiết bị sạc gần đó và hỗ trợ chức năng bản đồ.",
         "NSCameraUsageDescription": "Ứng dụng sử dụng camera để quét mã QR khi tương tác với trụ sạc và cung cấp thông tin phản ảnh sự cố sạc.",
@@ -32,7 +29,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "vn.ai.slink.enovo",
+      "package": "de.sacxe",
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.ACCESS_FINE_LOCATION",
@@ -61,7 +58,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "85252f67-afb1-4e73-9242-4f9aa4aaaca5"
+        "projectId": "6a2034ed-4060-490d-a2f2-5b6774baa3b8"
       },
       "apiUrl": "http://192.168.1.13:6868",
       "googleMapsApiKey": "AIzaSyDIGUTSaUL8RY6xt_2EusWZtvZYGC_AQA4",
