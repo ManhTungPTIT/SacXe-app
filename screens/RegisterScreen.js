@@ -20,7 +20,7 @@ import { useAuth } from "../queries/auth.query";
 import { TouchableWithoutFeedback } from "react-native";
 
 const registerBackground = require("../assets/background.png");
-const sacXeLogo = require("../assets/logo.backup-before-sac-xe-de.png");
+const sacXeLogo = require("../assets/logo.png");
 
 const RegisterScreen = ({ navigation }) => {
   const [name, setName] = useState("");
