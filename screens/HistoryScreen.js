@@ -134,7 +134,6 @@ const HistoryScreen = ({ navigation }) => {
   const activeHistoryId = activeHistory?._id;
   const activeHistoryStartTime = getHistoryStartTime(activeHistory);
   const activeHistoryEnergy = getHistoryBaseEnergy(activeHistory);
-  const activeHistoryPrice = getHistoryBasePrice(activeHistory);
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [realtimeEnergy, setRealtimeEnergy] = useState(activeHistoryEnergy);
   const [isLive, setIsLive] = useState((activeHistoryEnergy || 0) > 0);
@@ -210,17 +209,19 @@ const HistoryScreen = ({ navigation }) => {
   };
 
   const activeDisplayEnergy = activeHistory ? getDisplayEnergy(activeHistory) : 0;
-  const activeDisplayPrice = activeHistory ? getDisplayPrice(activeHistory) : 0;
+  // monthlyStats đã bao gồm phần luỹ kế của phiên đang chạy (backend lấy
+  // billedAmount/lastKnownEnergy khi price/energy chưa được chốt) và được
+  // RootNavigator cộng thêm phần chênh mỗi lần có charge_billing_update.
+  // Chi phí vì vậy dùng thẳng, không bù trừ lại nữa — bù trừ bằng chính con số
+  // đã nằm sẵn trong tổng là cách cũ khiến phiên đang sạc bị loại khỏi tổng tháng.
+  const displayMonthlyAmount = monthlyStats?.totalAmount;
+  // Riêng năng lượng vẫn cộng thêm phần realtime từ wave_data (mịn hơn mức đã
+  // ghi DB) — chỉ cộng đúng phần chênh so với mức đã nằm trong tổng.
   const displayMonthlyEnergy = activeHistory
     ? (Number(monthlyStats?.totalEnergy) || 0) -
     (Number(activeHistoryEnergy) || 0) +
     activeDisplayEnergy
     : monthlyStats?.totalEnergy;
-  const displayMonthlyAmount = activeHistory
-    ? (Number(monthlyStats?.totalAmount) || 0) -
-    (Number(activeHistoryPrice) || 0) +
-    activeDisplayPrice
-    : monthlyStats?.totalAmount;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>

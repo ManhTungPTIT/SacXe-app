@@ -243,6 +243,32 @@ const RootNavigator = () => {
       updateCachedBalance(currentBalance + numericAmount);
     };
 
+    // Chi phí một phiên như MỌI màn hình đang hiển thị. Dùng chung một công thức
+    // để cache nào cũng ra đúng một con số.
+    const getSessionAmount = (history) =>
+      Math.max(
+        Number(history?.lastKnownPrice) || 0,
+        Number(history?.billedAmount) || 0,
+        Number(history?.price) || 0,
+      );
+
+    const getSessionEnergy = (history) =>
+      Math.max(
+        Number(history?.lastKnownEnergy) || 0,
+        Number(history?.energy) || 0,
+      );
+
+    const applyBillingToHistory = (history, data) => ({
+      ...history,
+      billedAmount: data?.billedAmount ?? history.billedAmount,
+      lastKnownPrice: data?.price ?? history.lastKnownPrice,
+      lastKnownEnergy: data?.energy ?? history.lastKnownEnergy,
+      price: data?.isFinal ? (data?.price ?? history.price) : history.price,
+      energy: data?.isFinal ? (data?.energy ?? history.energy) : history.energy,
+      totalTime: data?.totalTime ?? history.totalTime,
+      stopReason: data?.stopReason ?? history.stopReason,
+    });
+
     const updateLatestHistoryBilling = (data) => {
       const incomingHistoryId = normalizeId(data?.historyId);
 
@@ -256,15 +282,59 @@ const RootNavigator = () => {
           return oldData;
         }
 
+        return applyBillingToHistory(oldData, data);
+      });
+    };
+
+    // Màn Lịch sử đọc cache ["history", page, limit] — KHÔNG phải ["latestHistory"].
+    // Không vá cache này thì chi phí ở màn Lịch sử đứng yên tới lần refetch kế
+    // tiếp (chỉ xảy ra mỗi khi năng lượng tăng 0.02 kWh) nên luôn thấp hơn con số
+    // ở màn Sạc xe. Cộng luôn phần chênh vào monthlyStats/totalStats để thống kê
+    // tháng không bị đứng lại một chỗ trong lúc phiên vẫn đang chạy.
+    const updateHistoryListBilling = (data) => {
+      const incomingHistoryId = normalizeId(data?.historyId);
+
+      if (!incomingHistoryId) {
+        return;
+      }
+
+      queryClient.setQueriesData({ queryKey: ["history"] }, (oldData) => {
+        if (!Array.isArray(oldData?.histories)) {
+          return oldData;
+        }
+
+        let amountDelta = 0;
+        let energyDelta = 0;
+
+        const histories = oldData.histories.map((history) => {
+          if (normalizeId(history?._id) !== incomingHistoryId) {
+            return history;
+          }
+
+          const updated = applyBillingToHistory(history, data);
+          amountDelta += getSessionAmount(updated) - getSessionAmount(history);
+          energyDelta += getSessionEnergy(updated) - getSessionEnergy(history);
+          return updated;
+        });
+
+        if (!amountDelta && !energyDelta) {
+          return { ...oldData, histories };
+        }
+
+        const applyDelta = (stats) =>
+          stats
+            ? {
+                ...stats,
+                totalAmount: (Number(stats.totalAmount) || 0) + amountDelta,
+                totalEnergy: (Number(stats.totalEnergy) || 0) + energyDelta,
+              }
+            : stats;
+
         return {
           ...oldData,
-          billedAmount: data?.billedAmount ?? oldData.billedAmount,
-          lastKnownPrice: data?.price ?? oldData.lastKnownPrice,
-          lastKnownEnergy: data?.energy ?? oldData.lastKnownEnergy,
-          price: data?.isFinal ? (data?.price ?? oldData.price) : oldData.price,
-          energy: data?.isFinal ? (data?.energy ?? oldData.energy) : oldData.energy,
-          totalTime: data?.totalTime ?? oldData.totalTime,
-          stopReason: data?.stopReason ?? oldData.stopReason,
+          histories,
+          monthlyStats: applyDelta(oldData.monthlyStats),
+          totalStats: applyDelta(oldData.totalStats),
         };
       });
     };
@@ -367,6 +437,7 @@ const RootNavigator = () => {
 
     const handleChargeBillingUpdate = (data) => {
       updateLatestHistoryBilling(data);
+      updateHistoryListBilling(data);
 
       if (data?.balance !== undefined && data?.balance !== null) {
         updateCachedBalance(data.balance);
