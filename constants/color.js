@@ -72,6 +72,13 @@ export const Colors = {
   infoBg: "#F4F9FD",           // Info box blue background
   infoBorder: "#E1F3FE",       // Info box blue border
 
+  // Amber / "chưa hoàn thành" (giao dịch pending). Khác với nhóm error* màu đỏ:
+  // đây là trạng thái còn xử lý được, không phải thất bại.
+  pendingBg: "#FFF8E6",        // Light amber background
+  pendingBorder: "#FFE0A3",    // Amber border
+  pendingTextDark: "#B97100",  // Dark amber text (tiêu đề, icon)
+  pendingText: "#8A5A00",      // Amber body text
+
   // Toast Notification Colors
   toastSuccessBg: "#EDF3EC",   // Muted Pastel Green Background
   toastSuccessText: "#346538", // Deep Green text

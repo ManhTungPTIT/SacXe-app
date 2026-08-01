@@ -29,7 +29,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "de.sacxe",
+      "package": "vn.ai.slink.enovo",
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.ACCESS_FINE_LOCATION",
@@ -58,7 +58,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "ef5c7cdf-d7da-4c19-8fec-05391489c2f6"
+        "projectId": "85252f67-afb1-4e73-9242-4f9aa4aaaca5"
       },
       "apiUrl": "https://enovo.slink.ai.vn",
       "googleMapsApiKey": "AIzaSyDIGUTSaUL8RY6xt_2EusWZtvZYGC_AQA4",
@@ -66,5 +66,6 @@
       "apiGoogleMapUrl": "https://www.google.com/maps/dir/?api=1&destination={lat},{lng}",
       "apiAppleMapUrl": "http://maps.apple.com/?daddr={lat},{lng}&dirflg=d"
     }
+    
   }
 }

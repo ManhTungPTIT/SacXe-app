@@ -12,6 +12,7 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "../stores/auth.store";
 import { Colors } from "../constants/color";
 import { useAuth } from "../queries/auth.query";
@@ -58,12 +59,15 @@ const SETTINGS_ACTIONS = [
 
 const SettingsScreen = ({ navigation, route }) => {
   const NOTIFICATIONS_LIMIT = 10;
+  const queryClient = useQueryClient();
   const storeUser = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const logoutMutation = useAuth.useLogout();
   const { data: userData } = useAuth.useGetMe();
+  // Không lọc theo status: modal lịch sử chia sẵn ba tab từ cùng một danh sách,
+  // gọi một lần thì đổi tab không phải chờ request.
   const { data: transactionHistory } =
-    useTransactionQuery.useGetTransactionHistory("completed");
+    useTransactionQuery.useGetTransactionHistory();
   const {
     data: bike,
     isLoading: isLoadingBikeData,
@@ -71,8 +75,6 @@ const SettingsScreen = ({ navigation, route }) => {
   } = useBike.useGetMyBike();
 
   const generateQRMutation = useTransactionQuery.generateQR();
-  const cancelTransactionMutation = useTransactionQuery.useCancelTransaction();
-  const isProcessingTransfer = cancelTransactionMutation.isPending;
 
   const [balanceInfoModalVisible, setBalanceInfoModalVisible] = useState(false);
   const [topUpModalVisible, setTopUpModalVisible] = useState(false);
@@ -81,7 +83,7 @@ const SettingsScreen = ({ navigation, route }) => {
   const [selectedAmount, setSelectedAmount] = useState(null);
   const [customAmount, setCustomAmount] = useState("");
   const [qrGenerated, setQrGenerated] = useState(null);
-  const [timeLeft, setTimeLeft] = useState(0);
+  const [qrExpiresAt, setQrExpiresAt] = useState(null);
   const [pendingTransactionId, setPendingTransactionId] = useState(null);
   const [logoutConfirmVisible, setLogoutConfirmVisible] = useState(false);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
@@ -92,6 +94,7 @@ const SettingsScreen = ({ navigation, route }) => {
   const [aboutEnovoModalVisible, setAboutEnovoModalVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState("success");
 
   const { data: notifications } = useNotificationQuery.useGetNotifications({
     enabled: true,
@@ -127,26 +130,6 @@ const SettingsScreen = ({ navigation, route }) => {
   }, [userData, storeUser]);
 
   const ownerInitial = ownerName?.trim()?.charAt(0)?.toUpperCase() || "U";
-
-  useEffect(() => {
-    if (!qrGenerated) return;
-
-    setTimeLeft(300);
-
-    const interval = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          setQrGenerated(null);
-          handleCloseTopUpModal();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [qrGenerated]);
 
   // Giao dịch được cộng tiền (hệ thống tự khớp hoặc admin duyệt) trong lúc màn
   // QR đang mở: đóng màn lại, nếu không nó cứ quay vòng tới khi hết hạn.
@@ -209,12 +192,13 @@ const SettingsScreen = ({ navigation, route }) => {
     setSelectedAmount(null);
     setCustomAmount("");
     setQrGenerated(null);
-    setTimeLeft(0);
+    setQrExpiresAt(null);
     setPendingTransactionId(null);
   };
 
-  const showToast = (message) => {
+  const showToast = (message, type = "success") => {
     setToastMessage(message);
+    setToastType(type);
     setToastVisible(true);
   };
 
@@ -226,6 +210,7 @@ const SettingsScreen = ({ navigation, route }) => {
     generateQRMutation.mutate(selectedAmount, {
       onSuccess: (data) => {
         setQrGenerated(data?.qrCodeUrl);
+        setQrExpiresAt(data?.expiresAt || null);
         setPendingTransactionId(data?.transactionId || null);
       },
       onError: (error) => {
@@ -238,46 +223,36 @@ const SettingsScreen = ({ navigation, route }) => {
     });
   };
 
-  // Khách đóng màn QR: không gọi API nào cả. Giao dịch ở lại "pending" để vòng
-  // lặp đối soát tự khớp, hoặc để admin duyệt tay khi API ngân hàng đang lỗi.
-  const handleFinishTransfer = () => {
+  // Khách đóng màn QR mà chưa chuyển khoản xong. Không gọi API nào: giao dịch ở
+  // lại "pending" cho tới hạn giữ, và mở lại được từ tab "Chưa xử lý".
+  const handleCloseQrScreen = () => {
     handleCloseTopUpModal();
+    // Giao dịch vừa tạo phải xuất hiện ngay ở tab "Chưa xử lý", nếu không khách
+    // làm theo lời nhắc mà vào lịch sử lại không thấy gì.
+    queryClient.invalidateQueries({ queryKey: ["TRANSACTION_HISTORY"] });
     showToast(
-      "Cảm ơn bạn đã sử dụng, tài khoản của bạn sẽ được cập nhật trong vòng 1 phút nữa.",
+      "Giao dịch chưa hoàn thành. Quý khách có thể vào phần lịch sử giao dịch để hoàn thành giao dịch",
+      "pending",
     );
   };
 
-  const handleCancelTransfer = () => {
-    if (!pendingTransactionId) {
-      handleCloseTopUpModal();
+  // Bấm một giao dịch ở tab "Chưa xử lý": mở lại đúng mã QR cũ để quét tiếp.
+  const handleOpenPendingTransaction = (transaction) => {
+    if (!transaction?.qrCodeUrl) {
+      Alert.alert(
+        "Thông báo",
+        "Giao dịch này không còn mã QR. Vui lòng tạo giao dịch nạp mới.",
+      );
       return;
     }
 
-    // Giao dịch đã huỷ thì không cộng tiền được nữa — cả vòng lặp tự động lẫn
-    // admin đều không cứu được — nên phải hỏi lại trước. Khách đã chuyển tiền
-    // rồi thì bấm "Đóng" mới là đường thoát đúng.
-    Alert.alert("Thông báo", "Bạn có muốn huỷ giao dịch không?", [
-      { text: "Không", style: "cancel" },
-      {
-        text: "Có",
-        style: "destructive",
-        onPress: () => {
-          cancelTransactionMutation.mutate(pendingTransactionId, {
-            onSuccess: () => {
-              handleCloseTopUpModal();
-              showToast("Đã huỷ yêu cầu nạp tiền.");
-            },
-            onError: (error) => {
-              Alert.alert(
-                "Thông báo",
-                error?.response?.data?.message ||
-                  "Không huỷ được giao dịch. Vui lòng thử lại.",
-              );
-            },
-          });
-        },
-      },
-    ]);
+    setTransactionHistoryModalVisible(false);
+    setSelectedAmount(null);
+    setCustomAmount("");
+    setQrGenerated(transaction.qrCodeUrl);
+    setQrExpiresAt(transaction.expiresAt || null);
+    setPendingTransactionId(transaction._id || null);
+    setTopUpModalVisible(true);
   };
 
   const handlePressNotification = (notification) => {
@@ -549,11 +524,9 @@ const SettingsScreen = ({ navigation, route }) => {
               customAmount={customAmount}
               setCustomAmount={setCustomAmount}
               handleConfirmTopUp={handleConfirmTopUp}
+              handleCloseQrScreen={handleCloseQrScreen}
               qrGenerated={qrGenerated}
-              timeLeft={timeLeft}
-              handleFinishTransfer={handleFinishTransfer}
-              handleCancelTransfer={handleCancelTransfer}
-              isProcessingTransfer={isProcessingTransfer}
+              qrExpiresAt={qrExpiresAt}
             />
 
             {/* Component lịch sử giao dịch */}
@@ -565,6 +538,7 @@ const SettingsScreen = ({ navigation, route }) => {
               handleCloseTransactionHistoryModal={() =>
                 setTransactionHistoryModalVisible(false)
               }
+              handleOpenPendingTransaction={handleOpenPendingTransaction}
             />
 
             {/* Component xe của tôi */}
@@ -583,8 +557,7 @@ const SettingsScreen = ({ navigation, route }) => {
               profileModalVisible={profileModalVisible}
               handleCloseProfileModal={() => setProfileModalVisible(false)}
               onProfileUpdated={() => {
-                setToastMessage("Cập nhật thông tin thành công.");
-                setToastVisible(true);
+                showToast("Cập nhật thông tin thành công.");
               }}
             />
 
@@ -612,7 +585,9 @@ const SettingsScreen = ({ navigation, route }) => {
       </View>
       <ToastNotification
         visible={toastVisible}
+        title={toastType === "pending" ? "Chưa hoàn thành" : "Thành công"}
         message={toastMessage}
+        type={toastType}
         onDismiss={() => setToastVisible(false)}
       />
     </SafeAreaView>

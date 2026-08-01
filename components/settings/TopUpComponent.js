@@ -16,26 +16,46 @@ import { Colors } from "../../constants/color";
 
 const TOP_UP_OPTIONS = [50000, 100000, 200000, 300000, 400000, 500000];
 
+const formatExpiry = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date.toLocaleString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
 const TopUpComponent = ({
   topUpModalVisible,
   handleCloseTopUpModal,
+  handleCloseQrScreen,
   qrGenerated,
-  timeLeft,
+  qrExpiresAt,
   selectedAmount,
   setSelectedAmount,
   customAmount,
   setCustomAmount,
   handleConfirmTopUp,
-  handleFinishTransfer,
-  handleCancelTransfer,
-  isProcessingTransfer,
 }) => {
+  const expiryLabel = formatExpiry(qrExpiresAt);
   return (
     <Modal
       visible={topUpModalVisible}
       animationType="slide"
       transparent={true}
-      onRequestClose={handleCloseTopUpModal}
+      // Nút back Android ở bước QR phải hành xử y hệt nút "Đóng" (kèm toast
+      // nhắc giao dịch còn dở), còn ở bước chọn mức nạp thì chưa có giao dịch
+      // nào để nhắc.
+      onRequestClose={qrGenerated ? handleCloseQrScreen : handleCloseTopUpModal}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <KeyboardAvoidingView
@@ -47,8 +67,9 @@ const TopUpComponent = ({
               <View style={styles.qrContainer}>
                 <Text style={styles.modalTitle}>QR Code nạp tài khoản sạc</Text>
                 <Text style={styles.qrCountdownText}>
-                  Hết hạn sau: {timeLeft}s. Vui lòng quét mã trước khi hết hạn
-                  để nạp tiền.
+                  {expiryLabel
+                    ? `Giao dịch được giữ đến ${expiryLabel}. Quét mã để hoàn tất nạp tiền.`
+                    : "Quét mã để hoàn tất nạp tiền."}
                 </Text>
                 <Image
                   source={{ uri: qrGenerated }}
@@ -58,31 +79,10 @@ const TopUpComponent = ({
 
                 <View style={styles.qrButtons}>
                   <TouchableOpacity
-                    style={[styles.modalButton, styles.cancelButton]}
-                    disabled={isProcessingTransfer}
-                    onPress={handleCancelTransfer}
+                    style={[styles.modalButton, styles.saveButton]}
+                    onPress={handleCloseQrScreen}
                   >
-                    <Text style={styles.cancelButtonText}>
-                      {isProcessingTransfer ? "Đang huỷ..." : "Hủy bỏ"}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.modalButton,
-                      styles.saveButton,
-                      isProcessingTransfer && styles.saveButtonDisabled,
-                    ]}
-                    disabled={isProcessingTransfer}
-                    onPress={handleFinishTransfer}
-                  >
-                    <Text
-                      style={[
-                        styles.saveButtonText,
-                        isProcessingTransfer && styles.saveButtonTextDisabled,
-                      ]}
-                    >
-                      Đóng
-                    </Text>
+                    <Text style={styles.saveButtonText}>Đóng</Text>
                   </TouchableOpacity>
                 </View>
               </View>

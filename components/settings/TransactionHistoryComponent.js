@@ -1,14 +1,37 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Modal,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/color";
+import { SCROLL_FEEL } from "../../constants/scroll";
+
+const TABS = [
+  {
+    key: "completed",
+    label: "Hoàn thành",
+    emptyTitle: "Chưa có giao dịch hoàn thành",
+    emptySubtitle: "Các lần nạp thành công sẽ hiển thị tại đây.",
+  },
+  {
+    key: "pending",
+    label: "Chưa xử lý",
+    emptyTitle: "Không có giao dịch nào đang chờ",
+    emptySubtitle: "Giao dịch bạn chưa chuyển khoản xong sẽ nằm ở đây.",
+  },
+  {
+    key: "cancelled",
+    label: "Đã hủy",
+    emptyTitle: "Chưa có giao dịch bị hủy",
+    emptySubtitle: "Giao dịch quá hạn giữ sẽ chuyển vào đây.",
+  },
+];
 
 const formatAmount = (value) => {
   const amount = Number(value) || 0;
@@ -28,15 +51,16 @@ const formatDateTime = (value) => {
   return date.toLocaleString("vi-VN");
 };
 
-const getStatusMeta = (status) => {
-  if (status === "pending") {
-    return {
-      label: "Đang xử lý",
-      badgeStyle: styles.statusPending,
-      textStyle: styles.statusPendingText,
-    };
-  }
+// Tab nào chứa giao dịch này. Dữ liệu cũ còn status "failed" (đã bỏ khỏi hệ
+// thống) là giao dịch chưa được cộng tiền và không còn cứu được, nên gom vào
+// "Đã hủy" thay vì để nó biến mất khỏi lịch sử.
+const getTabKey = (status) => {
+  if (status === "completed") return "completed";
+  if (status === "pending") return "pending";
+  return "cancelled";
+};
 
+const getStatusMeta = (status) => {
   if (status === "completed") {
     return {
       label: "Hoàn thành",
@@ -53,10 +77,12 @@ const getStatusMeta = (status) => {
     };
   }
 
+  // Giao dịch chỉ còn ba trạng thái, nên mọi giá trị còn lại (kể cả "failed"
+  // của dữ liệu cũ) đều là giao dịch chưa được cộng tiền.
   return {
-    label: "Thất bại",
-    badgeStyle: styles.statusFailed,
-    textStyle: styles.statusFailedText,
+    label: "Đang xử lý",
+    badgeStyle: styles.statusPending,
+    textStyle: styles.statusPendingText,
   };
 };
 
@@ -64,8 +90,31 @@ const TransactionHistoryComponent = ({
   history,
   topUpModalTransactionHistoryVisible,
   handleCloseTransactionHistoryModal,
+  handleOpenPendingTransaction,
 }) => {
-  const transactions = Array.isArray(history) ? history : [];
+  const [activeTab, setActiveTab] = useState("completed");
+
+  // Mở lại modal luôn bắt đầu ở "Hoàn thành", không giữ tab của lần trước.
+  useEffect(() => {
+    if (topUpModalTransactionHistoryVisible) {
+      setActiveTab("completed");
+    }
+  }, [topUpModalTransactionHistoryVisible]);
+
+  const groupedTransactions = useMemo(() => {
+    const groups = { completed: [], pending: [], cancelled: [] };
+    const source = Array.isArray(history) ? history : [];
+
+    source.forEach((item) => {
+      groups[getTabKey(item?.status)].push(item);
+    });
+
+    return groups;
+  }, [history]);
+
+  const activeTabMeta = TABS.find((tab) => tab.key === activeTab) || TABS[0];
+  const transactions = groupedTransactions[activeTab] || [];
+  const isPendingTab = activeTab === "pending";
 
   return (
     <Modal
@@ -74,88 +123,137 @@ const TransactionHistoryComponent = ({
       transparent={true}
       onRequestClose={handleCloseTransactionHistoryModal}
     >
-      <TouchableWithoutFeedback onPress={handleCloseTransactionHistoryModal}>
-        <View style={styles.overlay}>
-          <TouchableWithoutFeedback onPress={() => { }}>
-            <View style={styles.modalCard}>
-              <View style={styles.headerRow}>
-                <Text style={styles.title}>Lịch sử tài khoản sạc</Text>
+      <View style={styles.overlay}>
+        {/* Nền bấm-để-đóng là một lớp RIÊNG nằm sau thẻ nội dung. Cách cũ bọc
+            cả thẻ trong TouchableWithoutFeedback, nên mỗi cú vuốt phải giành
+            quyền responder với hai lớp touchable trước khi ScrollView nhận
+            được — đó là cảm giác "vuốt nặng, khó cuộn". */}
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={handleCloseTransactionHistoryModal}
+        />
+        <View style={styles.modalCard}>
+          <View style={styles.headerRow}>
+            <Text style={styles.title}>Lịch sử tài khoản sạc</Text>
+            <TouchableOpacity
+              onPress={handleCloseTransactionHistoryModal}
+              style={styles.closeButton}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.closeButtonText}>Đóng</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.tabBar}>
+            {TABS.map((tab) => {
+              const isActive = tab.key === activeTab;
+
+              return (
                 <TouchableOpacity
-                  onPress={handleCloseTransactionHistoryModal}
-                  style={styles.closeButton}
+                  key={tab.key}
+                  style={[styles.tabButton, isActive && styles.tabButtonActive]}
+                  onPress={() => setActiveTab(tab.key)}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.closeButtonText}>Đóng</Text>
-                </TouchableOpacity>
-              </View>
-
-              <Text style={styles.subtitle}>Các lần nạp gần đây của bạn</Text>
-
-              {transactions.length > 0 ? (
-                <ScrollView
-                  style={styles.list}
-                  showsVerticalScrollIndicator={false}
-                >
-                  {transactions.map((item, index) => {
-                    const statusMeta = getStatusMeta(item?.status);
-
-                    return (
-                      <View
-                        key={item?._id ?? `${item?.createdAt}-${index}`}
-                        style={styles.transactionCard}
-                      >
-                        <View style={styles.transactionHeader}>
-                          <Text style={styles.transactionTitle}>
-                            Nạp tài khoản sạc #{index + 1}
-                          </Text>
-                          <View
-                            style={[styles.statusBadge, statusMeta.badgeStyle]}
-                          >
-                            <Text
-                              style={[styles.statusText, statusMeta.textStyle]}
-                            >
-                              {statusMeta.label}
-                            </Text>
-                          </View>
-                        </View>
-
-                        <Text style={styles.timeText}>
-                          {formatDateTime(item?.createdAt)}
-                        </Text>
-
-                        <View style={styles.metricsRow}>
-                          <View
-                            style={[styles.metricCard, styles.metricSpacing]}
-                          >
-                            <Text style={styles.metricLabel}>Số tiền</Text>
-                            <Text style={styles.metricValue}>
-                              {formatAmount(item?.amount)}
-                            </Text>
-                          </View>
-
-                          <View style={styles.metricCard}>
-                            <Text style={styles.metricLabel}>Nội dung</Text>
-                            <Text style={styles.metricValue} numberOfLines={1}>
-                              {item?.content?.trim() || "--"}
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
-                    );
-                  })}
-                </ScrollView>
-              ) : (
-                <View style={styles.emptyCard}>
-                  <Text style={styles.emptyTitle}>Chưa có giao dịch nào</Text>
-                  <Text style={styles.emptySubtitle}>
-                    Các giao dịch nạp sẽ hiển thị tại đây.
+                  <Text
+                    style={[
+                      styles.tabButtonText,
+                      isActive && styles.tabButtonTextActive,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {tab.label}
                   </Text>
-                </View>
-              )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {transactions.length > 0 ? (
+            <ScrollView
+              style={styles.list}
+              showsVerticalScrollIndicator={false}
+              {...SCROLL_FEEL}
+            >
+              {transactions.map((item, index) => {
+                const statusMeta = getStatusMeta(item?.status);
+                // Chỉ giao dịch chưa xử lý mới bấm được: hoàn thành thì không
+                // còn gì để làm, đã hủy thì không quay lại được nữa.
+                const isPressable =
+                  isPendingTab && typeof handleOpenPendingTransaction === "function";
+                const CardWrapper = isPressable ? TouchableOpacity : View;
+
+                return (
+                  <CardWrapper
+                    key={item?._id ?? `${item?.createdAt}-${index}`}
+                    style={[
+                      styles.transactionCard,
+                      isPressable && styles.transactionCardPressable,
+                    ]}
+                    {...(isPressable
+                      ? {
+                        activeOpacity: 0.85,
+                        onPress: () => handleOpenPendingTransaction(item),
+                      }
+                      : {})}
+                  >
+                    <View style={styles.transactionHeader}>
+                      <Text style={styles.transactionTitle}>
+                        Nạp tài khoản sạc #{index + 1}
+                      </Text>
+                      <View style={[styles.statusBadge, statusMeta.badgeStyle]}>
+                        <Text style={[styles.statusText, statusMeta.textStyle]}>
+                          {statusMeta.label}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Text style={styles.timeText}>
+                      {formatDateTime(item?.createdAt)}
+                    </Text>
+
+                    <View style={styles.metricsRow}>
+                      <View style={[styles.metricCard, styles.metricSpacing]}>
+                        <Text style={styles.metricLabel}>Số tiền</Text>
+                        <Text style={styles.metricValue}>
+                          {formatAmount(item?.amount)}
+                        </Text>
+                      </View>
+
+                      <View style={styles.metricCard}>
+                        <Text style={styles.metricLabel}>Nội dung</Text>
+                        <Text style={styles.metricValue} numberOfLines={1}>
+                          {item?.content?.trim() || "--"}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {isPressable ? (
+                      <View style={styles.resumeRow}>
+                        <Text style={styles.resumeText}>
+                          Bấm để hoàn tất nạp tiền
+                        </Text>
+                        <Ionicons
+                          name="chevron-forward"
+                          size={16}
+                          color={Colors.pendingTextDark}
+                        />
+                      </View>
+                    ) : null}
+                  </CardWrapper>
+                );
+              })}
+            </ScrollView>
+          ) : (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyTitle}>{activeTabMeta.emptyTitle}</Text>
+              <Text style={styles.emptySubtitle}>
+                {activeTabMeta.emptySubtitle}
+              </Text>
             </View>
-          </TouchableWithoutFeedback>
+          )}
         </View>
-      </TouchableWithoutFeedback>
+      </View>
     </Modal>
   );
 };
@@ -209,10 +307,37 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: Colors.primary,
   },
-  subtitle: {
-    fontSize: 13,
-    color: Colors.textSecondary,
+  tabBar: {
+    flexDirection: "row",
+    backgroundColor: Colors.neutralBg,
+    borderRadius: 999,
+    padding: 4,
+    marginTop: 6,
     marginBottom: 12,
+  },
+  tabButton: {
+    flex: 1,
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    alignItems: "center",
+  },
+  tabButtonActive: {
+    backgroundColor: Colors.white,
+    shadowColor: Colors.shadowGreen,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  tabButtonText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.textSecondary,
+  },
+  tabButtonTextActive: {
+    color: Colors.primary,
+    fontWeight: "700",
   },
   list: {
     maxHeight: 420,
@@ -224,6 +349,22 @@ const styles = StyleSheet.create({
     borderColor: Colors.cardBorderGreen,
     padding: 14,
     marginBottom: 12,
+  },
+  transactionCardPressable: {
+    backgroundColor: Colors.pendingBg,
+    borderColor: Colors.pendingBorder,
+  },
+  resumeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    marginTop: 10,
+  },
+  resumeText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: Colors.pendingTextDark,
+    marginRight: 2,
   },
   transactionHeader: {
     flexDirection: "row",
@@ -252,16 +393,10 @@ const styles = StyleSheet.create({
     color: Colors.primary,
   },
   statusPending: {
-    backgroundColor: "#FFF2DD",
+    backgroundColor: Colors.pendingBg,
   },
   statusPendingText: {
-    color: "#B97100",
-  },
-  statusFailed: {
-    backgroundColor: Colors.errorBgLight,
-  },
-  statusFailedText: {
-    color: Colors.errorText,
+    color: Colors.pendingTextDark,
   },
   statusCancelled: {
     backgroundColor: Colors.bgGrayLight,

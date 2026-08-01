@@ -19,16 +19,6 @@ export const useTransactionQuery = {
     });
     return { mutate, ...rest };
   },
-  useCancelTransaction: () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-      mutationFn: (transactionId) =>
-        transactionApi.cancelTransaction(transactionId),
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["TRANSACTION_HISTORY"] });
-      },
-    });
-  },
   useGetTransactionHistory: (status) => {
     const { data, isLoading, isError, ...rest } = useQuery({
       queryKey: ["TRANSACTION_HISTORY", status],

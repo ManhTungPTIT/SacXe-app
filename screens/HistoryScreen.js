@@ -16,6 +16,7 @@ import {
   vietnamTime,
 } from "../utils/time";
 import { Colors } from "../constants/color";
+import { SCROLL_FEEL } from "../constants/scroll";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SocketContext } from "../providers/SocketProvider";
 import BatteryCharging from "../components/charging/BatteryCharging";
@@ -232,6 +233,7 @@ const HistoryScreen = ({ navigation }) => {
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
+          {...SCROLL_FEEL}
         >
           <View style={styles.headerSection}>
             <Text style={styles.title}>Lịch sử sạc xe</Text>

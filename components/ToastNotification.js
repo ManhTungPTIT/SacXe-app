@@ -122,17 +122,39 @@ const ToastNotification = ({
 
   if (!visible) return null;
 
-  const isWarning = type === "warning";
-
-  const currentStyles = {
-    bg: isWarning ? Colors.errorBgLight2 : Colors.toastSuccessBg,
-    border: isWarning ? Colors.errorBorderMuted : Colors.successBorder,
-    title: isWarning ? Colors.errorTextDark : Colors.toastSuccessText,
-    desc: isWarning ? Colors.errorText : Colors.toastSuccessDesc,
-    icon: isWarning ? "alert-circle" : "checkmark-circle",
-    iconColor: isWarning ? Colors.errorTextDark : Colors.toastSuccessText,
-    bar: isWarning ? Colors.errorBorderMuted : Colors.toastProgressBar,
+  // "warning" là toast ĐỎ báo thất bại (ChargeScreen đang dùng). "pending" là
+  // toast VÀNG cho việc còn dở dang mà khách xử lý tiếp được.
+  const TOAST_THEMES = {
+    success: {
+      bg: Colors.toastSuccessBg,
+      border: Colors.successBorder,
+      title: Colors.toastSuccessText,
+      desc: Colors.toastSuccessDesc,
+      icon: "checkmark-circle",
+      iconColor: Colors.toastSuccessText,
+      bar: Colors.toastProgressBar,
+    },
+    warning: {
+      bg: Colors.errorBgLight2,
+      border: Colors.errorBorderMuted,
+      title: Colors.errorTextDark,
+      desc: Colors.errorText,
+      icon: "alert-circle",
+      iconColor: Colors.errorTextDark,
+      bar: Colors.errorBorderMuted,
+    },
+    pending: {
+      bg: Colors.pendingBg,
+      border: Colors.pendingBorder,
+      title: Colors.pendingTextDark,
+      desc: Colors.pendingText,
+      icon: "time",
+      iconColor: Colors.pendingTextDark,
+      bar: Colors.pendingBorder,
+    },
   };
+
+  const currentStyles = TOAST_THEMES[type] || TOAST_THEMES.success;
 
   return (
     <Animated.View
