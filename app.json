@@ -8,7 +8,7 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/logo-sac-xe-de-tu-anh.png",
+      "image": "./assets/app-icon-padded.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -66,7 +66,7 @@
       "isAndroidMapEnabled": true,
       "apiGoogleMapUrl": "https://www.google.com/maps/dir/?api=1&destination={lat},{lng}",
       "apiAppleMapUrl": "http://maps.apple.com/?daddr={lat},{lng}&dirflg=d"
-    }
-    
+    },
+   
   }
 }
