@@ -20,7 +20,7 @@ import { useAuthStore } from "../stores/auth.store";
 import Entypo from "@expo/vector-icons/Entypo";
 
 const loginBackground = require("../assets/background.png");
-const enovoLogo = require("../assets/logo.png");
+const enovoLogo = require("../assets/logo.backup-before-sac-xe-de.png");
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");

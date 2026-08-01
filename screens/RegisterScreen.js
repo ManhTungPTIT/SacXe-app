@@ -20,7 +20,7 @@ import { useAuth } from "../queries/auth.query";
 import { TouchableWithoutFeedback } from "react-native";
 
 const registerBackground = require("../assets/background.png");
-const enovoLogo = require("../assets/enovo_logo.png");
+const sacXeLogo = require("../assets/logo.backup-before-sac-xe-de.png");
 
 const RegisterScreen = ({ navigation }) => {
   const [name, setName] = useState("");
@@ -109,7 +109,7 @@ const RegisterScreen = ({ navigation }) => {
               contentContainerStyle={styles.scrollContent}
               showsVerticalScrollIndicator={false}
             >
-              <Image source={enovoLogo} style={styles.logo} resizeMode="contain" />
+              <Image source={sacXeLogo} style={styles.logo} resizeMode="contain" />
               <View style={styles.container}>
                 <Text style={styles.title}>Đăng ký</Text>
 
