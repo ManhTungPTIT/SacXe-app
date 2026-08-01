@@ -25,7 +25,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon-foreground-padded.png",
+        "foregroundImage": "./assets/app-icon-padded.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
@@ -66,7 +66,6 @@
       "isAndroidMapEnabled": true,
       "apiGoogleMapUrl": "https://www.google.com/maps/dir/?api=1&destination={lat},{lng}",
       "apiAppleMapUrl": "http://maps.apple.com/?daddr={lat},{lng}&dirflg=d"
-    },
-   
+    }
   }
 }
