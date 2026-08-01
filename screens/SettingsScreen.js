@@ -28,15 +28,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import ToastNotification from "../components/ToastNotification";
 import { socket } from "../services/socket.service";
 
-// Thời gian chờ hệ thống tự khớp trước khi trả quyền lại cho khách.
-//
-// Cờ autoCheckEnabled backend trả về chỉ là ảnh chụp tại thời điểm tạo QR, và
-// nó chỉ lật sang false sau AUTO_CHECK_FAILURE_THRESHOLD (mặc định 3) chu kỳ
-// lỗi liên tiếp của vòng lặp 20 giây — tức tới 60 giây. Màn QR đã mở rồi thì
-// không có cách nào biết API ngân hàng vừa chết, nên khách bị kẹt ở vòng xoay.
-// Hết 10 giây là chuyển sang giao diện báo thủ công, không chờ backend nữa.
-const AUTO_CHECK_WINDOW_MS = 10000;
-
 const SETTINGS_ACTIONS = [
   {
     key: "profile",
@@ -80,10 +71,8 @@ const SettingsScreen = ({ navigation, route }) => {
   } = useBike.useGetMyBike();
 
   const generateQRMutation = useTransactionQuery.generateQR();
-  const claimTransactionMutation = useTransactionQuery.useClaimTransaction();
   const cancelTransactionMutation = useTransactionQuery.useCancelTransaction();
-  const isProcessingTransfer =
-    claimTransactionMutation.isPending || cancelTransactionMutation.isPending;
+  const isProcessingTransfer = cancelTransactionMutation.isPending;
 
   const [balanceInfoModalVisible, setBalanceInfoModalVisible] = useState(false);
   const [topUpModalVisible, setTopUpModalVisible] = useState(false);
@@ -94,11 +83,6 @@ const SettingsScreen = ({ navigation, route }) => {
   const [qrGenerated, setQrGenerated] = useState(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [pendingTransactionId, setPendingTransactionId] = useState(null);
-  // Backend báo API sao kê ngân hàng có đang khớp giao dịch được không.
-  // Khớp được -> chỉ chờ; không khớp được -> khách tự báo "Tôi đã chuyển".
-  const [autoCheckEnabled, setAutoCheckEnabled] = useState(true);
-  // Hết cửa sổ AUTO_CHECK_WINDOW_MS mà giao dịch chưa được cộng tiền.
-  const [autoWindowExpired, setAutoWindowExpired] = useState(false);
   const [logoutConfirmVisible, setLogoutConfirmVisible] = useState(false);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [myBikeModalVisible, setMyBikeModalVisible] = useState(false);
@@ -164,22 +148,6 @@ const SettingsScreen = ({ navigation, route }) => {
     return () => clearInterval(interval);
   }, [qrGenerated]);
 
-  // Đối soát tự động vẫn tiếp tục chạy ở backend sau khi cửa sổ này hết hạn —
-  // đây thuần tuý là đổi giao diện. Nếu API ngân hàng thực ra vẫn sống và khớp
-  // được ở giây thứ 25, socket vẫn bắn về và modal vẫn tự đóng như thường.
-  useEffect(() => {
-    if (!qrGenerated || !autoCheckEnabled) {
-      return;
-    }
-
-    const timer = setTimeout(
-      () => setAutoWindowExpired(true),
-      AUTO_CHECK_WINDOW_MS,
-    );
-
-    return () => clearTimeout(timer);
-  }, [qrGenerated, autoCheckEnabled]);
-
   // Giao dịch được cộng tiền (hệ thống tự khớp hoặc admin duyệt) trong lúc màn
   // QR đang mở: đóng màn lại, nếu không nó cứ quay vòng tới khi hết hạn.
   // RootNavigator đã lo phần cập nhật số dư và lịch sử.
@@ -243,8 +211,6 @@ const SettingsScreen = ({ navigation, route }) => {
     setQrGenerated(null);
     setTimeLeft(0);
     setPendingTransactionId(null);
-    setAutoCheckEnabled(true);
-    setAutoWindowExpired(false);
   };
 
   const showToast = (message) => {
@@ -261,9 +227,6 @@ const SettingsScreen = ({ navigation, route }) => {
       onSuccess: (data) => {
         setQrGenerated(data?.qrCodeUrl);
         setPendingTransactionId(data?.transactionId || null);
-        setAutoCheckEnabled(Boolean(data?.autoCheckEnabled));
-        // Tạo QR mới thì cửa sổ chờ đếm lại từ đầu.
-        setAutoWindowExpired(false);
       },
       onError: (error) => {
         Alert.alert(
@@ -275,29 +238,13 @@ const SettingsScreen = ({ navigation, route }) => {
     });
   };
 
-  // Khách đã chuyển khoản nhưng hệ thống chưa tự khớp được: gửi tín hiệu để
-  // admin thấy trên trang đối soát và cộng tiền thủ công.
-  const handleClaimTransfer = () => {
-    if (!pendingTransactionId) {
-      handleCloseTopUpModal();
-      return;
-    }
-
-    claimTransactionMutation.mutate(pendingTransactionId, {
-      onSuccess: () => {
-        handleCloseTopUpModal();
-        showToast(
-          "Cảm ơn bạn đã sử dụng hệ thống, tài khoản của bạn sẽ được cộng trong vòng 1 phút nữa.",
-        );
-      },
-      onError: (error) => {
-        Alert.alert(
-          "Thông báo",
-          error?.response?.data?.message ||
-            "Không gửi được yêu cầu. Vui lòng thử lại.",
-        );
-      },
-    });
+  // Khách đóng màn QR: không gọi API nào cả. Giao dịch ở lại "pending" để vòng
+  // lặp đối soát tự khớp, hoặc để admin duyệt tay khi API ngân hàng đang lỗi.
+  const handleFinishTransfer = () => {
+    handleCloseTopUpModal();
+    showToast(
+      "Cảm ơn bạn đã sử dụng, tài khoản của bạn sẽ được cập nhật trong vòng 1 phút nữa.",
+    );
   };
 
   const handleCancelTransfer = () => {
@@ -306,36 +253,31 @@ const SettingsScreen = ({ navigation, route }) => {
       return;
     }
 
-    // Giao dịch đã huỷ thì không cộng tiền được nữa, nên phải hỏi lại trước.
-    // "Chỉ đóng màn hình" là đường thoát cho khách đã chuyển tiền rồi: giữ
-    // giao dịch chờ hệ thống hoặc admin xử lý thay vì huỷ mất.
-    Alert.alert(
-      "Huỷ yêu cầu nạp tiền?",
-      "Nếu bạn đã chuyển khoản rồi thì ĐỪNG huỷ — giao dịch đã huỷ sẽ không được cộng tiền.",
-      [
-        { text: "Quay lại", style: "cancel" },
-        { text: "Chỉ đóng màn hình", onPress: handleCloseTopUpModal },
-        {
-          text: "Vẫn huỷ",
-          style: "destructive",
-          onPress: () => {
-            cancelTransactionMutation.mutate(pendingTransactionId, {
-              onSuccess: () => {
-                handleCloseTopUpModal();
-                showToast("Đã huỷ yêu cầu nạp tiền.");
-              },
-              onError: (error) => {
-                Alert.alert(
-                  "Thông báo",
-                  error?.response?.data?.message ||
-                    "Không huỷ được giao dịch. Vui lòng thử lại.",
-                );
-              },
-            });
-          },
+    // Giao dịch đã huỷ thì không cộng tiền được nữa — cả vòng lặp tự động lẫn
+    // admin đều không cứu được — nên phải hỏi lại trước. Khách đã chuyển tiền
+    // rồi thì bấm "Đóng" mới là đường thoát đúng.
+    Alert.alert("Thông báo", "Bạn có muốn huỷ giao dịch không?", [
+      { text: "Không", style: "cancel" },
+      {
+        text: "Có",
+        style: "destructive",
+        onPress: () => {
+          cancelTransactionMutation.mutate(pendingTransactionId, {
+            onSuccess: () => {
+              handleCloseTopUpModal();
+              showToast("Đã huỷ yêu cầu nạp tiền.");
+            },
+            onError: (error) => {
+              Alert.alert(
+                "Thông báo",
+                error?.response?.data?.message ||
+                  "Không huỷ được giao dịch. Vui lòng thử lại.",
+              );
+            },
+          });
         },
-      ],
-    );
+      },
+    ]);
   };
 
   const handlePressNotification = (notification) => {
@@ -609,8 +551,7 @@ const SettingsScreen = ({ navigation, route }) => {
               handleConfirmTopUp={handleConfirmTopUp}
               qrGenerated={qrGenerated}
               timeLeft={timeLeft}
-              autoCheckEnabled={autoCheckEnabled && !autoWindowExpired}
-              handleClaimTransfer={handleClaimTransfer}
+              handleFinishTransfer={handleFinishTransfer}
               handleCancelTransfer={handleCancelTransfer}
               isProcessingTransfer={isProcessingTransfer}
             />

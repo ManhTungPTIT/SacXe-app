@@ -15,12 +15,7 @@ const PUSH_TOKEN_KEY = "@registered_push_token";
 // Component con để sử dụng hook (hooks chỉ dùng được trong function components)
 function AppContent() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const notificationPermissionTriggered = useAuthStore(
-    (state) => state.notificationPermissionTriggered,
-  );
-  const { expoPushToken } = useNotifications(
-    isAuthenticated && notificationPermissionTriggered,
-  );
+  const { expoPushToken } = useNotifications(true);
 
   // Khi có token VÀ đã đăng nhập, gửi lên backend (chỉ khi token thay đổi)
   useEffect(() => {

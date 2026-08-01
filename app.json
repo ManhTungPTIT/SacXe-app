@@ -4,7 +4,7 @@
     "slug": "Sac-Xe-De",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo-sac-xe-de-tu-anh.png",
+    "icon": "./assets/app-icon-padded.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -28,7 +28,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo-sac-xe-de-tu-anh.png",
+        "foregroundImage": "./assets/adaptive-icon-foreground-padded.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
@@ -47,16 +47,16 @@
     },
     "plugins": [
       "expo-secure-store",
-        [
+      [
         "expo-notifications",
         {
-          "icon": "./assets/logo-sac-xe-de-tu-anh.png",
+          "icon": "./assets/app-icon-padded.png",
           "color": "#31C861"
         }
       ]
     ],
     "notification": {
-      "icon": "./assets/logo-sac-xe-de-tu-anh.png",
+      "icon": "./assets/app-icon-padded.png",
       "color": "#31C861"
     },
     "extra": {

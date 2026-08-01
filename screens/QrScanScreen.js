@@ -1,5 +1,6 @@
-import React, { useCallback, useRef } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Linking,
   StyleSheet,
@@ -15,8 +16,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useEChargeDeviceQuery } from "../queries/eChargeDevice.query";
 import eChargeDeviceApi from "../api/eChargeDevice.api";
 import claimScanDecision from "../utils/claimScanDecision";
+import proximity from "../utils/proximity";
+import {
+  ensureLocationPermission,
+  resolveCurrentPosition,
+} from "../services/location.service";
 
 const { getClaimScanDecision } = claimScanDecision;
+const { getProximityDecision } = proximity;
 
 const cleanScannedValue = (candidate) => {
   if (candidate === undefined || candidate === null) return null;
@@ -85,16 +92,19 @@ const QrScanScreen = ({ navigation, route }) => {
   const scannedRef = useRef(false);
   const isFocused = useIsFocused();
   const [permission, requestPermission] = useCameraPermissions();
+  const [isCheckingLocation, setIsCheckingLocation] = useState(false);
   const mode = route?.params?.mode;
   const claimDeviceMutation = useEChargeDeviceQuery.useClaimDevice();
 
-  const openCameraSettings = useCallback(async () => {
+  // Dùng chung cho cả quyền camera và quyền vị trí — Linking.openSettings mở
+  // trang cài đặt của ứng dụng chứ không mở riêng từng quyền.
+  const openAppSettings = useCallback(async () => {
     try {
       await Linking.openSettings();
     } catch (error) {
       Alert.alert(
         "Thông báo",
-        "Vui lòng vào phần Cài đặt của thiết bị để bật quyền camera cho ứng dụng.",
+        "Vui lòng vào phần Cài đặt của thiết bị để bật quyền cho ứng dụng.",
       );
     }
   }, []);
@@ -116,7 +126,7 @@ const QrScanScreen = ({ navigation, route }) => {
             [
               {
                 text: "Mở cài đặt",
-                onPress: openCameraSettings,
+                onPress: openAppSettings,
               },
               {
                 text: "Để sau",
@@ -138,7 +148,7 @@ const QrScanScreen = ({ navigation, route }) => {
               [
                 {
                   text: "Mở cài đặt",
-                  onPress: openCameraSettings,
+                  onPress: openAppSettings,
                 },
                 {
                   text: "Để sau",
@@ -155,19 +165,19 @@ const QrScanScreen = ({ navigation, route }) => {
 
       return true;
     },
-    [openCameraSettings, permission, requestPermission],
+    [openAppSettings, permission, requestPermission],
   );
 
   //luồng người dùng xin quyền camera ở máy chưa được cấp
   const handlePermissionAction = useCallback(() => {
     //mở thẳng phần cài đặt để bật quyền thủ công
     if (permission && permission.canAskAgain === false) {
-      openCameraSettings();
+      openAppSettings();
       return;
     }
 
     ensureCameraPermission();
-  }, [ensureCameraPermission, openCameraSettings, permission]);
+  }, [ensureCameraPermission, openAppSettings, permission]);
 
   useFocusEffect(
     useCallback(() => {
@@ -208,6 +218,101 @@ const QrScanScreen = ({ navigation, route }) => {
     );
   }, []);
 
+  // Đưa người dùng về màn chọn loại trụ. resetChargeFlowToken là cơ chế sẵn có
+  // của ChargeScreen (đặt chargeMode về null + dọn state), LatestHistory cũng
+  // đang dùng.
+  const leaveToChargeModePicker = useCallback(() => {
+    scannedRef.current = false;
+    navigation.navigate("Charge", { resetChargeFlowToken: Date.now() });
+  }, [navigation]);
+
+  const alertAndLeave = useCallback(
+    (title, message) => {
+      Alert.alert(
+        title,
+        message,
+        [{ text: "OK", onPress: leaveToChargeModePicker }],
+        // Không cho đóng bằng nút back của Android: onPress là chỗ duy nhất đặt
+        // lại scannedRef, đóng kiểu khác sẽ để máy quét kẹt ở trạng thái đã quét.
+        { cancelable: false },
+      );
+    },
+    [leaveToChargeModePicker],
+  );
+
+  // Trả true nếu được đi tiếp. Mọi nhánh trả false đều đã tự báo cho người dùng
+  // và rời màn quét.
+  const passesProximityCheck = useCallback(
+    async (deviceResponse) => {
+      const locationPermission = await ensureLocationPermission();
+
+      if (locationPermission === "blocked") {
+        Alert.alert(
+          "Cần quyền vị trí",
+          "Ứng dụng cần quyền vị trí để xác nhận bạn đang ở gần trụ sạc. Vui lòng mở Cài đặt để bật lại quyền này.",
+          [
+            {
+              text: "Mở cài đặt",
+              onPress: () => {
+                openAppSettings();
+                leaveToChargeModePicker();
+              },
+            },
+            {
+              text: "Để sau",
+              style: "cancel",
+              onPress: leaveToChargeModePicker,
+            },
+          ],
+          { cancelable: false },
+        );
+        return false;
+      }
+
+      if (locationPermission !== "granted") {
+        alertAndLeave(
+          "Cần quyền vị trí",
+          "Ứng dụng cần quyền vị trí để xác nhận bạn đang ở gần trụ sạc.",
+        );
+        return false;
+      }
+
+      const position = await resolveCurrentPosition();
+      const decision = getProximityDecision({
+        position,
+        device: deviceResponse,
+      });
+
+      // Trụ thiếu toạ độ là lỗi dữ liệu vận hành — không chặn người dùng vì một
+      // thiếu sót họ không gây ra.
+      if (decision.type === "unknownDevice") {
+        console.warn(
+          "[qr-scan] Trụ sạc thiếu toạ độ, bỏ qua kiểm tra khoảng cách.",
+        );
+        return true;
+      }
+
+      if (decision.type === "unknownPosition") {
+        alertAndLeave(
+          "Không xác định được vị trí",
+          "Không lấy được vị trí của bạn. Vui lòng kiểm tra định vị của máy rồi thử lại.",
+        );
+        return false;
+      }
+
+      if (decision.type === "outOfRange") {
+        alertAndLeave(
+          "Thông báo",
+          "Bạn đang ở ngoài phạm vi trụ sạc.",
+        );
+        return false;
+      }
+
+      return true;
+    },
+    [alertAndLeave, leaveToChargeModePicker, openAppSettings],
+  );
+
   const handleBarcodeScanned = useCallback(
     async ({ data }) => {
       if (scannedRef.current) {
@@ -224,8 +329,11 @@ const QrScanScreen = ({ navigation, route }) => {
       }
 
       scannedRef.current = true;
+      setIsCheckingLocation(true);
 
-      if (mode === "claim") {
+      try {
+        // Lấy thông tin trụ trước khi phân nhánh mode: mọi lần quét đều cần
+        // toạ độ trụ để kiểm tra khoảng cách.
         let deviceResponse;
 
         try {
@@ -251,6 +359,15 @@ const QrScanScreen = ({ navigation, route }) => {
               ],
             );
           }
+          return;
+        }
+
+        if (!(await passesProximityCheck(deviceResponse))) {
+          return;
+        }
+
+        if (mode !== "claim") {
+          navigateToScannedDevice(scannedDeviceCode);
           return;
         }
 
@@ -297,16 +414,15 @@ const QrScanScreen = ({ navigation, route }) => {
             },
           },
         );
-        return;
+      } finally {
+        setIsCheckingLocation(false);
       }
-
-      navigateToScannedDevice(scannedDeviceCode);
     },
     [
-      navigation,
       mode,
       claimDeviceMutation,
       navigateToScannedDevice,
+      passesProximityCheck,
       showInvalidQrAlert,
     ],
   );
@@ -356,10 +472,19 @@ const QrScanScreen = ({ navigation, route }) => {
               onBarcodeScanned={handleBarcodeScanned}
             />
 
-            <View style={styles.overlay} pointerEvents="none">
-              <View style={styles.scanFrame} />
-              <Text style={styles.guideText}>Quét mã Qr trên trụ sạc</Text>
-            </View>
+            {isCheckingLocation ? (
+              // Bước kiểm tra vị trí có thể mất vài giây ở nơi GPS yếu (hầm gửi
+              // xe) — không có chỉ báo thì người dùng tưởng máy treo.
+              <View style={styles.checkingOverlay}>
+                <ActivityIndicator size="large" color={Colors.white} />
+                <Text style={styles.checkingText}>Đang kiểm tra vị trí…</Text>
+              </View>
+            ) : (
+              <View style={styles.overlay} pointerEvents="none">
+                <View style={styles.scanFrame} />
+                <Text style={styles.guideText}>Quét mã Qr trên trụ sạc</Text>
+              </View>
+            )}
           </>
         )}
 
@@ -396,6 +521,18 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: Colors.white,
     backgroundColor: Colors.whiteTranslucent05,
+  },
+  checkingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: Colors.overlayBgDark,
+  },
+  checkingText: {
+    color: Colors.white,
+    fontSize: 16,
+    fontWeight: "600",
+    marginTop: 16,
   },
   guideText: {
     color: Colors.white,

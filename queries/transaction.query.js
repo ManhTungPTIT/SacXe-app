@@ -19,16 +19,6 @@ export const useTransactionQuery = {
     });
     return { mutate, ...rest };
   },
-  useClaimTransaction: () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-      mutationFn: (transactionId) =>
-        transactionApi.claimTransaction(transactionId),
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["TRANSACTION_HISTORY"] });
-      },
-    });
-  },
   useCancelTransaction: () => {
     const queryClient = useQueryClient();
     return useMutation({

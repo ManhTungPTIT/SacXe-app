@@ -35,9 +35,6 @@ const DevicesComponents = ({
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [selectedPowerOutlet, setSelectedPowerOutlet] = useState(null);
   const user = useAuthStore((state) => state.user);
-  const triggerNotificationPermission = useAuthStore(
-    (state) => state.triggerNotificationPermission,
-  );
   const userId = user?._id;
   // Hỏng (isBroken): admin đánh dấu/gỡ, hiển thị "Ổ đang bảo trì", không bấm
   // được. isUnavailable (mất điện tạm/mất tín hiệu) không còn hiển thị riêng
@@ -146,7 +143,6 @@ const DevicesComponents = ({
   };
 
   const handleOpenConfirmModal = (device) => {
-    triggerNotificationPermission();
     setSelectedPowerOutlet(device);
     setConfirmModalVisible(true);
   };

@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  ActivityIndicator,
   Image,
   Keyboard,
   KeyboardAvoidingView,
@@ -27,8 +26,7 @@ const TopUpComponent = ({
   customAmount,
   setCustomAmount,
   handleConfirmTopUp,
-  autoCheckEnabled,
-  handleClaimTransfer,
+  handleFinishTransfer,
   handleCancelTransfer,
   isProcessingTransfer,
 }) => {
@@ -58,50 +56,34 @@ const TopUpComponent = ({
                   resizeMode="contain"
                 />
 
-                {autoCheckEnabled ? (
-                  <View style={styles.qrAutoStatusRow}>
-                    <ActivityIndicator size="small" color={Colors.primary} />
-                    <Text style={styles.qrAutoStatusText}>
-                      Đang chờ hệ thống xác nhận tự động...
-                    </Text>
-                  </View>
-                ) : (
-                  <View style={styles.qrManualNotice}>
-                    <Text style={styles.qrManualNoticeText}>
-                      Sau khi chuyển
-                      khoản, hãy bấm "Tôi đã chuyển" để quản trị viên xác nhận.
-                    </Text>
-                  </View>
-                )}
-
                 <View style={styles.qrButtons}>
                   <TouchableOpacity
                     style={[styles.modalButton, styles.cancelButton]}
                     disabled={isProcessingTransfer}
                     onPress={handleCancelTransfer}
                   >
-                    <Text style={styles.cancelButtonText}>Hủy bỏ</Text>
+                    <Text style={styles.cancelButtonText}>
+                      {isProcessingTransfer ? "Đang huỷ..." : "Hủy bỏ"}
+                    </Text>
                   </TouchableOpacity>
-                  {!autoCheckEnabled && (
-                    <TouchableOpacity
+                  <TouchableOpacity
+                    style={[
+                      styles.modalButton,
+                      styles.saveButton,
+                      isProcessingTransfer && styles.saveButtonDisabled,
+                    ]}
+                    disabled={isProcessingTransfer}
+                    onPress={handleFinishTransfer}
+                  >
+                    <Text
                       style={[
-                        styles.modalButton,
-                        styles.saveButton,
-                        isProcessingTransfer && styles.saveButtonDisabled,
+                        styles.saveButtonText,
+                        isProcessingTransfer && styles.saveButtonTextDisabled,
                       ]}
-                      disabled={isProcessingTransfer}
-                      onPress={handleClaimTransfer}
                     >
-                      <Text
-                        style={[
-                          styles.saveButtonText,
-                          isProcessingTransfer && styles.saveButtonTextDisabled,
-                        ]}
-                      >
-                        {isProcessingTransfer ? "Đang gửi..." : "Tôi đã chuyển"}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
+                      Đóng
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             ) : (
@@ -372,33 +354,7 @@ const styles = StyleSheet.create({
   qrImage: {
     width: 280,
     height: 280,
-    marginBottom: 12,
-  },
-  qrAutoStatusRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
     marginBottom: 16,
-  },
-  qrAutoStatusText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: Colors.textSecondary,
-  },
-  qrManualNotice: {
-    backgroundColor: Colors.errorBgLight2,
-    borderWidth: 1,
-    borderColor: Colors.errorBorderLight,
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    marginBottom: 16,
-  },
-  qrManualNoticeText: {
-    fontSize: 12.5,
-    lineHeight: 18,
-    color: Colors.errorTextDark,
   },
   qrButtons: {
     flexDirection: "row",
