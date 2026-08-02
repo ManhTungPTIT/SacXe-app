@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
+  ImageBackground,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
@@ -18,6 +19,7 @@ import { useAuth } from "../queries/auth.query";
 import { useAuthStore } from "../stores/auth.store";
 import Entypo from "@expo/vector-icons/Entypo";
 
+const loginBackground = require("../assets/background.png");
 const enovoLogo = require("../assets/logo.png");
 
 const LoginScreen = ({ navigation }) => {
@@ -61,7 +63,11 @@ const LoginScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.background}>
+    <ImageBackground
+      source={loginBackground}
+      style={styles.background}
+      resizeMode="cover"
+    >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <View style={styles.overlay}>
           <KeyboardAvoidingView
@@ -134,7 +140,7 @@ const LoginScreen = ({ navigation }) => {
           </KeyboardAvoidingView>
         </View>
       </TouchableWithoutFeedback>
-    </View>
+    </ImageBackground>
   );
 };
 
@@ -160,7 +166,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   container: {
-    backgroundColor: Colors.whiteTranslucent85,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: Colors.cardBorderGreen,

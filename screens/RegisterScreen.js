@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
+  ImageBackground,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
@@ -18,6 +19,7 @@ import Entypo from "@expo/vector-icons/Entypo";
 import { useAuth } from "../queries/auth.query";
 import { TouchableWithoutFeedback } from "react-native";
 
+const registerBackground = require("../assets/background.png");
 const sacXeLogo = require("../assets/logo.png");
 
 const RegisterScreen = ({ navigation }) => {
@@ -91,7 +93,11 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.background}>
+    <ImageBackground
+      source={registerBackground}
+      style={styles.background}
+      resizeMode="cover"
+    >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <View style={styles.overlay}>
           <KeyboardAvoidingView
@@ -208,7 +214,7 @@ const RegisterScreen = ({ navigation }) => {
           </KeyboardAvoidingView>
         </View>
       </TouchableWithoutFeedback>
-    </View>
+    </ImageBackground>
   );
 };
 
@@ -234,7 +240,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   container: {
-    backgroundColor: Colors.whiteTranslucent85,
     borderWidth: 1,
     borderColor: Colors.borderGreenLight,
     borderRadius: 20,

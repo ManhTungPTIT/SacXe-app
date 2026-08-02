@@ -6,7 +6,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Image,
   Platform,
 } from "react-native";
 import { useMemo, useRef } from "react";
@@ -251,10 +250,13 @@ const MapComponent = ({
               >
                 <View style={styles.listItemInfo}>
                   <View style={styles.listItemHeader}>
-                    <Image
-                      source={require("../assets/charge.png")}
-                      style={styles.listItemIcon}
-                    />
+                    <View style={styles.listItemIcon}>
+                      <MaterialIcons
+                        name="ev-station"
+                        size={18}
+                        color={Colors.primary}
+                      />
+                    </View>
                     <Text style={styles.listItemTitle}>
                       {device.deviceCode || device.name}
                     </Text>
@@ -503,6 +505,8 @@ const styles = StyleSheet.create({
   listItemIcon: {
     width: 24,
     height: 24,
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 8,
   },
   listItemTitle: {
