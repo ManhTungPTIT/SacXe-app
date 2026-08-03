@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -23,6 +23,7 @@ const registerBackground = require("../assets/background.png");
 const sacXeLogo = require("../assets/logo.png");
 
 const isIOS = Platform.OS === "ios";
+const AUTH_INPUT_SCROLL_DELAY_MS = 120;
 
 const RegisterScreen = ({ navigation }) => {
   const [name, setName] = useState("");
@@ -34,6 +35,15 @@ const RegisterScreen = ({ navigation }) => {
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] =
     useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const scrollViewRef = useRef(null);
+
+  const scrollToInput = useCallback((y) => {
+    if (!isIOS) return;
+
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y, animated: true });
+    }, AUTH_INPUT_SCROLL_DELAY_MS);
+  }, []);
 
   const registerMutation = useAuth.useRegister();
 
@@ -104,15 +114,17 @@ const RegisterScreen = ({ navigation }) => {
         <View style={styles.overlay}>
           <KeyboardAvoidingView
             style={styles.keyboardView}
-            behavior={isIOS ? "padding" : "height"}
-            keyboardVerticalOffset={0}
+            behavior={isIOS ? undefined : "height"}
+            enabled={!isIOS}
           >
             <ScrollView
+              ref={scrollViewRef}
               style={styles.scrollView}
               contentContainerStyle={styles.scrollContent}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode={isIOS ? "interactive" : "none"}
+              automaticallyAdjustKeyboardInsets={isIOS}
             >
               <Image source={sacXeLogo} style={styles.logo} resizeMode="contain" />
               <View style={styles.container}>
@@ -136,6 +148,7 @@ const RegisterScreen = ({ navigation }) => {
                   onChangeText={setName}
                   keyboardType="default"
                   autoCapitalize="none"
+                  onFocus={() => scrollToInput(90)}
                 />
 
                 <TextInput
@@ -146,6 +159,7 @@ const RegisterScreen = ({ navigation }) => {
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  onFocus={() => scrollToInput(190)}
                 />
 
                 <View style={styles.passwordField}>
@@ -157,6 +171,7 @@ const RegisterScreen = ({ navigation }) => {
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!isPasswordVisible}
+                    onFocus={() => scrollToInput(320)}
                   />
                   <TouchableOpacity
                     style={styles.passwordToggle}
@@ -180,6 +195,7 @@ const RegisterScreen = ({ navigation }) => {
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
                     secureTextEntry={!isConfirmPasswordVisible}
+                    onFocus={() => scrollToInput(430)}
                   />
                   <TouchableOpacity
                     style={styles.passwordToggle}
@@ -243,7 +259,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: "center",
-    paddingBottom: 32,
+    paddingBottom: 180,
   },
   container: {
     borderWidth: 1,

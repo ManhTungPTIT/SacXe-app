@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -23,12 +23,22 @@ const loginBackground = require("../assets/background.png");
 const enovoLogo = require("../assets/logo.png");
 
 const isIOS = Platform.OS === "ios";
+const AUTH_INPUT_SCROLL_DELAY_MS = 120;
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const scrollViewRef = useRef(null);
+
+  const scrollToInput = useCallback((y) => {
+    if (!isIOS) return;
+
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y, animated: true });
+    }, AUTH_INPUT_SCROLL_DELAY_MS);
+  }, []);
 
   const loginMutation = useAuth.useLogin();
   const login = useAuthStore((state) => state.login);
@@ -74,15 +84,17 @@ const LoginScreen = ({ navigation }) => {
         <View style={styles.overlay}>
           <KeyboardAvoidingView
             style={styles.keyboardWrap}
-            behavior={isIOS ? "padding" : "height"}
-            keyboardVerticalOffset={0}
+            behavior={isIOS ? undefined : "height"}
+            enabled={!isIOS}
           >
             <ScrollView
+              ref={scrollViewRef}
               style={styles.scrollView}
               contentContainerStyle={styles.scrollContent}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode={isIOS ? "interactive" : "none"}
+              automaticallyAdjustKeyboardInsets={isIOS}
             >
               <Image source={enovoLogo} style={styles.logo} resizeMode="contain" />
               <View style={styles.container}>
@@ -96,6 +108,7 @@ const LoginScreen = ({ navigation }) => {
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  onFocus={() => scrollToInput(80)}
                 />
 
                 <View style={styles.passwordField}>
@@ -106,6 +119,7 @@ const LoginScreen = ({ navigation }) => {
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!isPasswordVisible}
+                    onFocus={() => scrollToInput(190)}
                   />
                   <TouchableOpacity
                     style={styles.passwordToggle}
@@ -169,7 +183,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: "center",
-    paddingBottom: 32,
+    paddingBottom: 96,
   },
   container: {
     borderRadius: 20,
