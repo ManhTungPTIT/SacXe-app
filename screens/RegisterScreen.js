@@ -22,6 +22,8 @@ import { TouchableWithoutFeedback } from "react-native";
 const registerBackground = require("../assets/background.png");
 const sacXeLogo = require("../assets/logo.png");
 
+const isIOS = Platform.OS === "ios";
+
 const RegisterScreen = ({ navigation }) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -102,12 +104,15 @@ const RegisterScreen = ({ navigation }) => {
         <View style={styles.overlay}>
           <KeyboardAvoidingView
             style={styles.keyboardView}
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            behavior={isIOS ? "padding" : "height"}
+            keyboardVerticalOffset={0}
           >
             <ScrollView
               style={styles.scrollView}
               contentContainerStyle={styles.scrollContent}
               showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode={isIOS ? "interactive" : "none"}
             >
               <Image source={sacXeLogo} style={styles.logo} resizeMode="contain" />
               <View style={styles.container}>
@@ -238,6 +243,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: "center",
+    paddingBottom: 32,
   },
   container: {
     borderWidth: 1,

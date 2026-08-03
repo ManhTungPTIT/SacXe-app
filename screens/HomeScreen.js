@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  KeyboardAvoidingView,
   ScrollView,
   Platform,
   Linking,
@@ -21,24 +20,66 @@ import normalizeAddress from "../utils/removeAccents";
 import Constants from "expo-constants";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+const SEARCH_DEBOUNCE_MS = 350;
+
+const SearchStationInput = React.memo(({ onKeywordChange }) => {
+  const [draftKeyword, setDraftKeyword] = useState("");
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      onKeywordChange(draftKeyword);
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => clearTimeout(timeoutId);
+  }, [draftKeyword, onKeywordChange]);
+
+  const handleClear = useCallback(() => {
+    setDraftKeyword("");
+    onKeywordChange("");
+  }, [onKeywordChange]);
+
+  return (
+    <View style={styles.searchInputWrap}>
+      <Ionicons name="search" size={18} color={Colors.neutralText} />
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Tìm kiếm trạm sạc theo mã hoặc địa chỉ"
+        placeholderTextColor={Colors.neutralText}
+        value={draftKeyword}
+        onChangeText={setDraftKeyword}
+        returnKeyType="search"
+      />
+      {draftKeyword ? (
+        <TouchableOpacity
+          onPress={handleClear}
+          style={styles.clearSearchButton}
+        >
+          <Ionicons
+            name="close-circle"
+            size={18}
+            color={Colors.textPlaceholder}
+          />
+        </TouchableOpacity>
+      ) : null}
+    </View>
+  );
+});
 const HomeScreen = ({ navigation }) => {
   const [location, setLocation] = useState(null);
   const [locationPermissionStatus, setLocationPermissionStatus] =
     useState("pending");
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
-  const [searchKeyword, setSearchKeyword] = useState("");
-  const [searchAddress, setSearchAddress] = useState("");
-
-  useEffect(() => {
-    const result = normalizeAddress(searchKeyword);
-    setSearchAddress(result);
-  }, [searchKeyword]);
+  const [debouncedSearchKeyword, setDebouncedSearchKeyword] = useState("");
 
   const { data: nearbyDevices } = useEChargeDeviceQuery.useFindAllDevices({
     latitude: location?.latitude,
     longitude: location?.longitude,
   });
   const { data: latestHistory } = useHistory.useGetLatestHistory();
+  const searchAddress = useMemo(
+    () => normalizeAddress(debouncedSearchKeyword),
+    [debouncedSearchKeyword],
+  );
 
   const filteredDevices = useMemo(() => {
     if (!nearbyDevices) {
@@ -114,7 +155,11 @@ const HomeScreen = ({ navigation }) => {
     }
   }, [requestLocationPermission]);
 
-  const openNavigation = (lat, lng) => {
+  const handleSearchKeywordChange = useCallback((keyword) => {
+    setDebouncedSearchKeyword(keyword);
+  }, []);
+
+  const openNavigation = useCallback((lat, lng) => {
     let url = "";
     if (Platform.OS === "ios") {
       url = `${Constants.expoConfig?.extra?.apiAppleMapUrl.replace("{lat}", lat).replace("{lng}", lng)}`;
@@ -123,43 +168,26 @@ const HomeScreen = ({ navigation }) => {
     }
 
     Linking.openURL(url);
-  };
+  }, []);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <View style={styles.page}>
-        <KeyboardAvoidingView
-          style={styles.keyboardView}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
+        <View style={styles.keyboardView}>
           <ScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.container}
             showsVerticalScrollIndicator={false}
             nestedScrollEnabled
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "none"}
+            automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
           >
             <View style={styles.mapSection}>
               <View style={styles.mapHeaderSection}>
-                <View style={styles.searchInputWrap}>
-                  <Ionicons name="search" size={18} color={Colors.neutralText} />
-                  <TextInput
-                    style={styles.searchInput}
-                    placeholder="Tìm kiếm trạm sạc theo mã hoặc địa chỉ"
-                    placeholderTextColor={Colors.neutralText}
-                    value={searchKeyword}
-                    onChangeText={setSearchKeyword}
-                    returnKeyType="search"
-                  />
-                  {searchKeyword ? (
-                    <TouchableOpacity
-                      onPress={() => setSearchKeyword("")}
-                      style={styles.clearSearchButton}
-                    >
-                      <Ionicons name="close-circle" size={18} color={Colors.textPlaceholder} />
-                    </TouchableOpacity>
-                  ) : null}
-                </View>
+                <SearchStationInput
+                  onKeywordChange={handleSearchKeywordChange}
+                />
               </View>
               <View style={styles.mapContainer}>
                 <MapComponent
@@ -187,7 +215,7 @@ const HomeScreen = ({ navigation }) => {
 
             <LatestHistory history={latestHistory} navigation={navigation} />
           </ScrollView>
-        </KeyboardAvoidingView>
+        </View>
       </View>
     </SafeAreaView>
   );

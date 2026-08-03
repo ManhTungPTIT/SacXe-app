@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   Platform,
 } from "react-native";
-import { useMemo, useRef } from "react";
+import { memo, useMemo, useRef } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import Constants from "expo-constants";
 import { Colors } from "../constants/color";
@@ -326,7 +326,7 @@ const MapComponent = ({
   );
 };
 
-export default MapComponent;
+export default memo(MapComponent);
 
 const styles = StyleSheet.create({
   container: { flex: 1 },

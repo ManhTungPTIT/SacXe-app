@@ -22,6 +22,8 @@ import Entypo from "@expo/vector-icons/Entypo";
 const loginBackground = require("../assets/background.png");
 const enovoLogo = require("../assets/logo.png");
 
+const isIOS = Platform.OS === "ios";
+
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -72,12 +74,15 @@ const LoginScreen = ({ navigation }) => {
         <View style={styles.overlay}>
           <KeyboardAvoidingView
             style={styles.keyboardWrap}
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            behavior={isIOS ? "padding" : "height"}
+            keyboardVerticalOffset={0}
           >
             <ScrollView
               style={styles.scrollView}
               contentContainerStyle={styles.scrollContent}
               showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode={isIOS ? "interactive" : "none"}
             >
               <Image source={enovoLogo} style={styles.logo} resizeMode="contain" />
               <View style={styles.container}>
@@ -164,6 +169,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: "center",
+    paddingBottom: 32,
   },
   container: {
     borderRadius: 20,
