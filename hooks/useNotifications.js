@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { InteractionManager } from "react-native";
 import {
   registerForPushNotificationsAsync,
   addNotificationReceivedListener,
@@ -23,11 +24,26 @@ export const useNotifications = (enabled = false) => {
       return;
     }
 
-    // 1. Đăng ký nhận push notification và lấy token
-    registerForPushNotificationsAsync().then((token) => {
-      if (token) {
-        setExpoPushToken(token);
-      }
+    // Chặn set state khi user đã logout / component unmount giữa lúc chờ
+    // người dùng trả lời hộp thoại quyền (có thể mất vài giây).
+    let isActive = true;
+
+    // 1. Đăng ký nhận push notification và lấy token.
+    // Hoãn tới khi animation chuyển sang màn chính chạy xong mới xin quyền —
+    // hộp thoại của hệ điều hành sẽ đè lên màn chính thay vì bật giữa lúc
+    // đang chuyển màn.
+    const permissionTask = InteractionManager.runAfterInteractions(() => {
+      if (!isActive) return;
+
+      registerForPushNotificationsAsync()
+        .then((token) => {
+          if (isActive && token) {
+            setExpoPushToken(token);
+          }
+        })
+        .catch((error) => {
+          console.error("Lỗi đăng ký notification:", error);
+        });
     });
 
     // 2. Lắng nghe khi nhận notification (app đang mở)
@@ -42,8 +58,10 @@ export const useNotifications = (enabled = false) => {
       () => {},
     );
 
-    // Cleanup khi unmount
+    // Cleanup khi unmount / khi logout (enabled -> false)
     return () => {
+      isActive = false;
+      permissionTask.cancel();
       if (notificationListener.current) {
         notificationListener.current.remove();
       }

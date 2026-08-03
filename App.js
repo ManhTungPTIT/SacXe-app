@@ -15,7 +15,11 @@ const PUSH_TOKEN_KEY = "@registered_push_token";
 // Component con để sử dụng hook (hooks chỉ dùng được trong function components)
 function AppContent() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const { expoPushToken } = useNotifications(true);
+  // Chỉ bật notification (kèm hộp thoại xin quyền của hệ điều hành) SAU khi
+  // đăng nhập thành công và đã vào màn chính. Bật sẵn từ lúc mở app sẽ hỏi
+  // quyền ngay ở màn đăng nhập, lúc người dùng còn chưa biết app dùng thông
+  // báo để làm gì -> tỉ lệ bấm "Không cho phép" rất cao và iOS chỉ hỏi 1 lần.
+  const { expoPushToken } = useNotifications(isAuthenticated);
 
   // Khi có token VÀ đã đăng nhập, gửi lên backend (chỉ khi token thay đổi)
   useEffect(() => {

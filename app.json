@@ -13,6 +13,7 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
+      "icon": "./assets/app-icon-ios-85.png",
       "supportsTablet": true,
       "bundleIdentifier": "de.sacxe",
       "infoPlist": {
