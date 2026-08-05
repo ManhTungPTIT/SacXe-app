@@ -9,9 +9,6 @@ export const useBike = {
       onSuccess: (data) => {
         queryClient.setQueryData(["USERS_BIKE"], data);
       },
-      onError: (error) => {
-        console.error("Error registering bike:", error);
-      },
     });
     return { mutate, ...rest };
   },

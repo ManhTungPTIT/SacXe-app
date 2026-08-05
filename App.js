@@ -41,11 +41,6 @@ function AppContent() {
         // Lưu token đã đăng ký thành công
         await AsyncStorage.setItem(PUSH_TOKEN_KEY, expoPushToken);
       } catch (err) {
-        console.error("Lỗi đăng ký push token:", {
-          status: err.response?.status,
-          data: err.response?.data,
-          message: err.message,
-        });
         // Không lưu token nếu gửi thất bại, để lần sau thử lại
       }
     };

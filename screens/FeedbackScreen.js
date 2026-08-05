@@ -166,7 +166,6 @@ const FeedbackScreen = ({ navigation }) => {
           );
         },
         onError: (error) => {
-          console.error("Error submitting feedback:", error);
           setIsSubmitting(false);
           Alert.alert(
             "Thông báo",

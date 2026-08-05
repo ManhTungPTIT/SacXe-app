@@ -89,8 +89,6 @@ const RegisterScreen = ({ navigation }) => {
           navigation.navigate("Login");
         },
         onError: (error) => {
-          console.error("Registration error:", JSON.stringify(error));
-          console.error("Server response:", error.response?.data);
           Alert.alert(
             "Thông báo",
             error.response?.data?.message ||

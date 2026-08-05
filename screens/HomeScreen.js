@@ -18,6 +18,7 @@ import { useHistory } from "../queries/history.query";
 import { Colors } from "../constants/color";
 import normalizeAddress from "../utils/removeAccents";
 import Constants from "expo-constants";
+import { requestLocationPermissionIfNeeded } from "../services/location.service";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const SEARCH_DEBOUNCE_MS = 350;
@@ -121,13 +122,11 @@ const HomeScreen = ({ navigation }) => {
     setIsResolvingLocation(true);
 
     try {
-      const permission = await Location.requestForegroundPermissionsAsync();
+      const permission = await requestLocationPermissionIfNeeded();
 
-      if (!permission.granted) {
+      if (permission !== "granted") {
         setLocation(null);
-        setLocationPermissionStatus(
-          permission.canAskAgain ? "denied" : "blocked",
-        );
+        setLocationPermissionStatus(permission === "blocked" ? "blocked" : "denied");
         return;
       }
 

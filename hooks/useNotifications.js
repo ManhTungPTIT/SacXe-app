@@ -42,7 +42,6 @@ export const useNotifications = (enabled = false) => {
           }
         })
         .catch((error) => {
-          console.error("Lỗi đăng ký notification:", error);
         });
     });
 

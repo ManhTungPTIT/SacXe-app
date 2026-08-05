@@ -13,9 +13,6 @@ export const useTransactionQuery = {
         const userId = useAuthStore.getState().user?._id;
         socket.emit("transaction_update", `user_${userId}`);
       },
-      onError: (error) => {
-        console.error("Error generating QR code:", error);
-      },
     });
     return { mutate, ...rest };
   },

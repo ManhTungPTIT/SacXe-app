@@ -60,14 +60,10 @@
     },
     "extra": {
       "eas": {
-        "projectId": "ef5c7cdf-d7da-4c19-8fec-05391489c2f6"
-      },
-      "apiUrl": "https://enovo.slink.ai.vn",
-      "googleMapsApiKey": "AIzaSyDIGUTSaUL8RY6xt_2EusWZtvZYGC_AQA4",
-      "isAndroidMapEnabled": true,
-      "apiGoogleMapUrl": "https://www.google.com/maps/dir/?api=1&destination={lat},{lng}",
-      "apiAppleMapUrl": "http://maps.apple.com/?daddr={lat},{lng}&dirflg=d"
+        "projectId": "549591e2-d911-4403-bed9-2975feda19b9"
+      }
+     
     }
-   
+    
   }
 }

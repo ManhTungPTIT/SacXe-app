@@ -74,7 +74,18 @@ const MapComponent = ({
       latitude: Number(device.latitude),
       longitude: Number(device.longitude),
     },
-    title: `${device.deviceCode} (Trống ${device.availableSlots} chỗ)`,
+    title: device.name || device.deviceCode || "Tr\u1ee5 s\u1ea1c",
+    snippet: [
+      device.name && device.deviceCode
+        ? "M\u00e3 tr\u1ee5: " + device.deviceCode
+        : null,
+      Number.isFinite(Number(device.availableSlots))
+        ? "Tr\u1ed1ng " + device.availableSlots + " ch\u1ed7"
+        : null,
+    ]
+      .filter(Boolean)
+      .join(" \u00b7 "),
+    showCallout: true,
     icon: chargeIcon,
     })),
     [chargeIcon, eChargeDevices?.allDevices],

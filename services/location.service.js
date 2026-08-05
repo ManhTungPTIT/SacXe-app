@@ -60,34 +60,47 @@ const withTimeout = (promise, timeoutMs) =>
       });
   });
 
-export const ensureLocationPermission = async () => {
+export const getLocationPermissionStatus = async () => {
   try {
     const current = await Location.getForegroundPermissionsAsync();
 
-    if (current.granted) {
-      return "granted";
-    }
-
-    if (current.canAskAgain === false) {
-      return "blocked";
-    }
-
-    const requested = await Location.requestForegroundPermissionsAsync();
-
-    if (requested.granted) {
-      return "granted";
-    }
-
-    return requested.canAskAgain === false ? "blocked" : "denied";
+    if (current.granted) return "granted";
+    return current.canAskAgain === false ? "blocked" : "denied";
   } catch (error) {
-    console.warn(
-      "[location] Không kiểm tra được quyền vị trí:",
-      error?.message,
-    );
     return "denied";
   }
 };
 
+export const requestLocationPermissionIfNeeded = async () => {
+  try {
+    const current = await Location.getForegroundPermissionsAsync();
+
+    if (current.granted) return "granted";
+    if (current.canAskAgain === false) return "blocked";
+
+    const requested = await Location.requestForegroundPermissionsAsync();
+    if (requested.granted) return "granted";
+    return requested.canAskAgain === false ? "blocked" : "denied";
+  } catch (error) {
+    return "denied";
+  }
+};
+
+export const getCurrentPositionIfPermitted = async ({
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+} = {}) => {
+  const status = await getLocationPermissionStatus();
+  if (status !== "granted") return { status, position: null };
+
+  const current = await withTimeout(
+    Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
+    }).then(normalizePosition),
+    timeoutMs,
+  );
+
+  return { status, position: current };
+};
 // Trả { latitude, longitude, accuracy } hoặc null nếu không lấy được vị trí nào
 // trong hạn chờ. Gọi hai nguồn song song và lấy bản chính xác hơn.
 export const resolveCurrentPosition = async ({

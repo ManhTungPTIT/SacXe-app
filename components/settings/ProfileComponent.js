@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -44,11 +44,33 @@ const ProfileComponent = ({
     useState(false);
   const [deletePassword, setDeletePassword] = useState("");
 
+  // Đã nạp dữ liệu vào form cho lần mở modal hiện tại hay chưa.
+  const hasSeededFormRef = useRef(false);
+
+  // Reset luồng xóa tài khoản CHỈ theo việc đóng/mở modal. Tuyệt đối không phụ
+  // thuộc `user`: object này bị thay mới mỗi khi số dư đổi (RootNavigator
+  // updateCachedBalance -> setQueryData(["ME"]) mỗi tick sự kiện sạc, admin
+  // duyệt nạp tiền, refetchOnWindowFocus...). Trước đây `user` nằm trong deps
+  // nên form nhập mật khẩu tự đóng giữa chừng dù người dùng không bấm gì.
   useEffect(() => {
     if (!profileModalVisible) return;
-    setProfileForm(getInitialFormState(user));
     setIsDeletePasswordFormVisible(false);
     setDeletePassword("");
+  }, [profileModalVisible]);
+
+  // Nạp dữ liệu hồ sơ vào form ĐÚNG MỘT LẦN cho mỗi lần mở modal. Vẫn giữ
+  // `user` trong deps để lo trường hợp query ["ME"] về muộn hơn lúc mở modal,
+  // nhưng cờ ref chặn việc nạp đè lên nội dung người dùng đang gõ dở.
+  useEffect(() => {
+    if (!profileModalVisible) {
+      hasSeededFormRef.current = false;
+      return;
+    }
+
+    if (hasSeededFormRef.current || !user) return;
+
+    hasSeededFormRef.current = true;
+    setProfileForm(getInitialFormState(user));
   }, [profileModalVisible, user]);
 
   const handleChangeField = (field, value) => {
@@ -270,12 +292,11 @@ const ProfileComponent = ({
               <Text style={styles.inputLabel}>Email</Text>
               <TextInput
                 value={profileForm.email}
-                onChangeText={(text) => handleChangeField("email", text)}
-                style={styles.input}
-                placeholder="Nhập email"
+                style={[styles.input, styles.inputReadOnly]}
+                placeholder="Email"
                 placeholderTextColor={Colors.grayMuted}
-                keyboardType="email-address"
-                autoCapitalize="none"
+                editable={false}
+                selectTextOnFocus={false}
               />
             </View>
 
@@ -468,6 +489,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textPrimaryDark,
     backgroundColor: Colors.white,
+  },
+  inputReadOnly: {
+    backgroundColor: Colors.bgGrayLight,
+    color: Colors.textSecondaryDark,
   },
   inputMultiline: {
     minHeight: 86,

@@ -218,7 +218,6 @@ const SettingsScreen = ({ navigation, route }) => {
           "Thông báo",
           error?.response?.data?.message || "Có lỗi xảy ra. Vui lòng thử lại.",
         );
-        console.error("Error generating QR code:", error);
       },
     });
   };

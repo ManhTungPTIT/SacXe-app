@@ -204,7 +204,6 @@ const BikeRegistration = ({ isUpdating, onCancel, onSuccess }) => {
     };
     bikeRegistrationMutation.mutate(data, {
       onError: (error) => {
-        console.error("Error during bike registration:", error);
         Alert.alert(
           "Thông báo",
           error.response?.data?.message ||

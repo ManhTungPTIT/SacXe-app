@@ -15,9 +15,6 @@ export const useAuth = {
       onSuccess: (data) => {
         queryClient.invalidateQueries({ queryKey: ["ME"] });
       },
-      onError: (error) => {
-        console.error("Login error:", error);
-      },
     });
     return { mutate, ...rest };
   },
@@ -49,9 +46,6 @@ export const useAuth = {
         }
 
         queryClient.invalidateQueries({ queryKey: ["ME"] });
-      },
-      onError: (error) => {
-        console.error("Update profile error:", error);
       },
     });
   },

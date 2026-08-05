@@ -49,7 +49,6 @@ export const useAuthStore = create((set, get) => ({
         isLoading: false,
       });
     } catch (error) {
-      console.error("Error saving auth data:", error);
     }
   },
 
@@ -59,7 +58,6 @@ export const useAuthStore = create((set, get) => ({
       await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
       set({ accessToken });
     } catch (error) {
-      console.error("Error saving access token:", error);
     }
   },
 
@@ -68,7 +66,6 @@ export const useAuthStore = create((set, get) => ({
     try {
       return await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
     } catch (error) {
-      console.error("Error getting refresh token:", error);
       return null;
     }
   },
@@ -87,7 +84,6 @@ export const useAuthStore = create((set, get) => ({
       // Xóa toàn bộ key lưu trong AsyncStorage theo cách an toàn.
       await clearAsyncStorageSafely();
     } catch (error) {
-      console.error("Error clearing auth data:", error);
     } finally {
       set({
         isAuthenticated: false,
@@ -118,7 +114,6 @@ export const useAuthStore = create((set, get) => ({
         set({ isLoading: false });
       }
     } catch (error) {
-      console.error("Error loading auth data:", error);
       set({ isLoading: false });
     }
   },

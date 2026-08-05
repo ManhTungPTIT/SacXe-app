@@ -403,7 +403,6 @@ const RootNavigator = () => {
     };
 
     const handleTransactionUpdate = (data) => {
-      console.log("data", data);
       Alert.alert("Thông báo", data?.message || "Giao dịch đã được cập nhật.");
 
       const transaction = data?.transaction;

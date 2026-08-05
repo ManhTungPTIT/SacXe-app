@@ -18,8 +18,7 @@ import eChargeDeviceApi from "../api/eChargeDevice.api";
 import claimScanDecision from "../utils/claimScanDecision";
 import proximity from "../utils/proximity";
 import {
-  ensureLocationPermission,
-  resolveCurrentPosition,
+  getCurrentPositionIfPermitted,
 } from "../services/location.service";
 
 const { getClaimScanDecision } = claimScanDecision;
@@ -244,40 +243,24 @@ const QrScanScreen = ({ navigation, route }) => {
   // và rời màn quét.
   const passesProximityCheck = useCallback(
     async (deviceResponse) => {
-      const locationPermission = await ensureLocationPermission();
+      const locationResult = await getCurrentPositionIfPermitted();
 
-      if (locationPermission === "blocked") {
-        Alert.alert(
-          "Cần quyền vị trí",
-          "Ứng dụng cần quyền vị trí để xác nhận bạn đang ở gần trụ sạc. Vui lòng mở Cài đặt để bật lại quyền này.",
-          [
-            {
-              text: "Mở cài đặt",
-              onPress: () => {
-                openAppSettings();
-                leaveToChargeModePicker();
-              },
-            },
-            {
-              text: "Để sau",
-              style: "cancel",
-              onPress: leaveToChargeModePicker,
-            },
-          ],
-          { cancelable: false },
-        );
-        return false;
-      }
-
-      if (locationPermission !== "granted") {
+      if (locationResult.status !== "granted") {
         alertAndLeave(
-          "Cần quyền vị trí",
-          "Ứng dụng cần quyền vị trí để xác nhận bạn đang ở gần trụ sạc.",
+          "Kh\u00f4ng th\u1ec3 x\u00e1c minh v\u1ecb tr\u00ed",
+          "Kh\u00f4ng th\u1ec3 l\u1ea5y t\u1ecda \u0111\u1ed9 hi\u1ec7n t\u1ea1i \u0111\u1ec3 ki\u1ec3m tra kho\u1ea3ng c\u00e1ch v\u1edbi tr\u1ee5 s\u1ea1c.",
         );
         return false;
       }
 
-      const position = await resolveCurrentPosition();
+      const position = locationResult.position;
+      if (!position) {
+        alertAndLeave(
+          "Kh\u00f4ng th\u1ec3 l\u1ea5y v\u1ecb tr\u00ed",
+          "Vui l\u00f2ng th\u1eed l\u1ea1i khi thi\u1ebft b\u1ecb c\u00f3 t\u00edn hi\u1ec7u v\u1ecb tr\u00ed \u1ed5n \u0111\u1ecbnh.",
+        );
+        return false;
+      }
       const decision = getProximityDecision({
         position,
         device: deviceResponse,
@@ -286,9 +269,6 @@ const QrScanScreen = ({ navigation, route }) => {
       // Trụ thiếu toạ độ là lỗi dữ liệu vận hành — không chặn người dùng vì một
       // thiếu sót họ không gây ra.
       if (decision.type === "unknownDevice") {
-        console.warn(
-          "[qr-scan] Trụ sạc thiếu toạ độ, bỏ qua kiểm tra khoảng cách.",
-        );
         return true;
       }
 

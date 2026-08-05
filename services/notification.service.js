@@ -157,7 +157,6 @@ export async function registerForPushNotificationsAsync() {
 
   // Bước 1: Kiểm tra thiết bị vật lý (không phải emulator)
   if (!Device.isDevice) {
-    console.warn("Push notifications chỉ hoạt động trên thiết bị thật!");
     return null;
   }
 
@@ -173,7 +172,6 @@ export async function registerForPushNotificationsAsync() {
 
   // Bước 4: Nếu không được cấp quyền, thoát
   if (finalStatus !== "granted") {
-    console.warn("Người dùng từ chối quyền notification!");
     return null;
   }
 
@@ -202,7 +200,6 @@ export async function registerForPushNotificationsAsync() {
       })
     ).data;
   } catch (error) {
-    console.error("Lỗi khi lấy push token:", error);
     return null;
   }
 

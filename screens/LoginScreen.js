@@ -56,7 +56,6 @@ const LoginScreen = ({ navigation }) => {
       },
       {
         onError: (error) => {
-          console.error("Login error:", error);
           Alert.alert(
             "Thông báo",
             error.response?.data?.message ||

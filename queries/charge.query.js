@@ -9,9 +9,6 @@ export const useChargeQuery = {
       onSuccess: (data) => {
         queryClient.invalidateQueries(["CURRENT_CHARGE_SESSION", data]);
       },
-      onError: (error) => {
-        console.error("Error initiating charge session:", error);
-      },
     });
     return { mutate, ...rest };
   },
@@ -27,8 +24,6 @@ export const useChargeQuery = {
         if (errorMessage.includes("Xe chưa đang")) {
           return;
         }
-
-        console.error("Error terminating charge session:", error);
       },
     });
     return { mutate, ...rest };
