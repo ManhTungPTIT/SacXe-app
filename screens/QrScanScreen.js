@@ -19,6 +19,8 @@ import claimScanDecision from "../utils/claimScanDecision";
 import proximity from "../utils/proximity";
 import {
   getCurrentPositionIfPermitted,
+  prefetchCurrentPosition,
+  resetScanPosition,
 } from "../services/location.service";
 
 const { getClaimScanDecision } = claimScanDecision;
@@ -186,8 +188,17 @@ const QrScanScreen = ({ navigation, route }) => {
         ensureCameraPermission({ showBlockedAlert: false });
       }
 
+      // Bắt đầu định vị ngay khi mở màn quét, không chờ kết quả. Ở hầm gửi xe
+      // lần bắt fix đầu tiên có thể mất hơn 15 giây; nếu đợi tới lúc quét được
+      // mã QR mới bắt đầu thì hạn chờ nào cũng hay trượt, và người dùng nhận
+      // "Không thể lấy vị trí" dù họ đang đứng ngay cạnh trụ.
+      prefetchCurrentPosition();
+
       return () => {
         scannedRef.current = false;
+        // Phiên quét sau có thể ở trụ khác — không để nó dùng lại toạ độ đo ở
+        // đây.
+        resetScanPosition();
       };
     }, [ensureCameraPermission, permission?.granted]),
   );
@@ -239,28 +250,58 @@ const QrScanScreen = ({ navigation, route }) => {
     [leaveToChargeModePicker],
   );
 
+  // Hỏi người dùng có chờ thêm không, thay vì đá họ ra khỏi màn quét. Ở chỗ
+  // sóng yếu fix thường về ngay sau lần chờ đầu tiên, nên bắt quét lại từ đầu
+  // chỉ tốn thêm thời gian mà không đổi được gì.
+  const confirmLocationRetry = useCallback(
+    (reason) =>
+      new Promise((resolve) => {
+        const isServicesDisabled = reason === "servicesDisabled";
+
+        Alert.alert(
+          isServicesDisabled
+            ? "Định vị của máy đang tắt"
+            : "Chưa lấy được vị trí",
+          isServicesDisabled
+            ? "Hãy bật định vị (GPS) của máy rồi bấm Thử lại."
+            : "Máy chưa bắt được tín hiệu vị trí. Hãy đứng cạnh trụ, tránh chỗ khuất rồi bấm Thử lại.",
+          [
+            { text: "Để sau", style: "cancel", onPress: () => resolve(false) },
+            { text: "Thử lại", onPress: () => resolve(true) },
+          ],
+          // Cùng lý do với alertAndLeave: onPress là chỗ duy nhất kết thúc chờ.
+          { cancelable: false },
+        );
+      }),
+    [],
+  );
+
   // Trả true nếu được đi tiếp. Mọi nhánh trả false đều đã tự báo cho người dùng
   // và rời màn quét.
   const passesProximityCheck = useCallback(
     async (deviceResponse) => {
-      const locationResult = await getCurrentPositionIfPermitted();
+      // C\òn th\ử l\ại ch\ừng n\ào ng\ư\ời d\ùng c\òn mu\ốn ch\ờ. L\ần th\ử sau b\ám v\ào l\ời
+      // g\ọi \đ\ịnh v\ị \đang ch\ạy d\ở n\ên kh\ông ph\ải ch\ờ l\ại t\ừ \đ\ầu.
+      let locationResult = await getCurrentPositionIfPermitted();
 
-      if (locationResult.status !== "granted") {
-        alertAndLeave(
-          "Kh\u00f4ng th\u1ec3 x\u00e1c minh v\u1ecb tr\u00ed",
-          "Kh\u00f4ng th\u1ec3 l\u1ea5y t\u1ecda \u0111\u1ed9 hi\u1ec7n t\u1ea1i \u0111\u1ec3 ki\u1ec3m tra kho\u1ea3ng c\u00e1ch v\u1edbi tr\u1ee5 s\u1ea1c.",
-        );
-        return false;
+      while (!locationResult.position) {
+        if (locationResult.reason === "permission") {
+          alertAndLeave(
+            "Kh\u00f4ng th\u1ec3 x\u00e1c minh v\u1ecb tr\u00ed",
+            "Kh\u00f4ng th\u1ec3 l\u1ea5y t\u1ecda \u0111\u1ed9 hi\u1ec7n t\u1ea1i \u0111\u1ec3 ki\u1ec3m tra kho\u1ea3ng c\u00e1ch v\u1edbi tr\u1ee5 s\u1ea1c.",
+          );
+          return false;
+        }
+
+        if (!(await confirmLocationRetry(locationResult.reason))) {
+          leaveToChargeModePicker();
+          return false;
+        }
+
+        locationResult = await getCurrentPositionIfPermitted();
       }
 
       const position = locationResult.position;
-      if (!position) {
-        alertAndLeave(
-          "Kh\u00f4ng th\u1ec3 l\u1ea5y v\u1ecb tr\u00ed",
-          "Vui l\u00f2ng th\u1eed l\u1ea1i khi thi\u1ebft b\u1ecb c\u00f3 t\u00edn hi\u1ec7u v\u1ecb tr\u00ed \u1ed5n \u0111\u1ecbnh.",
-        );
-        return false;
-      }
       const decision = getProximityDecision({
         position,
         device: deviceResponse,
@@ -290,7 +331,7 @@ const QrScanScreen = ({ navigation, route }) => {
 
       return true;
     },
-    [alertAndLeave, leaveToChargeModePicker, openAppSettings],
+    [alertAndLeave, confirmLocationRetry, leaveToChargeModePicker],
   );
 
   const handleBarcodeScanned = useCallback(

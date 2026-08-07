@@ -1,9 +1,16 @@
 import * as Location from "expo-location";
+import positionRequest from "../utils/positionRequest";
+
+const { createPositionRequest } = positionRequest;
 
 // Hạn chờ cho lời gọi định vị "tươi". Trụ sạc xe máy điện ở chung cư thường nằm
 // dưới hầm gửi xe, nơi getCurrentPositionAsync có thể chờ rất lâu hoặc không
 // bao giờ trả về — không có hạn chờ thì màn quét QR đứng hình.
-const DEFAULT_TIMEOUT_MS = 8000;
+//
+// 15 giây chứ không phải 8: ở hầm gửi xe lần bắt fix đầu tiên thường vượt 8
+// giây, và người dùng không mất trọn 15 giây đó vì màn quét đã gọi
+// prefetchCurrentPosition() từ lúc mở camera.
+const DEFAULT_TIMEOUT_MS = 15000;
 
 // Vị trí hệ thống đã lưu còn dùng được trong khoảng này. Một phút đủ ngắn để
 // người dùng không thể đi xa khỏi chỗ đo, đủ dài để tận dụng lần định vị mà
@@ -86,20 +93,63 @@ export const requestLocationPermissionIfNeeded = async () => {
   }
 };
 
+// Lời gọi định vị dùng chung cho một phiên quét QR. Xem utils/positionRequest.js
+// để biết vì sao phải dùng chung thay vì mỗi lần hỏi lại một lời gọi mới.
+const scanPositionRequest = createPositionRequest({
+  getPosition: () =>
+    Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
+    }).then(normalizePosition),
+});
+
+// Khởi động định vị sớm mà không chờ kết quả. Gọi lúc mở màn quét, để tới lúc
+// quét được mã QR thì máy đã bắt fix xong hoặc gần xong.
+//
+// Chỉ đọc trạng thái quyền, KHÔNG xin quyền: theo spec 2026-08-05, màn quét
+// không được hiện popup xin quyền vị trí.
+export const prefetchCurrentPosition = async () => {
+  const status = await getLocationPermissionStatus();
+  if (status !== "granted") return;
+
+  scanPositionRequest.prefetch();
+};
+
+// Quên toạ độ đã đo của phiên quét. Gọi khi rời màn quét để lần quét sau — có
+// thể ở trụ khác — đo lại từ đầu.
+export const resetScanPosition = () => {
+  scanPositionRequest.reset();
+};
+
+// Trả { status, position, reason }. `reason` chỉ có nghĩa khi position là null:
+//   "permission"       — chưa được cấp quyền vị trí
+//   "servicesDisabled" — người dùng đang tắt định vị của máy
+//   "timeout"          — có quyền, định vị đang bật, nhưng chưa bắt được fix
 export const getCurrentPositionIfPermitted = async ({
   timeoutMs = DEFAULT_TIMEOUT_MS,
 } = {}) => {
   const status = await getLocationPermissionStatus();
-  if (status !== "granted") return { status, position: null };
+  if (status !== "granted") {
+    return { status, position: null, reason: "permission" };
+  }
 
-  const current = await withTimeout(
-    Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Balanced,
-    }).then(normalizePosition),
-    timeoutMs,
+  const current = await scanPositionRequest.resolve({ timeoutMs });
+
+  if (current) {
+    return { status, position: current, reason: null };
+  }
+
+  // Chỉ hỏi khi đã thất bại: phân biệt "máy tắt định vị" (người dùng bật lại là
+  // xong) với "đang ở chỗ sóng yếu" (chỉ có thể chờ thêm). Hỏi ở nhánh thành
+  // công chỉ tổ thêm một lời gọi hệ thống vào ca phổ biến.
+  const servicesEnabled = await Location.hasServicesEnabledAsync().catch(
+    () => true,
   );
 
-  return { status, position: current };
+  return {
+    status,
+    position: null,
+    reason: servicesEnabled ? "timeout" : "servicesDisabled",
+  };
 };
 // Trả { latitude, longitude, accuracy } hoặc null nếu không lấy được vị trí nào
 // trong hạn chờ. Gọi hai nguồn song song và lấy bản chính xác hơn.
