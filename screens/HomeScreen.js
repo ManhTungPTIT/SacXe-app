@@ -122,7 +122,10 @@ const HomeScreen = ({ navigation }) => {
     setIsResolvingLocation(true);
 
     try {
+      // [LOCPERM-DEBUG] log tạm, gỡ sau khi tìm ra nguyên nhân gốc
+      console.log("[LOCPERM] home.effect.start", Date.now());
       const permission = await requestLocationPermissionIfNeeded();
+      console.log("[LOCPERM] home.effect.result", permission, Date.now());
 
       if (permission !== "granted") {
         setLocation(null);

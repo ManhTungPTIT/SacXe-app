@@ -67,28 +67,59 @@ const withTimeout = (promise, timeoutMs) =>
       });
   });
 
+// [LOCPERM-DEBUG] Log tạm để tìm nguyên nhân "không hiện popup xin quyền vị
+// trí". Gỡ sau khi đã xác định được nguyên nhân gốc.
+const logPerm = (step, payload) => {
+  console.log(`[LOCPERM] ${step}`, JSON.stringify(payload));
+};
+
 export const getLocationPermissionStatus = async () => {
   try {
     const current = await Location.getForegroundPermissionsAsync();
 
+    logPerm("get.result", {
+      status: current.status,
+      granted: current.granted,
+      canAskAgain: current.canAskAgain,
+      expires: current.expires,
+    });
+
     if (current.granted) return "granted";
     return current.canAskAgain === false ? "blocked" : "denied";
   } catch (error) {
+    logPerm("get.error", { message: String(error?.message ?? error) });
     return "denied";
   }
 };
 
 export const requestLocationPermissionIfNeeded = async () => {
   try {
+    logPerm("request.enter", { at: Date.now() });
+
     const current = await Location.getForegroundPermissionsAsync();
+
+    logPerm("request.currentStatus", {
+      status: current.status,
+      granted: current.granted,
+      canAskAgain: current.canAskAgain,
+    });
 
     if (current.granted) return "granted";
     if (current.canAskAgain === false) return "blocked";
 
+    logPerm("request.askingOS", { at: Date.now() });
     const requested = await Location.requestForegroundPermissionsAsync();
+    logPerm("request.osAnswered", {
+      at: Date.now(),
+      status: requested.status,
+      granted: requested.granted,
+      canAskAgain: requested.canAskAgain,
+    });
+
     if (requested.granted) return "granted";
     return requested.canAskAgain === false ? "blocked" : "denied";
   } catch (error) {
+    logPerm("request.error", { message: String(error?.message ?? error) });
     return "denied";
   }
 };

@@ -112,8 +112,11 @@ const ChargeScreen = ({ route, navigation }) => {
   const hasFinalizedLatestHistory = Boolean(
     latestHistory?.totalTime || latestHistory?.clientSessionStopped,
   );
+  // Suy từ History chứ không từ bike.isCharging: phiên ở trụ nhà dân không
+  // gắn xe nào, nên cờ trên bike sẽ mãi mãi false và màn "đang sạc" không bao
+  // giờ hiện ra.
   const isChargingSessionActive = Boolean(
-    bike?.bike?.isCharging && !hasFinalizedLatestHistory,
+    latestHistory && !hasFinalizedLatestHistory,
   );
   const isStopping =
     terminateChargeMutation.isLoading || terminateChargeMutation.isPending;
@@ -523,7 +526,16 @@ const ChargeScreen = ({ route, navigation }) => {
         onError: (error) => {
           const errorMessage = error?.response?.data?.message || "";
 
-          if (errorMessage.includes("Xe chưa đang")) {
+          // Phiên đã được chốt sẵn ở phía backend (watchdog telemetry, pin
+          // đầy, rút sạc...) -> không phải lỗi, chỉ cần đồng bộ lại màn hình.
+          // Backend từng báo ca này bằng "Xe chưa đang trong quá trình sạc";
+          // từ khi trạng thái phiên chuyển từ Bike sang History thì câu đó là
+          // "Không tìm thấy thông tin phiên sạc đang hoạt động". Giữ cả hai để
+          // app cũ/mới nói chuyện được với backend cũ/mới.
+          if (
+            errorMessage.includes("Xe chưa đang") ||
+            errorMessage.includes("Không tìm thấy thông tin phiên sạc")
+          ) {
             syncStoppedChargeState();
             completeManualChargeStop().catch(() => {});
             setToastType("success");
@@ -632,13 +644,16 @@ const ChargeScreen = ({ route, navigation }) => {
                     setConfirmedChargingStartTime(null);
                     setIsConfirmedSessionPendingSync(false);
                     setInitialChargingTelemetry(null);
-                    queryClient.setQueryData(["USERS_BIKE"], (current) => ({
-                      ...(current || {}),
-                      bike: charge?.bike || {
-                        ...(current?.bike || {}),
-                        isCharging: true,
-                      },
-                    }));
+                    // Chỉ vá cache khi backend thật sự trả về xe. Phiên nhà
+                    // dân trả bike: null — vá bừa isCharging: true sẽ làm thẻ
+                    // xe ở màn Tài khoản báo "Đang sạc" cho một chiếc xe đang
+                    // đứng yên.
+                    if (charge?.bike) {
+                      queryClient.setQueryData(["USERS_BIKE"], (current) => ({
+                        ...(current || {}),
+                        bike: charge.bike,
+                      }));
+                    }
                     setDeviceCheck({
                       deviceCode: charge?.deviceCode || deviceCode,
                       powerIndex: charge?.powerIndex,

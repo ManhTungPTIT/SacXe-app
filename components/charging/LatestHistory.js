@@ -104,21 +104,58 @@ const LatestHistory = ({ history, navigation }) => {
   const [isLive, setIsLive] = useState(baseEnergy > 0);
   const [currentTime, setCurrentTime] = useState(Date.now());
   const lastInvalidatedEnergyRef = useRef(baseEnergy);
+  const sessionIdRef = useRef(history?._id);
 
   useEffect(() => {
-    setRealtimeEnergy(baseEnergy);
-    lastInvalidatedEnergyRef.current = baseEnergy;
-    setIsLive(baseEnergy > 0);
+    // Sang phiên KHÁC thì đặt lại hẳn. Còn trong cùng một phiên thì số chỉ
+    // được phép đi lên: baseEnergy lấy từ lastKnownEnergy dưới DB, luôn chậm
+    // hơn số realtime vài giây, nên gán đè mỗi lần refetch sẽ kéo tụt số đang
+    // hiển thị.
+    const isNewSession = sessionIdRef.current !== history?._id;
+    sessionIdRef.current = history?._id;
+
+    if (isNewSession) {
+      setRealtimeEnergy(baseEnergy);
+      lastInvalidatedEnergyRef.current = baseEnergy;
+      setIsLive(baseEnergy > 0);
+      return;
+    }
+
+    setRealtimeEnergy((prev) => Math.max(prev, baseEnergy));
+    lastInvalidatedEnergyRef.current = Math.max(
+      lastInvalidatedEnergyRef.current,
+      baseEnergy,
+    );
+    if (baseEnergy > 0) {
+      setIsLive(true);
+    }
   }, [history?._id, baseEnergy]);
 
   useEffect(() => {
     if (!socket || !history || hasDuration) return;
 
     const handleWave = (value) => {
-      if (value?.energy !== undefined) {
-        setRealtimeEnergy(value.energy / 1000);
-        setIsLive(true);
+      // Gói telemetry có thể mang energy là null / "" / chuỗi rác. Cửa lọc cũ
+      // chỉ chặn undefined, nên `null / 1000` lọt xuống thành 0 và số trên màn
+      // hình rơi thẳng về 0 giữa lúc đang sạc.
+      if (
+        value?.energy === undefined ||
+        value?.energy === null ||
+        value?.energy === ""
+      ) {
+        return;
       }
+
+      const nextEnergy = Number(value.energy);
+      if (!Number.isFinite(nextEnergy)) {
+        return;
+      }
+
+      // Năng lượng của một phiên chỉ tăng (backend cũng chốt theo max, xem
+      // charge.service.js nhánh nhà dân). Lấy max thay vì gán đè để một gói
+      // đến muộn/thấp hơn không kéo tụt số đang hiển thị.
+      setRealtimeEnergy((prev) => Math.max(prev, nextEnergy / 1000));
+      setIsLive(true);
     };
 
     socket.on("wave_data", handleWave);
