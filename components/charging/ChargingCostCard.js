@@ -61,7 +61,9 @@ const ChargingCostCard = ({
     return () => clearInterval(id);
   }, []);
 
-  const rateInfo = getCurrentRateInfo(now);
+  const rateInfo = getCurrentRateInfo(now, {
+    unitPrice: latestHistory?.unitPrice,
+  });
   const badgeStyle = PERIOD_BADGE_STYLE[rateInfo.period] || PERIOD_BADGE_STYLE.normal;
   // Giá phẳng (PRICING_MODE = 'flat') không có khung giờ -> ẩn badge, chỉ
   // hiện đơn giá.
