@@ -36,9 +36,17 @@ const DevicesComponents = ({
   const [selectedPowerOutlet, setSelectedPowerOutlet] = useState(null);
   const user = useAuthStore((state) => state.user);
   const userId = user?._id;
-  // Hỏng (isBroken): admin đánh dấu/gỡ, hiển thị "Ổ đang bảo trì", không bấm
-  // được. isUnavailable (mất điện tạm/mất tín hiệu) không còn hiển thị riêng
-  // — gộp vào trạng thái "Có thể sử dụng" bình thường, không chặn bấm.
+  // Hỏng (isBroken): hiển thị "Ổ đang bảo trì". Cờ này THUẦN TỰ ĐỘNG — không
+  // có endpoint admin nào đặt/gỡ nó. Backend đánh khi trụ im CẢ heart_beat LẪN
+  // telemetry của ổ (scanOfflineDevices / scanStaleOutlets, và nhánh mất điện
+  // của trụ nhà dân) rồi gỡ khi trụ gửi tín hiệu trở lại, kể cả heart_beat.
+  // Trụ nhà dân mất điện cũng rơi vào nhãn này — quyết định sản phẩm.
+  //
+  // Mất điện: đọc qua `hasPower` do backend gửi kèm mỗi ổ
+  // (eChargeDevice.service.js). Chỉ trụ nhà dân mới suy ra được cờ này — nó
+  // dựa vào gói heart_beat, thứ phần cứng chỉ gửi khi ổ còn cấp điện. Trụ công
+  // cộng không có tín hiệu tương đương nên backend luôn trả hasPower = true,
+  // giữ nguyên hành vi cũ.
   const isDeviceBroken = (device) => device?.isBroken === true;
   const isDeviceNoPower = (device) => {
     const normalizedStatus = String(

@@ -21,9 +21,16 @@ const ChargingStatusComponent = ({
   onStopCharging,
   isStopping,
   initialTelemetry,
+  sessionKey,
 }) => {
   // Một nguồn telemetry duy nhất cho cả biểu đồ và thẻ chi phí/kỹ thuật.
-  const telemetry = useChargingTelemetry(initialEnergyKwh, initialTelemetry);
+  // sessionKey để hook biết lúc nào sang phiên khác mà reset — không có nó thì
+  // năng lượng của phiên trước rò sang phiên mới (xem utils/sessionEnergySeed.js).
+  const telemetry = useChargingTelemetry(
+    initialEnergyKwh,
+    initialTelemetry,
+    sessionKey,
+  );
 
   // Giá tiền là do backend tính (theo khung giờ). Khi năng lượng tăng đủ một
   // bước, làm mới latestHistory (giá) và ME (số dư ví) để hiển thị khớp backend.

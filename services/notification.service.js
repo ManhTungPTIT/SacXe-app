@@ -166,11 +166,7 @@ export async function registerForPushNotificationsAsync() {
 
   // Bước 3: Nếu chưa có quyền, yêu cầu quyền
   if (existingStatus !== "granted") {
-    // [LOCPERM-DEBUG] log tạm để đối chiếu thời điểm với hộp thoại quyền vị
-    // trí — hai lời xin quyền đè nhau là nghi phạm. Gỡ sau khi xong.
-    console.log("[LOCPERM] notif.askingOS", Date.now());
     const { status } = await Notifications.requestPermissionsAsync();
-    console.log("[LOCPERM] notif.osAnswered", status, Date.now());
     finalStatus = status;
   }
 

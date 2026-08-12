@@ -1,7 +1,13 @@
 import * as Location from "expo-location";
 import positionRequest from "../utils/positionRequest";
+import locationPermission from "../utils/locationPermission";
 
 const { createPositionRequest } = positionRequest;
+const {
+  decideNextAction,
+  resolveStatusAfterAsk,
+  resolveStatusWithoutAsking,
+} = locationPermission;
 
 // Hạn chờ cho lời gọi định vị "tươi". Trụ sạc xe máy điện ở chung cư thường nằm
 // dưới hầm gửi xe, nơi getCurrentPositionAsync có thể chờ rất lâu hoặc không
@@ -67,59 +73,29 @@ const withTimeout = (promise, timeoutMs) =>
       });
   });
 
-// [LOCPERM-DEBUG] Log tạm để tìm nguyên nhân "không hiện popup xin quyền vị
-// trí". Gỡ sau khi đã xác định được nguyên nhân gốc.
-const logPerm = (step, payload) => {
-  console.log(`[LOCPERM] ${step}`, JSON.stringify(payload));
-};
-
+// Chỉ ĐỌC trạng thái quyền, không bao giờ hiện hộp thoại. Dùng cho màn quét QR
+// (spec 2026-08-05) và cho các chỗ chỉ cần biết có quyền hay chưa.
 export const getLocationPermissionStatus = async () => {
   try {
     const current = await Location.getForegroundPermissionsAsync();
-
-    logPerm("get.result", {
-      status: current.status,
-      granted: current.granted,
-      canAskAgain: current.canAskAgain,
-      expires: current.expires,
-    });
-
-    if (current.granted) return "granted";
-    return current.canAskAgain === false ? "blocked" : "denied";
+    return resolveStatusWithoutAsking(current);
   } catch (error) {
-    logPerm("get.error", { message: String(error?.message ?? error) });
     return "denied";
   }
 };
 
+// Xin quyền nếu chưa có. Xem utils/locationPermission.js để biết vì sao KHÔNG
+// được dùng canAskAgain để bỏ qua lời hỏi — đó chính là nguyên nhân app không
+// hiện popup xin quyền vị trí trên máy vừa cài mới.
 export const requestLocationPermissionIfNeeded = async () => {
   try {
-    logPerm("request.enter", { at: Date.now() });
-
     const current = await Location.getForegroundPermissionsAsync();
 
-    logPerm("request.currentStatus", {
-      status: current.status,
-      granted: current.granted,
-      canAskAgain: current.canAskAgain,
-    });
+    if (decideNextAction(current) === "granted") return "granted";
 
-    if (current.granted) return "granted";
-    if (current.canAskAgain === false) return "blocked";
-
-    logPerm("request.askingOS", { at: Date.now() });
     const requested = await Location.requestForegroundPermissionsAsync();
-    logPerm("request.osAnswered", {
-      at: Date.now(),
-      status: requested.status,
-      granted: requested.granted,
-      canAskAgain: requested.canAskAgain,
-    });
-
-    if (requested.granted) return "granted";
-    return requested.canAskAgain === false ? "blocked" : "denied";
+    return resolveStatusAfterAsk(requested);
   } catch (error) {
-    logPerm("request.error", { message: String(error?.message ?? error) });
     return "denied";
   }
 };

@@ -1,5 +1,10 @@
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { SocketContext } from "../providers/SocketProvider";
+import telemetryEnergy from "../utils/telemetryEnergy";
+import sessionEnergySeed from "../utils/sessionEnergySeed";
+
+const { getTelemetryEnergyKwh, readTelemetryEnergyKwh } = telemetryEnergy;
+const { isNewSession } = sessionEnergySeed;
 
 // Số điểm công suất tối đa giữ lại để vẽ biểu đồ.
 const MAX_POINTS = 28;
@@ -13,7 +18,11 @@ const toFiniteNumber = (value, fallback = 0) => {
 // mọi thành phần trong phiên sạc (WaveChart, ChargingCostCard, ...). Đây là
 // nguồn sự thật duy nhất về công suất/năng lượng realtime, tránh việc nhiều nơi
 // tự subscribe rồi lệch số.
-export const useChargingTelemetry = (initialEnergyKwh = 0, initialTelemetry = null) => {
+export const useChargingTelemetry = (
+  initialEnergyKwh = 0,
+  initialTelemetry = null,
+  sessionKey = null,
+) => {
   const socketContext = useContext(SocketContext);
   const socket = socketContext?.socket;
 
@@ -24,7 +33,7 @@ export const useChargingTelemetry = (initialEnergyKwh = 0, initialTelemetry = nu
   const [energyKwh, setEnergyKwh] = useState(() =>
     Math.max(
       toFiniteNumber(initialEnergyKwh),
-      toFiniteNumber(initialTelemetry?.energy) / 1000,
+      getTelemetryEnergyKwh(initialTelemetry),
     ),
   );
   const [isRelayOn, setIsRelayOn] = useState(() =>
@@ -33,12 +42,25 @@ export const useChargingTelemetry = (initialEnergyKwh = 0, initialTelemetry = nu
       : Number.isFinite(initialPower) && initialPower > 0,
   );
 
-  // Năng lượng chỉ tăng: khi nhận giá trị mới từ DB (initialEnergyKwh) vẫn giữ
-  // mức cao nhất để không bị tụt khi refetch.
+  // Trong CÙNG một phiên, năng lượng chỉ đi lên: giá trị mới từ DB
+  // (initialEnergyKwh) không được kéo tụt số đang hiển thị khi refetch.
+  //
+  // Nhưng khi SANG PHIÊN KHÁC thì phải reset hẳn. Trước đây chỉ có nhánh
+  // Math.max, nên tổng của phiên trước rò sang phiên mới rồi đóng cứng ở đó:
+  // gói telemetry đầu tiên báo 0.095 kWh mà màn hình vẫn hiện 1.xxx kWh.
+  const sessionKeyRef = useRef(sessionKey);
   useEffect(() => {
     const nextEnergy = toFiniteNumber(initialEnergyKwh);
+
+    if (isNewSession(sessionKeyRef.current, sessionKey)) {
+      sessionKeyRef.current = sessionKey;
+      setEnergyKwh(nextEnergy);
+      setPowerSeries([]);
+      return;
+    }
+
     setEnergyKwh((prev) => Math.max(prev, nextEnergy));
-  }, [initialEnergyKwh]);
+  }, [sessionKey, initialEnergyKwh]);
 
   useEffect(() => {
     if (!socket) return;
@@ -48,15 +70,9 @@ export const useChargingTelemetry = (initialEnergyKwh = 0, initialTelemetry = nu
         setIsRelayOn(Boolean(Number(value.relay)));
       }
 
-      if (
-        value?.energy !== undefined &&
-        value?.energy !== null &&
-        value?.energy !== ""
-      ) {
-        const nextEnergy = Number(value.energy);
-        if (Number.isFinite(nextEnergy)) {
-          setEnergyKwh((prev) => Math.max(prev, nextEnergy / 1000));
-        }
+      const nextEnergy = readTelemetryEnergyKwh(value);
+      if (nextEnergy !== null) {
+        setEnergyKwh((prev) => Math.max(prev, nextEnergy));
       }
 
       const nextPower = Number(value?.power);

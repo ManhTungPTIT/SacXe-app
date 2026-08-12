@@ -20,6 +20,7 @@ import { SCROLL_FEEL } from "../constants/scroll";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SocketContext } from "../providers/SocketProvider";
 import BatteryCharging from "../components/charging/BatteryCharging";
+import telemetryEnergy from "../utils/telemetryEnergy";
 import { Ionicons } from "@expo/vector-icons";
 
 const formatCurrency = (value) => {
@@ -36,6 +37,8 @@ const formatEnergy = (value) => {
 
 // Khi năng lượng realtime tăng thêm mức này thì làm mới giá/số dư từ backend.
 const ENERGY_REFRESH_STEP_KWH = 0.02;
+
+const { readTelemetryEnergyKwh } = telemetryEnergy;
 
 const isChargingHistory = (history) => !history?.totalTime;
 
@@ -160,12 +163,17 @@ const HistoryScreen = ({ navigation }) => {
     if (!socket || !activeHistoryId) return;
 
     const handleWave = (value) => {
-      const nextEnergy = Number(value?.energy);
-
-      if (Number.isFinite(nextEnergy)) {
-        setRealtimeEnergy(nextEnergy / 1000);
-        setIsLive(true);
+      // Phải dùng chung cách đọc với LatestHistory, nếu không hai màn hiển thị
+      // lệch nhau cho cùng một phiên. Bản cũ ở đây gán đè thay vì lấy max, và
+      // `Number(null)` ra 0 chứ không phải NaN nên một gói thiếu energy lọt qua
+      // cửa Number.isFinite và kéo thẳng số đang hiển thị về 0.
+      const nextEnergy = readTelemetryEnergyKwh(value);
+      if (nextEnergy === null) {
+        return;
       }
+
+      setRealtimeEnergy((prev) => Math.max(prev, nextEnergy));
+      setIsLive(true);
     };
 
     socket.on("wave_data", handleWave);

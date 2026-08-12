@@ -6,6 +6,9 @@ import { SocketContext } from "../../providers/SocketProvider";
 import { useQueryClient } from "@tanstack/react-query";
 import BatteryCharging from "./BatteryCharging";
 import { formatPrice } from "../../utils/pricing";
+import telemetryEnergy from "../../utils/telemetryEnergy";
+
+const { readTelemetryEnergyKwh } = telemetryEnergy;
 
 // Khi năng lượng realtime tăng thêm mức này thì làm mới giá/số dư từ backend.
 const ENERGY_REFRESH_STEP_KWH = 0.02;
@@ -135,26 +138,18 @@ const LatestHistory = ({ history, navigation }) => {
     if (!socket || !history || hasDuration) return;
 
     const handleWave = (value) => {
-      // Gói telemetry có thể mang energy là null / "" / chuỗi rác. Cửa lọc cũ
-      // chỉ chặn undefined, nên `null / 1000` lọt xuống thành 0 và số trên màn
-      // hình rơi thẳng về 0 giữa lúc đang sạc.
-      if (
-        value?.energy === undefined ||
-        value?.energy === null ||
-        value?.energy === ""
-      ) {
-        return;
-      }
-
-      const nextEnergy = Number(value.energy);
-      if (!Number.isFinite(nextEnergy)) {
+      // Gói telemetry có thể mang energy là null / "" / chuỗi rác -> null,
+      // khác hẳn "gói báo đúng 0 kWh". Bỏ qua gói không mang số liệu để số
+      // trên màn không rơi về 0 giữa lúc đang sạc.
+      const nextEnergy = readTelemetryEnergyKwh(value);
+      if (nextEnergy === null) {
         return;
       }
 
       // Năng lượng của một phiên chỉ tăng (backend cũng chốt theo max, xem
       // charge.service.js nhánh nhà dân). Lấy max thay vì gán đè để một gói
       // đến muộn/thấp hơn không kéo tụt số đang hiển thị.
-      setRealtimeEnergy((prev) => Math.max(prev, nextEnergy / 1000));
+      setRealtimeEnergy((prev) => Math.max(prev, nextEnergy));
       setIsLive(true);
     };
 

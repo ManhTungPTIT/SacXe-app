@@ -23,6 +23,10 @@ import {
   wasChargeDeviceMissingRecently,
   wasChargeStoppedManuallyRecently,
 } from "../services/notification.service";
+import billingCachePatch from "../utils/billingCachePatch";
+
+const { patchLatestHistory, patchHistoryList, isEnergyOnlyUpdate } =
+  billingCachePatch;
 
 // Rung + phát local notification cho các cảnh báo CẦN người dùng xử lý ngay
 // (hết tiền, lỗi phần cứng, quên cắm sạc...) — khác với Toast/Alert thường
@@ -112,6 +116,12 @@ const RootNavigator = () => {
       joinRooms();
       queryClient.invalidateQueries({ queryKey: ["ME"] });
       queryClient.invalidateQueries({ queryKey: ["TRANSACTION_HISTORY"] });
+      // Danh sách ổ cũng phải nạp lại: charge_device_status phát trong lúc mất
+      // kết nối là mất hẳn, mà query này có refetchOnWindowFocus: false và
+      // không có refetchInterval (queries/eChargeDevice.query.js) nên không còn
+      // đường nào khác kéo về. Thiếu dòng này thì ổ đổi sang "bảo trì" lúc app
+      // rớt mạng sẽ đứng nguyên cho tới khi thoát màn chọn ổ rồi vào lại.
+      queryClient.invalidateQueries({ queryKey: ["E_CHARGE_DEVICE"] });
     };
 
     // Join ngay + join lại mỗi lần reconnect
@@ -243,47 +253,13 @@ const RootNavigator = () => {
       updateCachedBalance(currentBalance + numericAmount);
     };
 
-    // Chi phí một phiên như MỌI màn hình đang hiển thị. Dùng chung một công thức
-    // để cache nào cũng ra đúng một con số.
-    const getSessionAmount = (history) =>
-      Math.max(
-        Number(history?.lastKnownPrice) || 0,
-        Number(history?.billedAmount) || 0,
-        Number(history?.price) || 0,
-      );
-
-    const getSessionEnergy = (history) =>
-      Math.max(
-        Number(history?.lastKnownEnergy) || 0,
-        Number(history?.energy) || 0,
-      );
-
-    const applyBillingToHistory = (history, data) => ({
-      ...history,
-      billedAmount: data?.billedAmount ?? history.billedAmount,
-      lastKnownPrice: data?.price ?? history.lastKnownPrice,
-      lastKnownEnergy: data?.energy ?? history.lastKnownEnergy,
-      price: data?.isFinal ? (data?.price ?? history.price) : history.price,
-      energy: data?.isFinal ? (data?.energy ?? history.energy) : history.energy,
-      totalTime: data?.totalTime ?? history.totalTime,
-      stopReason: data?.stopReason ?? history.stopReason,
-    });
-
+    // Công thức tính chi phí/năng lượng của một phiên và toàn bộ phép vá cache
+    // nằm ở utils/billingCachePatch.js (thuần, có test). Ở đây chỉ còn lớp bọc
+    // gọi queryClient.
     const updateLatestHistoryBilling = (data) => {
-      const incomingHistoryId = normalizeId(data?.historyId);
-
-      queryClient.setQueryData(["latestHistory"], (oldData) => {
-        const cachedHistoryId = normalizeId(oldData?._id);
-
-        if (
-          !oldData ||
-          (incomingHistoryId && cachedHistoryId !== incomingHistoryId)
-        ) {
-          return oldData;
-        }
-
-        return applyBillingToHistory(oldData, data);
-      });
+      queryClient.setQueryData(["latestHistory"], (oldData) =>
+        patchLatestHistory(oldData, data),
+      );
     };
 
     // Màn Lịch sử đọc cache ["history", page, limit] — KHÔNG phải ["latestHistory"].
@@ -292,51 +268,9 @@ const RootNavigator = () => {
     // ở màn Sạc xe. Cộng luôn phần chênh vào monthlyStats/totalStats để thống kê
     // tháng không bị đứng lại một chỗ trong lúc phiên vẫn đang chạy.
     const updateHistoryListBilling = (data) => {
-      const incomingHistoryId = normalizeId(data?.historyId);
-
-      if (!incomingHistoryId) {
-        return;
-      }
-
-      queryClient.setQueriesData({ queryKey: ["history"] }, (oldData) => {
-        if (!Array.isArray(oldData?.histories)) {
-          return oldData;
-        }
-
-        let amountDelta = 0;
-        let energyDelta = 0;
-
-        const histories = oldData.histories.map((history) => {
-          if (normalizeId(history?._id) !== incomingHistoryId) {
-            return history;
-          }
-
-          const updated = applyBillingToHistory(history, data);
-          amountDelta += getSessionAmount(updated) - getSessionAmount(history);
-          energyDelta += getSessionEnergy(updated) - getSessionEnergy(history);
-          return updated;
-        });
-
-        if (!amountDelta && !energyDelta) {
-          return { ...oldData, histories };
-        }
-
-        const applyDelta = (stats) =>
-          stats
-            ? {
-                ...stats,
-                totalAmount: (Number(stats.totalAmount) || 0) + amountDelta,
-                totalEnergy: (Number(stats.totalEnergy) || 0) + energyDelta,
-              }
-            : stats;
-
-        return {
-          ...oldData,
-          histories,
-          monthlyStats: applyDelta(oldData.monthlyStats),
-          totalStats: applyDelta(oldData.totalStats),
-        };
-      });
+      queryClient.setQueriesData({ queryKey: ["history"] }, (oldData) =>
+        patchHistoryList(oldData, data),
+      );
     };
 
     const invalidateChargeState = () => {
@@ -437,6 +371,15 @@ const RootNavigator = () => {
     const handleChargeBillingUpdate = (data) => {
       updateLatestHistoryBilling(data);
       updateHistoryListBilling(data);
+
+      // Phiên nhà dân: điện miễn phí nên backend chỉ gửi năng lượng, không có
+      // `balance` kèm theo. Không chặn ở đây thì rơi thẳng vào nhánh else bên
+      // dưới và invalidate ["ME"] ở MỌI gói telemetry (~5s) suốt phiên. Hai lời
+      // vá cache phía trên đã là toàn bộ việc cần làm với loại gói này — không
+      // có ví để cập nhật, không có cảnh báo hết tiền, không có auto-stop.
+      if (isEnergyOnlyUpdate(data)) {
+        return;
+      }
 
       if (data?.balance !== undefined && data?.balance !== null) {
         updateCachedBalance(data.balance);

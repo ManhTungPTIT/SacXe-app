@@ -33,6 +33,9 @@ import {
   markChargeDeviceMissing,
   setChargeDeviceCheckInProgress,
 } from "../services/notification.service";
+import sessionEnergySeed from "../utils/sessionEnergySeed";
+
+const { resolveSessionSeedEnergyKwh, resolveSessionKey } = sessionEnergySeed;
 
 // Phần cứng gửi telemetry mỗi ~5s (xem comment TELEMETRY_TIMEOUT_MS ở
 // backend/src/configs/mqtt.config.js) — backend tự cho phép trễ tới 15000ms
@@ -107,8 +110,12 @@ const ChargeScreen = ({ route, navigation }) => {
   const chargingStartTime = latestHistory?.startTime || latestHistory?.createdAt;
   const displayedChargingStartTime =
     confirmedChargingStartTime || chargingStartTime;
-  const initialEnergyKwh =
-    Number(latestHistory?.lastKnownEnergy ?? latestHistory?.energy ?? 0) || 0;
+  // KHÔNG đọc thẳng latestHistory: nó là phiên gần nhất, không phải phiên đang
+  // chạy. Lúc vừa bấm sạc, isConfirmedSessionPendingSync bật màn phiên sạc lên
+  // ngay trong khi cache còn là phiên TRƯỚC (đã chốt) — seed thẳng sẽ lấy tổng
+  // năng lượng của phiên cũ. Xem utils/sessionEnergySeed.js.
+  const initialEnergyKwh = resolveSessionSeedEnergyKwh(latestHistory);
+  const chargingSessionKey = resolveSessionKey(latestHistory);
   const hasFinalizedLatestHistory = Boolean(
     latestHistory?.totalTime || latestHistory?.clientSessionStopped,
   );
@@ -612,6 +619,7 @@ const ChargeScreen = ({ route, navigation }) => {
                     onStopCharging={handleStopCharging}
                   isStopping={isStopping}
                   initialTelemetry={initialChargingTelemetry}
+                  sessionKey={chargingSessionKey}
                   />
                 </>
               ) : (
