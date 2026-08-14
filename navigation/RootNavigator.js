@@ -24,9 +24,15 @@ import {
   wasChargeStoppedManuallyRecently,
 } from "../services/notification.service";
 import billingCachePatch from "../utils/billingCachePatch";
+import activeSessionPick from "../utils/activeSessionPick";
 
-const { patchLatestHistory, patchHistoryList, isEnergyOnlyUpdate } =
-  billingCachePatch;
+const {
+  patchLatestHistory,
+  patchHistoryList,
+  isSessionMissingFromList,
+  isEnergyOnlyUpdate,
+} = billingCachePatch;
+const { getActiveSessions, pickActiveSession } = activeSessionPick;
 
 // Rung + phát local notification cho các cảnh báo CẦN người dùng xử lý ngay
 // (hết tiền, lỗi phần cứng, quên cắm sạc...) — khác với Toast/Alert thường
@@ -54,8 +60,17 @@ const RootNavigator = () => {
   const initialize = useAuthStore((state) => state.initialize);
   const userId = useAuthStore((state) => state.user?._id);
   const { data: latestHistory } = useHistory.useGetLatestHistory();
+  const { data: activeSessionsData } = useHistory.useGetActiveSessions();
+  const activeSessions = getActiveSessions(activeSessionsData);
+  const activeSessionIds = activeSessions
+    .map((session) => String(session?._id || ""))
+    .join(":");
   const serverStopAlertsRef = useRef(new Set());
   const deviceStatusAlertsRef = useRef(new Set());
+  // Các phiên đã kích hoạt nạp lại danh sách Lịch sử. Chặn lặp: nếu phiên nằm ở
+  // trang khác (màn Lịch sử phân trang) thì nạp lại vẫn không thấy nó, mà gói
+  // telemetry về mỗi ~5s — không chặn thì mỗi gói lại kéo một request.
+  const historyListSyncedRef = useRef(new Set());
   const [toastVisible, setToastVisible] = useState(false);
   const [toastTitle, setToastTitle] = useState("Thông báo");
   const [toastMessage, setToastMessage] = useState("");
@@ -66,7 +81,8 @@ const RootNavigator = () => {
   useEffect(() => {
     serverStopAlertsRef.current.clear();
     deviceStatusAlertsRef.current.clear();
-  }, [latestHistory?._id]);
+    historyListSyncedRef.current.clear();
+  }, [activeSessionIds, latestHistory?._id]);
 
   // Khởi tạo auth state khi mở app
   useEffect(() => {
@@ -78,11 +94,8 @@ const RootNavigator = () => {
       socket.connect();
       // join vào room của user để nhận thông báo
       if (userId) {
-        if (latestHistory?._id && !latestHistory?.totalTime && !latestHistory?.clientSessionStopped) {
-          socket.emit(
-            "telemetry_data",
-            `user_${userId}_${latestHistory.deviceId?.deviceCode}_${latestHistory.powerId?.index}`,
-          );
+        if (activeSessions.length) {
+          socket.emit("telemetry_data");
         }
         socket.emit("transaction_update", userId); // Báo server cho join vào room userId
       }
@@ -92,7 +105,7 @@ const RootNavigator = () => {
     return () => {
       socket.disconnect();
     };
-  }, [isAuthenticated, userId, latestHistory]);
+  }, [isAuthenticated, userId, activeSessionIds]);
 
   useEffect(() => {
     if (!isAuthenticated || !userId) {
@@ -100,11 +113,8 @@ const RootNavigator = () => {
     }
 
     const joinRooms = () => {
-      if (latestHistory?._id && !latestHistory?.totalTime && !latestHistory?.clientSessionStopped) {
-        socket.emit(
-          "telemetry_data",
-          `user_${userId}_${latestHistory.deviceId?.deviceCode}_${latestHistory.powerId?.index}`,
-        );
+      if (activeSessions.length) {
+        socket.emit("telemetry_data");
       }
       socket.emit("transaction_update", userId);
     };
@@ -131,7 +141,7 @@ const RootNavigator = () => {
     return () => {
       socket.off("connect", resyncAfterReconnect);
     };
-  }, [isAuthenticated, userId, latestHistory, queryClient]);
+  }, [isAuthenticated, userId, activeSessionIds, queryClient]);
 
   useEffect(() => {
     const upsertTransactionHistory = (status, transaction) => {
@@ -273,9 +283,33 @@ const RootNavigator = () => {
       );
     };
 
+    // Phiên chạy NGẦM (trụ nhà dân bật tay ở trụ) ra đời SAU khi màn Lịch sử đã
+    // nạp danh sách, nên nó không có trong cache và patchHistoryList ở trên
+    // không có gì để vá — màn Lịch sử đứng yên suốt phiên, chỉ thấy dữ liệu khi
+    // phiên kết thúc. Nạp lại danh sách MỘT LẦN để nó biết phiên mới, từ đó các
+    // gói telemetry sau vá được bình thường như phiên bấm từ app.
+    const ensureHistoryListHasSession = (data) => {
+      const historyId = normalizeId(data?.historyId);
+      if (!historyId || historyListSyncedRef.current.has(historyId)) {
+        return;
+      }
+
+      const isMissingAnywhere = queryClient
+        .getQueriesData({ queryKey: ["history"] })
+        .some(([, oldData]) => isSessionMissingFromList(oldData, historyId));
+
+      if (!isMissingAnywhere) {
+        return;
+      }
+
+      historyListSyncedRef.current.add(historyId);
+      queryClient.invalidateQueries({ queryKey: ["history"] });
+    };
+
     const invalidateChargeState = () => {
       queryClient.invalidateQueries({ queryKey: ["ME"] });
       queryClient.invalidateQueries({ queryKey: ["latestHistory"] });
+      queryClient.invalidateQueries({ queryKey: ["activeSessions"] });
       queryClient.invalidateQueries({ queryKey: ["history"] });
       queryClient.invalidateQueries({ queryKey: ["USERS_BIKE"] });
       queryClient.invalidateQueries({ queryKey: ["NOTIFICATIONS"] });
@@ -371,6 +405,7 @@ const RootNavigator = () => {
     const handleChargeBillingUpdate = (data) => {
       updateLatestHistoryBilling(data);
       updateHistoryListBilling(data);
+      ensureHistoryListHasSession(data);
 
       // Phiên nhà dân: điện miễn phí nên backend chỉ gửi năng lượng, không có
       // `balance` kèm theo. Không chặn ở đây thì rơi thẳng vào nhánh else bên
@@ -468,6 +503,13 @@ const RootNavigator = () => {
       // Ổ sạc đổi trạng thái khả dụng (mất/có lại bản tin) -> refetch danh sách
       // ổ để mọi màn hình đang xem cập nhật realtime.
       queryClient.invalidateQueries({ queryKey: ["E_CHARGE_DEVICE"] });
+      queryClient.invalidateQueries({ queryKey: ["activeSessions"] });
+      queryClient.invalidateQueries({ queryKey: ["latestHistory"] });
+      // Phiên chạy ngầm ở trụ nhà dân ra đời qua chính sự kiện này
+      // (handleHouseStationCharging phát emitOutletUsageChanged). Thiếu dòng
+      // dưới thì màn Lịch sử là màn DUY NHẤT không biết phiên mới tồn tại —
+      // Trang chủ thoát nhờ ["latestHistory"] ngay phía trên.
+      queryClient.invalidateQueries({ queryKey: ["history"] });
 
       if (statusState === "online") {
         return;
@@ -486,7 +528,11 @@ const RootNavigator = () => {
         return;
       }
 
-      const activeHistory = queryClient.getQueryData(["latestHistory"]);
+      const activeHistory =
+        pickActiveSession(queryClient.getQueryData(["activeSessions"]), {
+          deviceCode: data?.deviceCode ?? data?.deviceId ?? data?.device_id,
+          powerIndex: data?.powerIndex,
+        }) || queryClient.getQueryData(["latestHistory"]);
       if (
         !activeHistory ||
         activeHistory?.totalTime ||

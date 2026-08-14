@@ -104,6 +104,28 @@ const patchHistoryList = (oldData, data) => {
   };
 };
 
+// Gói billing thuộc về một phiên KHÔNG có trong danh sách đang cache.
+//
+// Đây là ca của phiên chạy NGẦM: trụ nhà dân được bật bằng tay ở trụ, backend tự
+// tạo History (handleHouseStationCharging) SAU khi màn Lịch sử đã nạp danh sách.
+// Phiên đó không nằm trong cache, nên patchHistoryList duyệt qua rồi lặng lẽ
+// không vá gì — màn Lịch sử đứng yên suốt phiên và chỉ thấy dữ liệu khi phiên kết
+// thúc (lúc đó mới có nhánh invalidate cả ["history"]).
+//
+// Trả false khi CHƯA có cache nào: không có màn nào đang xem danh sách thì không
+// cần nạp lại. Cũng trả false khi gói không mang historyId — không đủ căn cứ.
+const isSessionMissingFromList = (oldData, historyId) => {
+  const incomingHistoryId = normalizeId(historyId);
+
+  if (!incomingHistoryId || !Array.isArray(oldData?.histories)) {
+    return false;
+  }
+
+  return !oldData.histories.some(
+    (history) => normalizeId(history?._id) === incomingHistoryId,
+  );
+};
+
 // Gói CHỈ mang năng lượng (phiên nhà dân) -> không có ví để cập nhật, không có
 // cảnh báo hết tiền, không có auto-stop. Phía component phải dừng sau khi vá
 // cache, nếu không sẽ invalidate ["ME"] ở mọi gói telemetry (~5s) suốt phiên.
@@ -115,5 +137,6 @@ module.exports = {
   applyBillingToHistory,
   patchLatestHistory,
   patchHistoryList,
+  isSessionMissingFromList,
   isEnergyOnlyUpdate,
 };

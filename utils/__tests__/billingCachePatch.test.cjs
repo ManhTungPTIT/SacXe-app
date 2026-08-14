@@ -4,6 +4,7 @@ const test = require("node:test");
 const {
   patchLatestHistory,
   patchHistoryList,
+  isSessionMissingFromList,
   isEnergyOnlyUpdate,
 } = require("../billingCachePatch");
 
@@ -178,4 +179,43 @@ test("gói isFinal chốt cả price/energy/totalTime", () => {
   assert.equal(next.price, 4800);
   assert.deepEqual(next.totalTime, { hours: 0, minutes: 12 });
   assert.equal(next.stopReason, "user");
+});
+
+// --- Phiên chạy NGẦM (trụ nhà dân bật tay) không có trong danh sách cache ---
+//
+// patchHistoryList duyệt qua rồi không vá gì, và nó KHÔNG phân biệt được
+// "đã vá xong" với "không tìm thấy phiên". Thiếu tín hiệu đó thì màn Lịch sử
+// đứng yên suốt phiên ngầm.
+
+test("phiên ngầm chưa có trong danh sách -> báo thiếu để nạp lại", () => {
+  const cache = { histories: [{ _id: "cu-1" }, { _id: "cu-2" }] };
+  assert.equal(isSessionMissingFromList(cache, "phien-ngam"), true);
+});
+
+test("phiên đã có trong danh sách -> không cần nạp lại", () => {
+  const cache = { histories: [{ _id: "cu-1" }, { _id: "phien-ngam" }] };
+  assert.equal(isSessionMissingFromList(cache, "phien-ngam"), false);
+});
+
+test("so khớp id không phụ thuộc kiểu dữ liệu", () => {
+  const cache = { histories: [{ _id: 12345 }] };
+  assert.equal(isSessionMissingFromList(cache, "12345"), false);
+});
+
+// Chưa màn nào nạp danh sách thì không có gì để nạp lại — không được bắt
+// invalidate, nếu không mỗi gói telemetry (~5s) lại kéo một request thừa.
+test("chưa có cache danh sách -> không yêu cầu nạp lại", () => {
+  assert.equal(isSessionMissingFromList(undefined, "phien-ngam"), false);
+  assert.equal(isSessionMissingFromList({}, "phien-ngam"), false);
+  assert.equal(isSessionMissingFromList({ histories: null }, "phien-ngam"), false);
+});
+
+test("gói thiếu historyId -> không đủ căn cứ, không yêu cầu nạp lại", () => {
+  const cache = { histories: [{ _id: "cu-1" }] };
+  assert.equal(isSessionMissingFromList(cache, undefined), false);
+  assert.equal(isSessionMissingFromList(cache, ""), false);
+});
+
+test("danh sách rỗng vẫn tính là thiếu phiên", () => {
+  assert.equal(isSessionMissingFromList({ histories: [] }, "phien-ngam"), true);
 });

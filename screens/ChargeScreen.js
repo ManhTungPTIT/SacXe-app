@@ -8,6 +8,7 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
 import BikeRegistration from "../components/bike/BikeRegistration";
 import { useBike } from "../queries/bike.query";
@@ -34,8 +35,10 @@ import {
   setChargeDeviceCheckInProgress,
 } from "../services/notification.service";
 import sessionEnergySeed from "../utils/sessionEnergySeed";
+import activeSessionPick from "../utils/activeSessionPick";
 
 const { resolveSessionSeedEnergyKwh, resolveSessionKey } = sessionEnergySeed;
+const { getActiveSessions, pickActiveSession } = activeSessionPick;
 
 // Phần cứng gửi telemetry mỗi ~5s (xem comment TELEMETRY_TIMEOUT_MS ở
 // backend/src/configs/mqtt.config.js) — backend tự cho phép trễ tới 15000ms
@@ -67,6 +70,7 @@ const ChargeScreen = ({ route, navigation }) => {
   const [deviceCheck, setDeviceCheck] = useState(null);
   const [initialChargingTelemetry, setInitialChargingTelemetry] = useState(null);
   const [confirmedChargingStartTime, setConfirmedChargingStartTime] = useState(null);
+  const [selectedActiveHistoryId, setSelectedActiveHistoryId] = useState(null);
   // Keep the charging session visible while bike/history syncs after detection.
   const [isConfirmedSessionPendingSync, setIsConfirmedSessionPendingSync] =
     useState(false);
@@ -84,9 +88,13 @@ const ChargeScreen = ({ route, navigation }) => {
     refetch: refetchBike,
   } = useBike.useGetMyBike();
   const {
-    data: latestHistory,
+    data: latestHistoryData,
     refetch: refetchLatestHistory,
   } = useHistory.useGetLatestHistory();
+  const {
+    data: activeSessionsData,
+    refetch: refetchActiveSessions,
+  } = useHistory.useGetActiveSessions();
   const { data: userData } = useAuth.useGetMe();
   const walletBalance = userData?.user?.balance;
   const terminateChargeMutation = useChargeQuery.useTerminate();
@@ -107,6 +115,13 @@ const ChargeScreen = ({ route, navigation }) => {
     selectedChargeDevice?.isHouse === true ||
     selectedChargeDevice?.isHouse === "true";
   const deviceId = selectedChargeDevice?._id || null;
+  const activeSessions = getActiveSessions(activeSessionsData);
+  const latestHistory =
+    pickActiveSession(activeSessionsData, {
+      selectedHistoryId: selectedActiveHistoryId,
+      deviceCode,
+      powerId,
+    }) || latestHistoryData;
   const chargingStartTime = latestHistory?.startTime || latestHistory?.createdAt;
   const displayedChargingStartTime =
     confirmedChargingStartTime || chargingStartTime;
@@ -136,6 +151,21 @@ const ChargeScreen = ({ route, navigation }) => {
     !noDeviceConfirmedRef.current &&
     (isConfirmedSessionPendingSync || isChargingSessionActive || isStopping);
 
+  const activeSessionIds = activeSessions.map((session) => String(session?._id || "")).join(":");
+
+  useEffect(() => {
+    if (!selectedActiveHistoryId) {
+      return;
+    }
+
+    const stillActive = activeSessions.some(
+      (session) => String(session?._id || "") === String(selectedActiveHistoryId),
+    );
+    if (!stillActive) {
+      setSelectedActiveHistoryId(activeSessions[0]?._id || null);
+    }
+  }, [selectedActiveHistoryId, activeSessionIds]);
+
   useEffect(() => {
     if (isConfirmedSessionPendingSync && isChargingSessionActive) {
       setIsConfirmedSessionPendingSync(false);
@@ -150,7 +180,8 @@ const ChargeScreen = ({ route, navigation }) => {
     useCallback(() => {
       refetchBike();
       refetchLatestHistory();
-    }, [refetchBike, refetchLatestHistory]),
+      refetchActiveSessions();
+    }, [refetchBike, refetchLatestHistory, refetchActiveSessions]),
   );
 
   useEffect(() => {
@@ -204,6 +235,13 @@ const ChargeScreen = ({ route, navigation }) => {
   }, [route?.params?.resetChargeFlowToken, navigation]);
 
 
+
+  useEffect(() => {
+    if (isSelectedHouseDevice && deviceCode) {
+      refetchActiveSessions();
+      socket.emit("telemetry_data");
+    }
+  }, [deviceCode, isSelectedHouseDevice, refetchActiveSessions]);
 
   useEffect(() => {
     if (isScanned && deviceCode && !isDeviceLoading) {
@@ -334,6 +372,7 @@ const ChargeScreen = ({ route, navigation }) => {
     if (!deferBackendConfirm) {
       queryClient.invalidateQueries({ queryKey: ["USERS_BIKE"] });
       queryClient.invalidateQueries({ queryKey: ["latestHistory"] });
+      queryClient.invalidateQueries({ queryKey: ["activeSessions"] });
       if (activeDeviceCode) {
         queryClient.invalidateQueries({ queryKey: ["E_CHARGE_DEVICE", String(activeDeviceCode)] });
       }
@@ -372,8 +411,10 @@ const ChargeScreen = ({ route, navigation }) => {
       setDeviceCheck(null);
       queryClient.invalidateQueries({ queryKey: ["USERS_BIKE"] });
       queryClient.invalidateQueries({ queryKey: ["latestHistory"] });
+      queryClient.invalidateQueries({ queryKey: ["activeSessions"] });
       refetchBike();
       refetchLatestHistory();
+      refetchActiveSessions();
       setToastType("success");
       setToastMessage("Đã phát hiện thiết bị. Bắt đầu phiên sạc!");
       setToastVisible(true);
@@ -483,11 +524,12 @@ const ChargeScreen = ({ route, navigation }) => {
         const confirmDeviceCode =
           deviceCode || latestHistory?.deviceId?.deviceCode;
         terminateChargeMutation.mutate(
-          {},
+          { historyId: deviceCheck?.historyId || latestHistory?._id },
           {
             onSettled: () => {
               queryClient.invalidateQueries({ queryKey: ["USERS_BIKE"] });
               queryClient.invalidateQueries({ queryKey: ["latestHistory"] });
+              queryClient.invalidateQueries({ queryKey: ["activeSessions"] });
               if (confirmDeviceCode) {
                 queryClient.invalidateQueries({
                   queryKey: ["E_CHARGE_DEVICE", String(confirmDeviceCode)],
@@ -508,6 +550,58 @@ const ChargeScreen = ({ route, navigation }) => {
     };
   }, [deviceCheck]);
 
+  // PHẢI khai báo TRƯỚC early return `isLoadingBikeData` bên dưới. Hook nằm sau
+  // early return thì lần render đầu (bike data đang tải -> đi vào nhánh return)
+  // gọi ít hơn một hook so với lần render sau, và React ném "Rendered more hooks
+  // than during the previous render." ngay khi vào màn — màn phiên sạc không mở
+  // được. Mọi hook khác của component đều nằm phía trên; giữ nguyên vị trí này.
+  const handleOpenActiveSessionFromOutlet = useCallback(
+    async (outlet, currentSession) => {
+      let session = currentSession;
+
+      if (!session?._id) {
+        try {
+          const refreshed = await refetchActiveSessions();
+          session = pickActiveSession(refreshed?.data || activeSessionsData, {
+            deviceCode,
+            powerId: outlet?._id,
+            powerIndex: outlet?.index,
+          });
+        } catch {
+          session = null;
+        }
+      }
+
+      if (!session?._id) {
+        queryClient.invalidateQueries({ queryKey: ["activeSessions"] });
+        Alert.alert(
+          "Thông báo",
+          "Ổ sạc đang hoạt động nhưng phiên sạc chưa đồng bộ xong. Vui lòng thử lại sau vài giây.",
+        );
+        return;
+      }
+
+      noDeviceConfirmedRef.current = false;
+      setDeviceCheck(null);
+      setIsConfirmedSessionPendingSync(false);
+      setInitialChargingTelemetry(null);
+      setConfirmedChargingStartTime(null);
+      setSelectedActiveHistoryId(session._id);
+      setPowerId(session?.powerId?._id || session?.powerId || outlet?._id || null);
+
+      const sessionDeviceCode = session?.deviceId?.deviceCode || deviceCode;
+      if (sessionDeviceCode) {
+        setdeviceCode(String(sessionDeviceCode));
+        setIsScanned(true);
+      }
+
+      socket.emit("telemetry_data");
+      queryClient.invalidateQueries({ queryKey: ["latestHistory"] });
+      queryClient.invalidateQueries({ queryKey: ["activeSessions"] });
+    },
+    [activeSessionsData, deviceCode, queryClient, refetchActiveSessions],
+  );
+
   if (isLoadingBikeData) {
     return (
       <View style={styles.loadingContainer}>
@@ -520,7 +614,7 @@ const ChargeScreen = ({ route, navigation }) => {
   const executeStopCharging = () => {
     beginManualChargeStop();
     terminateChargeMutation.mutate(
-      {},
+      { historyId: latestHistory?._id },
       {
         onSuccess: (data) => {
           syncStoppedChargeState();
@@ -610,6 +704,40 @@ const ChargeScreen = ({ route, navigation }) => {
                 />
               ) : displayChargingSession ? (
                 <>
+                  {activeSessions.length > 1 ? (
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={styles.activeSessionSelector}
+                      contentContainerStyle={styles.activeSessionSelectorContent}
+                    >
+                      {activeSessions.map((session) => {
+                        const isSelected = String(session?._id || "") === String(latestHistory?._id || "");
+                        const label = session?.deviceId?.deviceCode
+                          ? `${session.deviceId.deviceCode} / Ổ ${session?.powerId?.index ?? session?.powerIndex ?? "-"}`
+                          : `Phiên ${String(session?._id || "").slice(-6)}`;
+                        return (
+                          <TouchableOpacity
+                            key={String(session?._id)}
+                            style={[
+                              styles.activeSessionChip,
+                              isSelected && styles.activeSessionChipSelected,
+                            ]}
+                            onPress={() => setSelectedActiveHistoryId(session?._id)}
+                          >
+                            <Text
+                              style={[
+                                styles.activeSessionChipText,
+                                isSelected && styles.activeSessionChipTextSelected,
+                              ]}
+                            >
+                              {label}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  ) : null}
                   <ChargingStatusComponent
                     chargingStartTime={displayedChargingStartTime}
                     initialEnergyKwh={initialEnergyKwh}
@@ -636,6 +764,8 @@ const ChargeScreen = ({ route, navigation }) => {
                   mode={chargeMode}
                   setMode={setChargeMode}
                   openHomeDevicesToken={route?.params?.openHomeDevicesToken}
+                  activeSessionsData={activeSessionsData}
+                  onOpenActiveSession={handleOpenActiveSessionFromOutlet}
                   onScanQrPress={(params) =>
                     navigation.navigate("ScanQR", params)
                   }
@@ -662,12 +792,17 @@ const ChargeScreen = ({ route, navigation }) => {
                         bike: charge.bike,
                       }));
                     }
+                    if (charge?.historyId) {
+                      setSelectedActiveHistoryId(charge.historyId);
+                    }
                     setDeviceCheck({
+                      historyId: charge?.historyId,
                       deviceCode: charge?.deviceCode || deviceCode,
                       powerIndex: charge?.powerIndex,
                     });
                     queryClient.invalidateQueries({ queryKey: ["USERS_BIKE"] });
                     queryClient.invalidateQueries({ queryKey: ["latestHistory"] });
+                    queryClient.invalidateQueries({ queryKey: ["activeSessions"] });
                   }}
                 />
               )}
@@ -751,6 +886,33 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
     paddingHorizontal: 24,
     marginHorizontal: -24,
+  },
+  activeSessionSelector: {
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  activeSessionSelectorContent: {
+    gap: 8,
+    paddingRight: 8,
+  },
+  activeSessionChip: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: Colors.secondary,
+  },
+  activeSessionChipSelected: {
+    backgroundColor: Colors.primary,
+  },
+  activeSessionChipText: {
+    color: Colors.primary,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  activeSessionChipTextSelected: {
+    color: Colors.secondary,
   },
 });
 

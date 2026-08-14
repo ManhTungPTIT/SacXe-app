@@ -21,6 +21,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { SocketContext } from "../providers/SocketProvider";
 import BatteryCharging from "../components/charging/BatteryCharging";
 import telemetryEnergy from "../utils/telemetryEnergy";
+import sessionTelemetryMatch from "../utils/sessionTelemetryMatch";
 import { Ionicons } from "@expo/vector-icons";
 
 const formatCurrency = (value) => {
@@ -39,6 +40,7 @@ const formatEnergy = (value) => {
 const ENERGY_REFRESH_STEP_KWH = 0.02;
 
 const { readTelemetryEnergyKwh } = telemetryEnergy;
+const { matchesSessionTelemetry } = sessionTelemetryMatch;
 
 const isChargingHistory = (history) => !history?.totalTime;
 
@@ -195,6 +197,7 @@ const HistoryScreen = ({ navigation }) => {
       lastInvalidatedEnergyRef.current = realtimeEnergy;
       queryClient.invalidateQueries({ queryKey: ["history"] });
       queryClient.invalidateQueries({ queryKey: ["latestHistory"] });
+      queryClient.invalidateQueries({ queryKey: ["activeSessions"] });
       queryClient.invalidateQueries({ queryKey: ["ME"] });
     }
   }, [activeHistoryId, realtimeEnergy, activeHistoryEnergy, queryClient]);

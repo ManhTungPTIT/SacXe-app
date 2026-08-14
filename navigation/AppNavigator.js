@@ -17,6 +17,7 @@ import SettingsScreen from "../screens/SettingsScreen";
 import QrScanScreen from "../screens/QrScanScreen";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHistory } from "../queries/history.query";
+import activeSessionPick from "../utils/activeSessionPick";
 
 const Tab = createBottomTabNavigator();
 const TAB_BAR_TOP_PADDING = 4;
@@ -110,11 +111,15 @@ const FloatingScanButton = ({ onPress, accessibilityState, hideHint = false }) =
   );
 };
 
+const { getActiveSessions } = activeSessionPick;
+
 const AppNavigator = () => {
   const inset = useSafeAreaInsets();
   const bottomSystemInset = inset.bottom;
   const { data: latestHistory } = useHistory.useGetLatestHistory();
-  const isChargingSessionActive = Boolean(
+  const { data: activeSessionsData } = useHistory.useGetActiveSessions();
+  const activeSessions = getActiveSessions(activeSessionsData);
+  const isChargingSessionActive = activeSessions.length > 0 || Boolean(
     latestHistory &&
       !latestHistory.totalTime &&
       !latestHistory.clientSessionStopped,

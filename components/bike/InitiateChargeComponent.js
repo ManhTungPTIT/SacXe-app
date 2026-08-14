@@ -31,8 +31,10 @@ const InitiateChargeComponent = ({
   mode,
   setMode,
   openHomeDevicesToken,
+  activeSessionsData,
   onScanQrPress,
   onChargeStarted,
+  onOpenActiveSession,
 }) => {
 
   const { data: myDevicesData, isLoading: isLoadingMyDevices } =
@@ -106,7 +108,9 @@ const InitiateChargeComponent = ({
         deviceId={deviceId}
         deviceAddress={selectedDevice?.address || devices?.address}
         deviceIsHouse={selectedDevice?.isHouse ?? devices?.isHouse}
+        activeSessionsData={activeSessionsData}
         onChargeStarted={onChargeStarted}
+        onOpenActiveSession={onOpenActiveSession}
       />
     );
   }

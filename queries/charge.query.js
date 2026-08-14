@@ -8,6 +8,8 @@ export const useChargeQuery = {
       mutationFn: (data) => chargeApi.initiate(data),
       onSuccess: (data) => {
         queryClient.invalidateQueries(["CURRENT_CHARGE_SESSION", data]);
+        queryClient.invalidateQueries({ queryKey: ["activeSessions"] });
+        queryClient.invalidateQueries({ queryKey: ["latestHistory"] });
       },
     });
     return { mutate, ...rest };
@@ -15,9 +17,11 @@ export const useChargeQuery = {
   useTerminate: () => {
     const queryClient = useQueryClient();
     const { mutate, ...rest } = useMutation({
-      mutationFn: () => chargeApi.terminate(),
+      mutationFn: (data) => chargeApi.terminate(data),
       onSuccess: (data) => {
         queryClient.invalidateQueries(["CURRENT_CHARGE_SESSION"]);
+        queryClient.invalidateQueries({ queryKey: ["activeSessions"] });
+        queryClient.invalidateQueries({ queryKey: ["latestHistory"] });
       },
       onError: (error) => {
         const errorMessage = error?.response?.data?.message || "";

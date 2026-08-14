@@ -30,6 +30,7 @@ const ChargingStatusComponent = ({
     initialEnergyKwh,
     initialTelemetry,
     sessionKey,
+    latestHistory,
   );
 
   // Giá tiền là do backend tính (theo khung giờ). Khi năng lượng tăng đủ một
@@ -44,6 +45,7 @@ const ChargingStatusComponent = ({
     if (energy - lastRefreshEnergyRef.current >= ENERGY_REFRESH_STEP_KWH) {
       lastRefreshEnergyRef.current = energy;
       queryClient.invalidateQueries({ queryKey: ["latestHistory"] });
+      queryClient.invalidateQueries({ queryKey: ["activeSessions"] });
       if (!isHouse) {
         queryClient.invalidateQueries({ queryKey: ["ME"] });
       }

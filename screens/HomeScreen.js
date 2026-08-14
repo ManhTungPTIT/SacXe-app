@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import MapComponent from "../components/MapComponent";
 import LatestHistory from "../components/charging/LatestHistory";
+import activeSessionPick from "../utils/activeSessionPick";
 import { useEChargeDeviceQuery } from "../queries/eChargeDevice.query";
 import { useHistory } from "../queries/history.query";
 import { Colors } from "../constants/color";
@@ -65,6 +66,8 @@ const SearchStationInput = React.memo(({ onKeywordChange }) => {
     </View>
   );
 });
+const { pickActiveSession } = activeSessionPick;
+
 const HomeScreen = ({ navigation }) => {
   const [location, setLocation] = useState(null);
   const [locationPermissionStatus, setLocationPermissionStatus] =
@@ -77,6 +80,8 @@ const HomeScreen = ({ navigation }) => {
     longitude: location?.longitude,
   });
   const { data: latestHistory } = useHistory.useGetLatestHistory();
+  const { data: activeSessionsData } = useHistory.useGetActiveSessions();
+  const displayedHistory = pickActiveSession(activeSessionsData) || latestHistory;
   const searchAddress = useMemo(
     () => normalizeAddress(debouncedSearchKeyword),
     [debouncedSearchKeyword],
@@ -212,7 +217,7 @@ const HomeScreen = ({ navigation }) => {
               </TouchableOpacity>
             </View> */}
 
-            <LatestHistory history={latestHistory} navigation={navigation} />
+            <LatestHistory history={displayedHistory} navigation={navigation} />
           </ScrollView>
         </View>
       </View>

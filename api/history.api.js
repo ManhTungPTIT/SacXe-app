@@ -7,4 +7,7 @@ export const historyApi = {
   getLatestHistory: () => {
     return api.get("/api/history/get-latest");
   },
+  getActiveSessions: () => {
+    return api.get("/api/history/active");
+  },
 };

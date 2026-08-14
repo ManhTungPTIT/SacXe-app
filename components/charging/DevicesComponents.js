@@ -16,8 +16,10 @@ import {
   setChargeDeviceCheckInProgress,
 } from "../../services/notification.service";
 import { Colors } from "../../constants/color";
-import { useAuthStore } from "../../stores/auth.store";
 import ChargingDeviceCheck from "./ChargingDeviceCheck";
+import activeSessionPick from "../../utils/activeSessionPick";
+
+const { pickActiveSession } = activeSessionPick;
 
 const DevicesComponents = ({
   navigation,
@@ -29,13 +31,13 @@ const DevicesComponents = ({
   deviceAddress,
   deviceIsHouse,
   setDevices,
+  activeSessionsData,
   onChargeStarted,
+  onOpenActiveSession,
 }) => {
   const initiateChargeMutation = useChargeQuery.useInitiate();
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [selectedPowerOutlet, setSelectedPowerOutlet] = useState(null);
-  const user = useAuthStore((state) => state.user);
-  const userId = user?._id;
   // Hỏng (isBroken): hiển thị "Ổ đang bảo trì". Cờ này THUẦN TỰ ĐỘNG — không
   // có endpoint admin nào đặt/gỡ nó. Backend đánh khi trụ im CẢ heart_beat LẪN
   // telemetry của ổ (scanOfflineDevices / scanStaleOutlets, và nhánh mất điện
@@ -139,10 +141,7 @@ const DevicesComponents = ({
           }
         },
         onSuccess: (data) => {
-          socket.emit(
-            "telemetry_data",
-            `user_${userId}_${data?.deviceCode}_${data?.powerIndex}`,
-          );
+          socket.emit("telemetry_data");
           onChargeStarted?.(data);
         },
         onSettled: resetConfirmModal,
@@ -253,10 +252,23 @@ const DevicesComponents = ({
           const isBroken = isDeviceBroken(device);
           const isNoPower = !isBroken && isDeviceNoPower(device);
           const isAvailable = !isBroken && !isNoPower && !device?.isUsing;
+          const activeSession = pickActiveSession(activeSessionsData, {
+            deviceCode,
+            powerId: device?._id,
+            powerIndex: device?.index ?? index + 1,
+          });
+          const canOpenBusySession = Boolean(
+            isHouseDevice &&
+              device?.isUsing &&
+              !isBroken &&
+              !isNoPower &&
+              onOpenActiveSession,
+          );
           // Ổ bảo trì vẫn bấm được để báo lý do (trước đây disabled hoàn
           // toàn nên bấm vào không có phản hồi gì) — chỉ ổ khả dụng mới mở
-          // modal xác nhận sạc.
-          const isPressable = isAvailable || isBroken;
+          // modal xác nhận sạc. Riêng trụ nhà dân, ổ đang sạc mở thẳng
+          // phiên sạc vì mọi owner trong nhà đều được quyền can thiệp.
+          const isPressable = isAvailable || isBroken || canOpenBusySession;
 
           const cardStyle = isBroken
             ? styles.deviceCardBroken
@@ -264,28 +276,36 @@ const DevicesComponents = ({
               ? styles.deviceCardNoPower
               : isAvailable
                 ? styles.deviceCardAvailable
-                : styles.deviceCardDisabled;
+                : canOpenBusySession
+                  ? styles.deviceCardBusySession
+                  : styles.deviceCardDisabled;
           const nameStyle = isBroken
             ? styles.textBroken
             : isNoPower
               ? styles.textNoPower
               : isAvailable
                 ? styles.textAvailable
-                : styles.textDisabled;
+                : canOpenBusySession
+                  ? styles.textBusySession
+                  : styles.textDisabled;
           const iconWrapStyle = isBroken
             ? styles.outletIconWrapBroken
             : isNoPower
               ? styles.outletIconWrapNoPower
               : isAvailable
                 ? styles.outletIconWrapAvailable
-                : styles.outletIconWrapDisabled;
+                : canOpenBusySession
+                  ? styles.outletIconWrapBusySession
+                  : styles.outletIconWrapDisabled;
           const statusStyle = isBroken
             ? styles.textBrokenSub
             : isNoPower
               ? styles.textNoPowerSub
               : isAvailable
                 ? styles.textAvailableSub
-                : styles.textDisabled;
+                : canOpenBusySession
+                  ? styles.textBusySessionSub
+                  : styles.textDisabled;
 
           let iconName = "lock-closed-outline";
           let iconColor = Colors.inactive;
@@ -298,9 +318,16 @@ const DevicesComponents = ({
           } else if (isAvailable) {
             iconName = "flash-outline";
             iconColor = Colors.primary;
+          } else if (canOpenBusySession) {
+            iconName = "pulse-outline";
+            iconColor = Colors.primary;
           }
 
-          let statusLabel = "Đang có xe sạc";
+          let statusLabel = canOpenBusySession
+            ? activeSession?._id
+              ? "Đang sạc - chạm để xem phiên"
+              : "Đang sạc - chạm để đồng bộ phiên"
+            : "Đang có xe sạc";
           if (isBroken) {
             statusLabel = "Ổ đang bảo trì";
           } else if (isNoPower) {
@@ -319,6 +346,10 @@ const DevicesComponents = ({
                   );
                   return;
                 }
+                if (canOpenBusySession) {
+                  onOpenActiveSession(device, activeSession);
+                  return;
+                }
                 handleOpenConfirmModal(device);
               }}
               key={device._id}
@@ -330,7 +361,9 @@ const DevicesComponents = ({
                   ? `Ổ cắm thứ ${index + 1} đang bảo trì`
                   : isNoPower
                     ? `Ổ cắm thứ ${index + 1} đang không có điện`
-                    : `Ổ cắm thứ ${index + 1}`
+                    : canOpenBusySession
+                      ? `Ổ cắm thứ ${index + 1} đang sạc, chạm để xem phiên`
+                      : `Ổ cắm thứ ${index + 1}`
               }
               accessibilityState={{ disabled: !isPressable }}
               style={[styles.deviceCard, cardStyle]}
@@ -634,6 +667,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0,
     transform: [{ translateY: 0 }],
   },
+  deviceCardBusySession: {
+    backgroundColor: Colors.bgGreenTint,
+    borderColor: Colors.successBorder,
+    elevation: 1,
+    shadowOpacity: 0,
+    transform: [{ translateY: 0 }],
+  },
   deviceCardBroken: {
     backgroundColor: "#374151",
     borderColor: "#1F2937",
@@ -667,6 +707,9 @@ const styles = StyleSheet.create({
   },
   outletIconWrapDisabled: {
     backgroundColor: "#E4E7EC",
+  },
+  outletIconWrapBusySession: {
+    backgroundColor: Colors.white,
   },
   outletIconWrapBroken: {
     backgroundColor: "#1F2937",
@@ -714,6 +757,12 @@ const styles = StyleSheet.create({
   },
   textDisabled: {
     color: Colors.inactive,
+  },
+  textBusySession: {
+    color: Colors.textPrimaryDark,
+  },
+  textBusySessionSub: {
+    color: Colors.primary,
   },
   textBroken: {
     color: "#E5E7EB",

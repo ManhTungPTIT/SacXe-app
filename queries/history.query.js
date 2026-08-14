@@ -20,4 +20,13 @@ export const useHistory = {
       refetchOnWindowFocus: false,
     });
   },
+  useGetActiveSessions: () => {
+    return useQuery({
+      queryKey: ["activeSessions"],
+      queryFn: () => historyApi.getActiveSessions(),
+      retry: 3,
+      staleTime: 30 * 1000,
+      refetchOnWindowFocus: false,
+    });
+  },
 };

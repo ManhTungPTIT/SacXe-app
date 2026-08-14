@@ -7,8 +7,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import BatteryCharging from "./BatteryCharging";
 import { formatPrice } from "../../utils/pricing";
 import telemetryEnergy from "../../utils/telemetryEnergy";
+import sessionTelemetryMatch from "../../utils/sessionTelemetryMatch";
 
 const { readTelemetryEnergyKwh } = telemetryEnergy;
+const { matchesSessionTelemetry } = sessionTelemetryMatch;
 
 // Khi năng lượng realtime tăng thêm mức này thì làm mới giá/số dư từ backend.
 const ENERGY_REFRESH_STEP_KWH = 0.02;
@@ -192,6 +194,7 @@ const LatestHistory = ({ history, navigation }) => {
     if (realtimeEnergy - reference >= ENERGY_REFRESH_STEP_KWH) {
       lastInvalidatedEnergyRef.current = realtimeEnergy;
       queryClient.invalidateQueries({ queryKey: ["latestHistory"] });
+      queryClient.invalidateQueries({ queryKey: ["activeSessions"] });
       queryClient.invalidateQueries({ queryKey: ["ME"] });
     }
   }, [realtimeEnergy, lastFetchedEnergy, hasDuration, queryClient]);

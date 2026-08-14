@@ -2,9 +2,13 @@ import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { SocketContext } from "../providers/SocketProvider";
 import telemetryEnergy from "../utils/telemetryEnergy";
 import sessionEnergySeed from "../utils/sessionEnergySeed";
+import sessionTelemetryMatch from "../utils/sessionTelemetryMatch";
+import chargingLiveState from "../utils/chargingLiveState";
 
 const { getTelemetryEnergyKwh, readTelemetryEnergyKwh } = telemetryEnergy;
 const { isNewSession } = sessionEnergySeed;
+const { matchesSessionTelemetry } = sessionTelemetryMatch;
+const { isChargingLive } = chargingLiveState;
 
 // Số điểm công suất tối đa giữ lại để vẽ biểu đồ.
 const MAX_POINTS = 28;
@@ -22,6 +26,7 @@ export const useChargingTelemetry = (
   initialEnergyKwh = 0,
   initialTelemetry = null,
   sessionKey = null,
+  activeSession = null,
 ) => {
   const socketContext = useContext(SocketContext);
   const socket = socketContext?.socket;
@@ -36,10 +41,13 @@ export const useChargingTelemetry = (
       getTelemetryEnergyKwh(initialTelemetry),
     ),
   );
+  // Cùng quy tắc với nhánh nhận gói bên dưới — hai chỗ lệch nhau thì gói đầu
+  // phiên và các gói sau sẽ cho ra hai kết luận khác nhau.
   const [isRelayOn, setIsRelayOn] = useState(() =>
-    initialTelemetry?.relay !== undefined && initialTelemetry?.relay !== null
-      ? Boolean(Number(initialTelemetry.relay))
-      : Number.isFinite(initialPower) && initialPower > 0,
+    isChargingLive({
+      relay: initialTelemetry?.relay,
+      powerWatts: initialPower,
+    }),
   );
 
   // Trong CÙNG một phiên, năng lượng chỉ đi lên: giá trị mới từ DB
@@ -66,8 +74,8 @@ export const useChargingTelemetry = (
     if (!socket) return;
 
     const handleWave = (value) => {
-      if (value?.relay !== undefined && value?.relay !== null) {
-        setIsRelayOn(Boolean(Number(value.relay)));
+      if (!matchesSessionTelemetry(activeSession || sessionKey, value)) {
+        return;
       }
 
       const nextEnergy = readTelemetryEnergyKwh(value);
@@ -76,12 +84,20 @@ export const useChargingTelemetry = (
       }
 
       const nextPower = Number(value?.power);
+
+      // Xét relay VÀ công suất cùng lúc (utils/chargingLiveState.js). Bản cũ
+      // tách làm hai nhánh và để `relay` thắng tuyệt đối khi có mặt, nên phiên
+      // nhà dân bật bằng tay — backend chưa gửi lệnh nên phần cứng báo relay=0
+      // dù đang tải điện thật — hiện "Đang chờ sạc" suốt cả phiên.
+      setIsRelayOn(
+        isChargingLive({
+          relay: value?.relay,
+          powerWatts: nextPower,
+        }),
+      );
+
       if (!Number.isFinite(nextPower)) {
         return;
-      }
-
-      if (value?.relay === undefined || value?.relay === null) {
-        setIsRelayOn(nextPower > 0);
       }
 
       setPowerSeries((prev) => {
@@ -98,7 +114,7 @@ export const useChargingTelemetry = (
     return () => {
       socket.off("wave_data", handleWave);
     };
-  }, [socket]);
+  }, [socket, activeSession, sessionKey]);
 
   const derived = useMemo(() => {
     const currentPower = powerSeries[powerSeries.length - 1] || 0;

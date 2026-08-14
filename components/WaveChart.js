@@ -10,6 +10,9 @@ import Svg, {
 } from "react-native-svg";
 import { Colors } from "../constants/color";
 import BatteryCharging from "./charging/BatteryCharging";
+import chargingLiveState from "../utils/chargingLiveState";
+
+const { hasTelemetrySignal } = chargingLiveState;
 
 const CHART_HEIGHT = 140;
 const CHART_PADDING = {
@@ -166,7 +169,17 @@ const WaveChart = ({ chargingStartTime, telemetry }) => {
     [chartData, chartWidth],
   );
 
+  // HAI câu hỏi khác nhau, trước đây dùng chung một biến nên lệch nhau ở phiên
+  // nhà dân bật tay: đã có dữ liệu công suất và điện năng đã cộng dồn, nhưng
+  // overlay vẫn báo "đang chờ tín hiệu".
+  //
+  //   isLive       -> CÓ ĐANG SẠC không (badge trên đầu thẻ)
+  //   hasSignal    -> ĐÃ NHẬN ĐƯỢC TÍN HIỆU chưa (overlay che biểu đồ)
+  //
+  // Chỉ cần một điểm công suất là đã có tín hiệu, kể cả điểm đó bằng 0 — lúc đó
+  // biểu đồ có dữ liệu thật để vẽ nên không được che nữa.
   const isLive = isRelayOn;
+  const hasSignal = hasTelemetrySignal({ powerSeries });
   const currentPowerParts = getPowerParts(currentPower);
   const scaleMaxPower = isLive ? peakPower : 0;
   const activePoint =
@@ -252,7 +265,7 @@ const WaveChart = ({ chargingStartTime, telemetry }) => {
           ) : null}
         </Svg>
 
-        {!isLive ? (
+        {!hasSignal ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>Đang chờ tín hiệu từ trụ sạc</Text>
             <Text style={styles.emptyText}>
