@@ -25,6 +25,7 @@ import { useNotificationQuery } from "../queries/notification.query";
 import AboutEnovoComponent from "../components/settings/AboutEnovoComponent";
 import MyBikeComponent from "../components/bike/MyBikeComponent";
 import ProfileComponent from "../components/settings/ProfileComponent";
+import MyDevicesComponent from "../components/settings/MyDevicesComponent";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ToastNotification from "../components/ToastNotification";
 import { socket } from "../services/socket.service";
@@ -34,6 +35,11 @@ const SETTINGS_ACTIONS = [
     key: "profile",
     label: "THÔNG TIN CÁ NHÂN",
     icon: "person-circle-outline",
+  },
+  {
+    key: "my-devices",
+    label: "THIẾT BỊ",
+    icon: "hardware-chip-outline",
   },
   {
     key: "my-bike",
@@ -52,7 +58,7 @@ const SETTINGS_ACTIONS = [
   },
   {
     key: "about",
-    label: "VỀ ENOVO",
+    label: "VỀ SẠCXEĐÊ",
     icon: "information-circle-outline",
   },
 ];
@@ -88,6 +94,7 @@ const SettingsScreen = ({ navigation, route }) => {
   const [logoutConfirmVisible, setLogoutConfirmVisible] = useState(false);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [myBikeModalVisible, setMyBikeModalVisible] = useState(false);
+  const [myDevicesModalVisible, setMyDevicesModalVisible] = useState(false);
   const [notificationsModalVisible, setNotificationsModalVisible] =
     useState(false);
   const [notificationsPage, setNotificationsPage] = useState(1);
@@ -268,6 +275,11 @@ const SettingsScreen = ({ navigation, route }) => {
 
     if (actionKey === "feedback") {
       navigation.navigate("Feedback");
+      return;
+    }
+
+    if (actionKey === "my-devices") {
+      setMyDevicesModalVisible(true);
       return;
     }
 
@@ -486,7 +498,7 @@ const SettingsScreen = ({ navigation, route }) => {
                             color={Colors.primary}
                             style={{ marginRight: 6 }}
                           />
-                          <Text style={styles.infoDescriptionTitle}>Tài khoản sạc Enovo</Text>
+                          <Text style={styles.infoDescriptionTitle}>Tài khoản sạc SạcXeĐê</Text>
                         </View>
                         <Text style={styles.infoDescriptionText}>
                           Tài khoản sạc là số dư trả trước được sử dụng để thanh toán các dịch vụ sạc xe điện do Enovo cung cấp.{"\n\n"}
@@ -548,6 +560,15 @@ const SettingsScreen = ({ navigation, route }) => {
               onUpdateRegistration={() => {
                 setMyBikeModalVisible(false);
                 navigation.navigate("Charge", { isUpdating: true });
+              }}
+            />
+
+            {/* Component thiết bị của tôi */}
+            <MyDevicesComponent
+              myDevicesModalVisible={myDevicesModalVisible}
+              handleCloseMyDevicesModal={() => setMyDevicesModalVisible(false)}
+              onDeviceUpdated={() => {
+                showToast("Cập nhật thông tin trụ thành công.");
               }}
             />
 

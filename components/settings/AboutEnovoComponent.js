@@ -39,7 +39,7 @@ const AboutEnovoComponent = ({
                   <View style={styles.logoBadge}>
                     <Ionicons name="flash" size={20} color={Colors.white} />
                   </View>
-                  <Text style={styles.title}>Về Enovo</Text>
+                  <Text style={styles.title}>Về SạcXeĐê</Text>
                 </View>
                 <TouchableOpacity
                   onPress={handleCloseAboutEnovoModal}

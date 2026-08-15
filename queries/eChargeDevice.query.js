@@ -68,6 +68,21 @@ export const useEChargeDeviceQuery = {
     });
     return { mutate, ...rest };
   },
+  useUpdateMyDevice: () => {
+    const queryClient = useQueryClient();
+    const { mutate, ...rest } = useMutation({
+      mutationFn: ({ deviceCode, address, latitude, longitude }) =>
+        eChargeDeviceApi.updateMyDevice({
+          deviceCode,
+          address,
+          latitude,
+          longitude,
+        }),
+      onSuccess: () =>
+        queryClient.invalidateQueries({ queryKey: MY_DEVICES_KEY }),
+    });
+    return { mutate, ...rest };
+  },
   useUnclaimDevice: () => {
     const queryClient = useQueryClient();
     const { mutate, ...rest } = useMutation({
