@@ -31,8 +31,17 @@ const getClaimScanDecision = (response) => {
   };
 };
 
+const getClaimSuccessDecision = (response) => {
+  const payload = response?.data || response;
+
+  return payload?.alreadyOwned === true
+    ? { type: 'alreadyOwned' }
+    : { type: 'claimed' };
+};
+
 module.exports = {
   PUBLIC_DEVICE_CLAIM_MESSAGE,
   getClaimScanDecision,
+  getClaimSuccessDecision,
   getDeviceDocument,
 };

@@ -23,7 +23,7 @@ import {
   resetScanPosition,
 } from "../services/location.service";
 
-const { getClaimScanDecision } = claimScanDecision;
+const { getClaimScanDecision, getClaimSuccessDecision } = claimScanDecision;
 const { getProximityDecision } = proximity;
 
 const cleanScannedValue = (candidate) => {
@@ -407,7 +407,16 @@ const QrScanScreen = ({ navigation, route }) => {
         claimDeviceMutation.mutate(
           { deviceCode: scannedDeviceCode },
           {
-            onSuccess: () => {
+            onSuccess: (claimResponse) => {
+              // Backend giữ claim idempotent. Nếu trụ đã có trong tài khoản thì
+              // bỏ qua thông báo đã thêm và mở thẳng danh sách ổ sạc.
+              if (
+                getClaimSuccessDecision(claimResponse).type === 'alreadyOwned'
+              ) {
+                navigateToScannedDevice(scannedDeviceCode);
+                return;
+              }
+
               Alert.alert(
                 "Th\u00e0nh c\u00f4ng",
                 "\u0110\u00e3 th\u00eam thi\u1ebft b\u1ecb v\u00e0o t\u00e0i kho\u1ea3n c\u1ee7a b\u1ea1n.",

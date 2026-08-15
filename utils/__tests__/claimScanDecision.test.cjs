@@ -4,6 +4,7 @@ const test = require("node:test");
 const {
   PUBLIC_DEVICE_CLAIM_MESSAGE,
   getClaimScanDecision,
+  getClaimSuccessDecision,
 } = require("../claimScanDecision");
 
 test("claim scan decision allows claiming house devices from raw document responses", () => {
@@ -53,4 +54,23 @@ test("claim scan decision reports invalid when no device document is returned", 
   assert.deepEqual(getClaimScanDecision({ data: null }), {
     type: "invalid",
   });
+});
+
+test('claim success decision opens an already-owned device immediately', () => {
+  assert.deepEqual(getClaimSuccessDecision({ alreadyOwned: true }), {
+    type: 'alreadyOwned',
+  });
+});
+
+test('claim success decision keeps the success notice for a newly claimed device', () => {
+  assert.deepEqual(getClaimSuccessDecision({ alreadyOwned: false }), {
+    type: 'claimed',
+  });
+});
+
+test('claim success decision supports an axios-style response wrapper', () => {
+  assert.deepEqual(
+    getClaimSuccessDecision({ data: { alreadyOwned: true } }),
+    { type: 'alreadyOwned' },
+  );
 });
