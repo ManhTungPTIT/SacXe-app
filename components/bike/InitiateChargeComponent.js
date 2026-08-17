@@ -14,6 +14,9 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import DevicesComponents from "../charging/DevicesComponents";
 import { useEChargeDeviceQuery } from "../../queries/eChargeDevice.query";
+import deviceDisplayName from "../../utils/deviceDisplayName";
+
+const { getDeviceDisplayName, hasCustomDeviceName } = deviceDisplayName;
 
 // Màn bắt đầu sạc gồm 3 bước:
 // 1. Chọn loại trụ: công cộng (quét QR) / tại gia (trụ của tôi)
@@ -35,6 +38,7 @@ const InitiateChargeComponent = ({
   onScanQrPress,
   onChargeStarted,
   onOpenActiveSession,
+  onRequireDeviceSetup,
 }) => {
 
   const { data: myDevicesData, isLoading: isLoadingMyDevices } =
@@ -69,6 +73,14 @@ const InitiateChargeComponent = ({
   }, [navigation, openHomeDevicesToken]);
 
   const handleSelectMyDevice = (device) => {
+    // Địa chỉ là bắt buộc với trụ nhà dân. Trụ thêm từ trước bước thiết lập này
+    // (hoặc bị thoát giữa chừng) vẫn có thể trống — chặn ở đây thì không còn
+    // đường nào dùng một trụ chưa có địa chỉ.
+    if (!String(device?.address || "").trim()) {
+      onRequireDeviceSetup?.(String(device.deviceCode));
+      return;
+    }
+
     setDevices([]);
     setPowerId(null);
     setdeviceCode(String(device.deviceCode));
@@ -78,7 +90,7 @@ const InitiateChargeComponent = ({
   const handleRemoveMyDevice = (device) => {
     Alert.alert(
       "Thông báo",
-      `Bạn có chắc muốn bỏ thiết bị ${device.deviceCode} khỏi tài khoản?`,
+      `Bạn có chắc muốn bỏ thiết bị ${getDeviceDisplayName(device)} khỏi tài khoản?`,
       [
         { text: "Hủy", style: "cancel" },
         {
@@ -108,6 +120,7 @@ const InitiateChargeComponent = ({
         deviceId={deviceId}
         deviceAddress={selectedDevice?.address || devices?.address}
         deviceIsHouse={selectedDevice?.isHouse ?? devices?.isHouse}
+        deviceName={selectedDevice?.name || devices?.name}
         activeSessionsData={activeSessionsData}
         onChargeStarted={onChargeStarted}
         onOpenActiveSession={onOpenActiveSession}
@@ -207,7 +220,7 @@ const InitiateChargeComponent = ({
       {backButton}
       <View style={styles.myDeviceSection}>
         <View style={styles.myDeviceHeader}>
-          <Text style={styles.myDeviceSectionTitle}>Trụ sạc của bạn</Text>
+          <Text style={styles.myDeviceSectionTitle}>Trụ sạc gia đình</Text>
           {myDevices.length > 0 ? (
             <TouchableOpacity
               style={styles.addDeviceButton}
@@ -256,12 +269,23 @@ const InitiateChargeComponent = ({
                 />
               </View>
               <View style={styles.myDeviceInfo}>
-                <Text style={styles.myDeviceCode}>{device.deviceCode}</Text>
+                <Text style={styles.myDeviceCode}>
+                  {getDeviceDisplayName(device)}
+                </Text>
+                {hasCustomDeviceName(device) ? (
+                  <Text style={styles.myDeviceSubCode} numberOfLines={1}>
+                    {device.deviceCode}
+                  </Text>
+                ) : null}
                 {device.address ? (
                   <Text style={styles.myDeviceAddress} numberOfLines={1}>
                     {device.address}
                   </Text>
-                ) : null}
+                ) : (
+                  <Text style={styles.myDeviceMissingAddress} numberOfLines={1}>
+                    Chưa có địa chỉ — bấm để thiết lập
+                  </Text>
+                )}
               </View>
               <TouchableOpacity
                 onPress={() => handleRemoveMyDevice(device)}
@@ -408,7 +432,7 @@ const styles = StyleSheet.create({
   },
   myDeviceSectionTitle: {
     color: Colors.textPrimaryDark,
-    fontSize: 16,
+    fontSize: 28,
     fontWeight: "800",
   },
   addDeviceButton: {
@@ -466,8 +490,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "800",
   },
+  myDeviceSubCode: {
+    color: Colors.textPlaceholder,
+    fontSize: 12,
+    marginTop: 2,
+  },
   myDeviceAddress: {
     color: Colors.textSecondary,
+    fontSize: 13,
+    marginTop: 2,
+  },
+  myDeviceMissingAddress: {
+    color: Colors.warningOrange,
     fontSize: 13,
     marginTop: 2,
   },

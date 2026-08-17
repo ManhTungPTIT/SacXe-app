@@ -71,9 +71,10 @@ export const useEChargeDeviceQuery = {
   useUpdateMyDevice: () => {
     const queryClient = useQueryClient();
     const { mutate, ...rest } = useMutation({
-      mutationFn: ({ deviceCode, address, latitude, longitude }) =>
+      mutationFn: ({ deviceCode, name, address, latitude, longitude }) =>
         eChargeDeviceApi.updateMyDevice({
           deviceCode,
+          name,
           address,
           latitude,
           longitude,

@@ -17,6 +17,8 @@ import { useEChargeDeviceQuery } from "../queries/eChargeDevice.query";
 import eChargeDeviceApi from "../api/eChargeDevice.api";
 import claimScanDecision from "../utils/claimScanDecision";
 import proximity from "../utils/proximity";
+import reviewerAccount from "../utils/reviewerAccount";
+import { useAuthStore } from "../stores/auth.store";
 import {
   getCurrentPositionIfPermitted,
   prefetchCurrentPosition,
@@ -25,6 +27,7 @@ import {
 
 const { getClaimScanDecision, getClaimSuccessDecision } = claimScanDecision;
 const { getProximityDecision } = proximity;
+const { isReviewerAccount } = reviewerAccount;
 
 const cleanScannedValue = (candidate) => {
   if (candidate === undefined || candidate === null) return null;
@@ -95,6 +98,11 @@ const QrScanScreen = ({ navigation, route }) => {
   const [permission, requestPermission] = useCameraPermissions();
   const [isCheckingLocation, setIsCheckingLocation] = useState(false);
   const mode = route?.params?.mode;
+  // Luồng nhà dân ("Sạc trụ sạc gia đình") là luồng duy nhất mở màn quét ở mode
+  // claim — cả nút "Quét QR thiết bị" lẫn "Thêm thiết bị" đều đi qua đây.
+  const isHomeFlow = mode === "claim";
+  const user = useAuthStore((state) => state.user);
+  const isReviewer = isReviewerAccount(user);
   const claimDeviceMutation = useEChargeDeviceQuery.useClaimDevice();
 
   // Dùng chung cho cả quyền camera và quyền vị trí — Linking.openSettings mở
@@ -192,7 +200,10 @@ const QrScanScreen = ({ navigation, route }) => {
       // lần bắt fix đầu tiên có thể mất hơn 15 giây; nếu đợi tới lúc quét được
       // mã QR mới bắt đầu thì hạn chờ nào cũng hay trượt, và người dùng nhận
       // "Không thể lấy vị trí" dù họ đang đứng ngay cạnh trụ.
-      prefetchCurrentPosition();
+      // Luồng nhà dân không còn kiểm tra khoảng cách nên cũng không xin định vị.
+      if (!isHomeFlow) {
+        prefetchCurrentPosition();
+      }
 
       return () => {
         scannedRef.current = false;
@@ -200,7 +211,7 @@ const QrScanScreen = ({ navigation, route }) => {
         // đây.
         resetScanPosition();
       };
-    }, [ensureCameraPermission, permission?.granted]),
+    }, [ensureCameraPermission, isHomeFlow, permission?.granted]),
   );
 
   const navigateToScannedDevice = useCallback(
@@ -208,6 +219,22 @@ const QrScanScreen = ({ navigation, route }) => {
       navigation.navigate("Charge", {
         scannedDeviceCode,
         scanToken: Date.now(),
+      });
+    },
+    [navigation],
+  );
+
+  // Trụ vừa vào tài khoản chưa có địa chỉ. Mở luôn trang Thiết bị ở chế độ thiết
+  // lập thay vì báo "đã thêm thiết bị" rồi để trụ nằm đó không tên không địa chỉ.
+  // Vẫn kèm scannedDeviceCode để sau khi lưu xong người dùng ở ngay danh sách ổ
+  // sạc của trụ, không phải quét lại.
+  const navigateToDeviceSetup = useCallback(
+    (scannedDeviceCode) => {
+      navigation.navigate("Charge", {
+        scannedDeviceCode,
+        scanToken: Date.now(),
+        setupDeviceCode: scannedDeviceCode,
+        setupToken: Date.now(),
       });
     },
     [navigation],
@@ -225,6 +252,26 @@ const QrScanScreen = ({ navigation, route }) => {
           },
         },
       ],
+    );
+  }, []);
+
+  // Luồng nhà dân đã bỏ kiểm tra khoảng cách; riêng tài khoản duyệt ứng dụng vẫn
+  // nhận thông báo ở xa trụ. Giữ người dùng lại màn quét đúng như lời nhắn "lại
+  // gần trụ để quét mã" — bắt họ đi lại từ màn chọn loại trụ là thừa.
+  const showTooFarFromDeviceAlert = useCallback(() => {
+    Alert.alert(
+      "Thông báo",
+      "Bạn đang ở xa trụ sạc, vui lòng lại gần trụ để quét mã.",
+      [
+        {
+          text: "OK",
+          onPress: () => {
+            scannedRef.current = false;
+          },
+        },
+      ],
+      // Cùng lý do với alertAndLeave: onPress là chỗ duy nhất đặt lại scannedRef.
+      { cancelable: false },
     );
   }, []);
 
@@ -383,11 +430,18 @@ const QrScanScreen = ({ navigation, route }) => {
           return;
         }
 
-        if (!(await passesProximityCheck(deviceResponse))) {
+        // Luồng nhà dân: người dùng quét trụ của chính mình nên không còn kiểm
+        // tra khoảng cách. Trụ công cộng vẫn phải đứng trong bán kính trụ.
+        if (isHomeFlow) {
+          if (isReviewer) {
+            showTooFarFromDeviceAlert();
+            return;
+          }
+        } else if (!(await passesProximityCheck(deviceResponse))) {
           return;
         }
 
-        if (mode !== "claim") {
+        if (!isHomeFlow) {
           navigateToScannedDevice(scannedDeviceCode);
           return;
         }
@@ -417,17 +471,7 @@ const QrScanScreen = ({ navigation, route }) => {
                 return;
               }
 
-              Alert.alert(
-                "Th\u00e0nh c\u00f4ng",
-                "\u0110\u00e3 th\u00eam thi\u1ebft b\u1ecb v\u00e0o t\u00e0i kho\u1ea3n c\u1ee7a b\u1ea1n.",
-                [
-                  {
-                    text: "OK",
-                    onPress: () =>
-                      navigateToScannedDevice(scannedDeviceCode),
-                  },
-                ],
-              );
+              navigateToDeviceSetup(scannedDeviceCode);
             },
             onError: (error) => {
               const message =
@@ -449,11 +493,14 @@ const QrScanScreen = ({ navigation, route }) => {
       }
     },
     [
-      mode,
+      isHomeFlow,
+      isReviewer,
       claimDeviceMutation,
+      navigateToDeviceSetup,
       navigateToScannedDevice,
       passesProximityCheck,
       showInvalidQrAlert,
+      showTooFarFromDeviceAlert,
     ],
   );
   if (!permission?.granted) {
@@ -504,10 +551,13 @@ const QrScanScreen = ({ navigation, route }) => {
 
             {isCheckingLocation ? (
               // Bước kiểm tra vị trí có thể mất vài giây ở nơi GPS yếu (hầm gửi
-              // xe) — không có chỉ báo thì người dùng tưởng máy treo.
+              // xe) — không có chỉ báo thì người dùng tưởng máy treo. Luồng nhà
+              // dân chỉ còn gọi API tra trụ nên nhãn phải nói đúng việc đang làm.
               <View style={styles.checkingOverlay}>
                 <ActivityIndicator size="large" color={Colors.white} />
-                <Text style={styles.checkingText}>Đang kiểm tra vị trí…</Text>
+                <Text style={styles.checkingText}>
+                  {isHomeFlow ? "Đang kiểm tra mã QR…" : "Đang kiểm tra vị trí…"}
+                </Text>
               </View>
             ) : (
               <View style={styles.overlay} pointerEvents="none">

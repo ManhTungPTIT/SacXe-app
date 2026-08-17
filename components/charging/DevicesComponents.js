@@ -30,6 +30,7 @@ const DevicesComponents = ({
   deviceId,
   deviceAddress,
   deviceIsHouse,
+  deviceName,
   setDevices,
   activeSessionsData,
   onChargeStarted,
@@ -84,7 +85,12 @@ const DevicesComponents = ({
       !isDeviceBroken(device) &&
       !isDeviceNoPower(device),
   ).length;
-  const deviceLabel = deviceCode ? `Trụ ${deviceCode}` : "Trụ sạc đã quét";
+  // Tên do chủ trụ đặt được ưu tiên; trụ công cộng (và trụ nhà chưa đặt tên) vẫn
+  // hiện mã trụ như cũ.
+  const deviceDisplayLabel = String(deviceName || "").trim() || deviceCode;
+  const deviceLabel = deviceDisplayLabel
+    ? `Trụ ${deviceDisplayLabel}`
+    : "Trụ sạc đã quét";
   const deviceAddressText = String(deviceAddress || "").trim();
   const isHouseDevice = deviceIsHouse === true || deviceIsHouse === "true";
   const stationTitle = isHouseDevice

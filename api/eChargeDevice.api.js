@@ -24,9 +24,10 @@ const eChargeDeviceApi = {
   },
   // Bỏ trường nào thì trường đó giữ nguyên: sửa mỗi địa chỉ không được đụng tới
   // toạ độ, và ngược lại (xem utils/deviceLocationPatch.js phía backend).
-  updateMyDevice: async ({ deviceCode, address, latitude, longitude }) => {
+  updateMyDevice: async ({ deviceCode, name, address, latitude, longitude }) => {
     return await api.patch("/api/e-charge-device/my-device", {
       deviceCode,
+      name,
       address,
       latitude,
       longitude,

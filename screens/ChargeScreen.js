@@ -34,8 +34,12 @@ import {
   markChargeDeviceMissing,
   setChargeDeviceCheckInProgress,
 } from "../services/notification.service";
+import MyDevicesComponent from "../components/settings/MyDevicesComponent";
+import deviceDisplayName from "../utils/deviceDisplayName";
 import sessionEnergySeed from "../utils/sessionEnergySeed";
 import activeSessionPick from "../utils/activeSessionPick";
+
+const { getDeviceDisplayName } = deviceDisplayName;
 
 const { resolveSessionSeedEnergyKwh, resolveSessionKey } = sessionEnergySeed;
 const { getActiveSessions, pickActiveSession } = activeSessionPick;
@@ -64,6 +68,9 @@ const ChargeScreen = ({ route, navigation }) => {
   });
   const [powerId, setPowerId] = useState(null);
   const [chargeMode, setChargeMode] = useState(null);
+  // Mã trụ vừa claim đang chờ thiết lập (tên + địa chỉ + vị trí). Khác null là
+  // modal Thiết bị đang mở ở chế độ bắt buộc — xem MyDevicesComponent.
+  const [setupDeviceCode, setSetupDeviceCode] = useState(null);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState("success");
@@ -211,6 +218,25 @@ const ChargeScreen = ({ route, navigation }) => {
       scanToken: undefined,
     });
   }, [route?.params?.scanToken, route?.params?.scannedDeviceCode, navigation]);
+
+  // Quét claim lần đầu xong thì QrScanScreen gửi kèm hai param này. Chuyển sang
+  // state rồi xoá param ngay, cùng cách hiệu ứng quét ở trên làm: giữ lại param
+  // thì rời màn rồi quay lại là modal thiết lập bật lên lần nữa.
+  useEffect(() => {
+    const nextSetupDeviceCode = route?.params?.setupDeviceCode;
+    const setupToken = route?.params?.setupToken;
+
+    if (!setupToken || !nextSetupDeviceCode) {
+      return;
+    }
+
+    setSetupDeviceCode(String(nextSetupDeviceCode));
+    navigation.setParams({
+      setupDeviceCode: undefined,
+      setupToken: undefined,
+    });
+  }, [route?.params?.setupToken, route?.params?.setupDeviceCode, navigation]);
+
   useEffect(() => {
     const resetChargeFlowToken = route?.params?.resetChargeFlowToken;
 
@@ -230,6 +256,8 @@ const ChargeScreen = ({ route, navigation }) => {
       scannedDeviceCode: undefined,
       scanToken: undefined,
       openHomeDevicesToken: undefined,
+      setupDeviceCode: undefined,
+      setupToken: undefined,
       isUpdating: false,
     });
   }, [route?.params?.resetChargeFlowToken, navigation]);
@@ -713,8 +741,13 @@ const ChargeScreen = ({ route, navigation }) => {
                     >
                       {activeSessions.map((session) => {
                         const isSelected = String(session?._id || "") === String(latestHistory?._id || "");
-                        const label = session?.deviceId?.deviceCode
-                          ? `${session.deviceId.deviceCode} / Ổ ${session?.powerId?.index ?? session?.powerIndex ?? "-"}`
+                        // Trụ nhà dân có tên tự đặt thì hiện tên; trụ công cộng
+                        // không có name nên vẫn rơi về mã trụ như trước.
+                        const sessionDeviceLabel = getDeviceDisplayName(
+                          session?.deviceId,
+                        );
+                        const label = sessionDeviceLabel
+                          ? `${sessionDeviceLabel} / Ổ ${session?.powerId?.index ?? session?.powerIndex ?? "-"}`
                           : `Phiên ${String(session?._id || "").slice(-6)}`;
                         return (
                           <TouchableOpacity
@@ -769,6 +802,7 @@ const ChargeScreen = ({ route, navigation }) => {
                   onScanQrPress={(params) =>
                     navigation.navigate("ScanQR", params)
                   }
+                  onRequireDeviceSetup={(code) => setSetupDeviceCode(code)}
                   onChargeStarted={(charge) => {
                     // Bật thành công (gói ack lệnh success=1) -> vào màn TÌM
                     // THIẾT BỊ và chờ gói KIỂM TRA (code, ~4s sau). Backend:
@@ -830,6 +864,21 @@ const ChargeScreen = ({ route, navigation }) => {
           />
         )}
       </KeyboardAvoidingView>
+
+      {/* Thiết lập lần đầu cho trụ nhà dân vừa quét. Dùng lại đúng màn Thiết bị
+          ở Cài đặt để chỗ đặt tên/địa chỉ/vị trí chỉ có một bản. Modal không
+          đóng được cho tới khi có địa chỉ. */}
+      <MyDevicesComponent
+        myDevicesModalVisible={!!setupDeviceCode}
+        setupDeviceCode={setupDeviceCode}
+        handleCloseMyDevicesModal={() => setSetupDeviceCode(null)}
+        onDeviceUpdated={() => {
+          setToastType("success");
+          setToastMessage("Đã lưu thông tin trụ sạc!");
+          setToastVisible(true);
+        }}
+      />
+
       <ToastNotification
         visible={toastVisible}
         title={toastType === "warning" ? "Thất bại" : "Thành công"}

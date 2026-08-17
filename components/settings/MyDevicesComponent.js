@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -22,9 +22,11 @@ import {
   resolveCurrentPosition,
 } from "../../services/location.service";
 import deviceLocationChange from "../../utils/deviceLocationChange";
+import deviceDisplayName from "../../utils/deviceDisplayName";
 import proximity from "../../utils/proximity";
 
 const { getLocationChangeDecision } = deviceLocationChange;
+const { getDeviceDisplayName, hasCustomDeviceName } = deviceDisplayName;
 const { getDeviceCoordinates, MAX_ACCURACY_TOLERANCE_M } = proximity;
 
 const formatMeters = (meters) => {
@@ -34,10 +36,21 @@ const formatMeters = (meters) => {
     : `${Math.round(meters)} m`;
 };
 
+// 6 chữ số thập phân ~ 0,1 m — thừa sức cho một trụ sạc, và ngắn đủ để đọc.
+const formatCoordinate = (value) =>
+  Number.isFinite(value) ? value.toFixed(6) : "—";
+
+// Phải khớp MAX_NAME_LENGTH ở backend/src/utils/deviceLocationPatch.js. Chặn tại
+// ô nhập thì người dùng thấy giới hạn ngay, thay vì gõ xong mới ăn lỗi 400.
+const MAX_DEVICE_NAME_LENGTH = 60;
+
+// setupDeviceCode: mã trụ vừa claim lần đầu. Khác null nghĩa là modal đang ở chế
+// độ THIẾT LẬP — vào thẳng form của trụ đó và không cho đóng khi chưa có địa chỉ.
 const MyDevicesComponent = ({
   myDevicesModalVisible,
   handleCloseMyDevicesModal,
   onDeviceUpdated,
+  setupDeviceCode = null,
 }) => {
   const { data, isLoading } = useEChargeDeviceQuery.useGetMyDevices();
   const updateMyDeviceMutation = useEChargeDeviceQuery.useUpdateMyDevice();
@@ -46,6 +59,7 @@ const MyDevicesComponent = ({
 
   // deviceCode của trụ đang mở form. null = đang ở danh sách.
   const [editingCode, setEditingCode] = useState(null);
+  const [nameInput, setNameInput] = useState("");
   const [addressInput, setAddressInput] = useState("");
   // Toạ độ vừa đo, chưa lưu. null = lần lưu này không đụng tới toạ độ.
   const [pendingPosition, setPendingPosition] = useState(null);
@@ -54,6 +68,11 @@ const MyDevicesComponent = ({
   const editingDevice = devices.find(
     (device) => device?.deviceCode === editingCode,
   );
+
+  const isSetupMode = !!setupDeviceCode;
+  const setupDevice = isSetupMode
+    ? devices.find((device) => device?.deviceCode === setupDeviceCode)
+    : null;
 
   const openAppSettings = async () => {
     try {
@@ -68,6 +87,7 @@ const MyDevicesComponent = ({
 
   const backToList = () => {
     setEditingCode(null);
+    setNameInput("");
     setAddressInput("");
     setPendingPosition(null);
   };
@@ -79,9 +99,26 @@ const MyDevicesComponent = ({
 
   const handlePickDevice = (device) => {
     setEditingCode(device?.deviceCode || null);
+    // Ô tên để trống khi trụ chưa đặt tên: placeholder là mã trụ nên người dùng
+    // vẫn thấy sẽ hiển thị gì nếu họ bỏ trống.
+    setNameInput(
+      hasCustomDeviceName(device) ? getDeviceDisplayName(device) : "",
+    );
     setAddressInput(device?.address ? String(device.address) : "");
     setPendingPosition(null);
   };
+
+  // Chế độ thiết lập: nhảy thẳng vào form của trụ vừa claim. Danh sách trụ đến
+  // từ query nên trụ mới chỉ xuất hiện sau khi invalidate xong — chờ nó tới rồi
+  // mới mở form. Điều kiện editingCode chặn effect ghi đè thứ người dùng đang gõ
+  // mỗi lần query refetch.
+  useEffect(() => {
+    if (!setupDevice || editingCode === setupDeviceCode) {
+      return;
+    }
+
+    handlePickDevice(setupDevice);
+  }, [setupDevice, setupDeviceCode, editingCode]);
 
   const applyPosition = (position) => {
     setPendingPosition(position);
@@ -179,6 +216,9 @@ const MyDevicesComponent = ({
     updateMyDeviceMutation.mutate(
       {
         deviceCode: editingDevice.deviceCode,
+        // Bỏ trống ô tên là chọn hiển thị mã trụ — gửi chuỗi rỗng để backend xoá
+        // tên cũ, khác với undefined (giữ nguyên).
+        name: nameInput.trim(),
         address,
         // Không đo vị trí mới thì bỏ hẳn hai trường này khỏi payload — backend
         // hiểu là giữ nguyên toạ độ đang có.
@@ -189,6 +229,11 @@ const MyDevicesComponent = ({
         onSuccess: () => {
           backToList();
           onDeviceUpdated?.();
+          // Thiết lập lần đầu chỉ có một trụ để làm — lưu xong là xong, không có
+          // danh sách nào để quay về.
+          if (isSetupMode) {
+            handleCloseMyDevicesModal();
+          }
         },
         onError: (error) => {
           Alert.alert(
@@ -238,7 +283,12 @@ const MyDevicesComponent = ({
           activeOpacity={0.85}
         >
           <View style={styles.deviceCardLeft}>
-            <Text style={styles.deviceCode}>{device?.deviceCode}</Text>
+            <Text style={styles.deviceName}>{getDeviceDisplayName(device)}</Text>
+            {/* Mã trụ vẫn là thứ dán trên máy — giữ lại làm dòng phụ để đối
+                chiếu, nhưng chỉ khi nó không phải chính dòng tên ở trên. */}
+            {hasCustomDeviceName(device) ? (
+              <Text style={styles.deviceCode}>{device?.deviceCode}</Text>
+            ) : null}
             <Text style={styles.deviceAddress} numberOfLines={2}>
               {device?.address || "Chưa có địa chỉ"}
             </Text>
@@ -279,8 +329,58 @@ const MyDevicesComponent = ({
     });
   };
 
+  // Ở chế độ thiết lập, trụ vừa claim chỉ xuất hiện sau khi query my-devices
+  // refetch xong. Trong lúc đó không được hiện danh sách trụ: người dùng sẽ bấm
+  // nhầm sang một trụ khác và đi lạc khỏi bước thiết lập.
+  const renderSetupOrList = () => {
+    if (!isSetupMode) {
+      return renderList();
+    }
+
+    if (isLoading) {
+      return (
+        <View style={styles.stateBox}>
+          <ActivityIndicator color={Colors.primary} />
+          <Text style={styles.emptyText}>Đang mở trụ vừa thêm…</Text>
+        </View>
+      );
+    }
+
+    // Tải xong mà không thấy trụ (mạng lỗi lúc làm mới danh sách). Chế độ này
+    // không có nút X, nên phải mở một lối ra — nếu không người dùng kẹt hẳn.
+    // Bỏ qua ở đây không phá quy tắc bắt buộc địa chỉ: lần chọn trụ sau vẫn bị
+    // đẩy về đúng form này (InitiateChargeComponent.handleSelectMyDevice).
+    return (
+      <View style={styles.stateBox}>
+        <Ionicons
+          name="cloud-offline-outline"
+          size={32}
+          color={Colors.textPlaceholder}
+        />
+        <Text style={styles.emptyTitle}>Chưa tải được trụ vừa thêm</Text>
+        <Text style={styles.emptyText}>
+          Trụ đã vào tài khoản của bạn nhưng danh sách chưa tải về được. Kiểm tra
+          mạng rồi mở lại trụ từ "Trụ sạc của bạn" để đặt địa chỉ.
+        </Text>
+        <TouchableOpacity
+          style={[styles.actionButton, styles.backButton, styles.stateBoxButton]}
+          onPress={handleCloseMyDevicesModal}
+        >
+          <Text style={styles.backButtonText}>Đóng</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   const renderForm = () => (
     <>
+      {isSetupMode ? (
+        <Text style={styles.setupIntro}>
+          Trụ đã được thêm vào tài khoản. Đặt tên và địa chỉ cho trụ để nhận ra
+          nó trong danh sách những lần sau.
+        </Text>
+      ) : null}
+
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Mã trụ</Text>
         <TextInput
@@ -289,6 +389,21 @@ const MyDevicesComponent = ({
           editable={false}
           selectTextOnFocus={false}
         />
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.inputLabel}>Tên trụ sạc</Text>
+        <TextInput
+          value={nameInput}
+          onChangeText={setNameInput}
+          style={styles.input}
+          placeholder={editingDevice?.deviceCode || "Ví dụ: Trụ sân sau"}
+          placeholderTextColor={Colors.textPlaceholder}
+          maxLength={MAX_DEVICE_NAME_LENGTH}
+        />
+        <Text style={styles.inputHint}>
+          Để trống thì trụ hiển thị bằng mã trụ.
+        </Text>
       </View>
 
       <View style={styles.inputGroup}>
@@ -329,36 +444,88 @@ const MyDevicesComponent = ({
           </Text>
         </TouchableOpacity>
 
-        {pendingPosition ? (
-          <Text style={styles.locationPending}>
-            Đã lấy vị trí mới
-            {Number.isFinite(pendingPosition.accuracy)
-              ? ` (sai số khoảng ${formatMeters(pendingPosition.accuracy)})`
-              : ""}
-            . Bấm Lưu để áp dụng.
-          </Text>
-        ) : (
-          <Text style={styles.locationCurrent}>
-            {getDeviceCoordinates(editingDevice)
-              ? "Trụ đã có vị trí. Không bấm nút trên thì vị trí cũ được giữ nguyên."
-              : "Trụ chưa có vị trí nào."}
-          </Text>
-        )}
+        {/* Toạ độ sẽ được lưu: vừa đo xong thì lấy số vừa đo, chưa đo thì lấy số
+            đang có của trụ. In ra để chủ trụ đối chiếu được — nút bấm một phát
+            là xong thì không có gì để họ kiểm tra. */}
+        {(() => {
+          const savedCoordinates = getDeviceCoordinates(editingDevice);
+          const shownCoordinates = pendingPosition || savedCoordinates;
+
+          if (!shownCoordinates) {
+            return (
+              <Text style={styles.locationCurrent}>Trụ chưa có vị trí nào.</Text>
+            );
+          }
+
+          return (
+            <View style={styles.coordinateBox}>
+              <View style={styles.coordinateRow}>
+                <Text style={styles.coordinateLabel}>Vĩ độ</Text>
+                <Text style={styles.coordinateValue}>
+                  {formatCoordinate(Number(shownCoordinates.latitude))}
+                </Text>
+              </View>
+              <View style={styles.coordinateRow}>
+                <Text style={styles.coordinateLabel}>Kinh độ</Text>
+                <Text style={styles.coordinateValue}>
+                  {formatCoordinate(Number(shownCoordinates.longitude))}
+                </Text>
+              </View>
+
+              <Text
+                style={
+                  pendingPosition
+                    ? styles.locationPending
+                    : styles.locationCurrent
+                }
+              >
+                {pendingPosition
+                  ? `Vị trí mới vừa đo${
+                      Number.isFinite(pendingPosition.accuracy)
+                        ? ` (sai số khoảng ${formatMeters(
+                            pendingPosition.accuracy,
+                          )})`
+                        : ""
+                    }. Bấm Lưu để áp dụng.`
+                  : "Vị trí đang lưu của trụ. Không bấm nút trên thì giữ nguyên."}
+              </Text>
+            </View>
+          );
+        })()}
       </View>
     </>
   );
 
   const isFormMode = !!editingDevice;
+  // Địa chỉ là bắt buộc: ở chế độ thiết lập, Lưu là lối ra duy nhất. Bỏ nút X,
+  // bỏ chạm nền, chặn cả nút back Android — thoát được bằng bất kỳ đường nào là
+  // trụ nằm lại trong tài khoản mà không có địa chỉ.
+  const canDismiss = !isSetupMode;
+
+  const headerTitle = isSetupMode
+    ? "Thiết lập trụ sạc"
+    : isFormMode
+      ? "Sửa thông tin trụ"
+      : "Thiết bị";
+  const headerSubtitle = isSetupMode
+    ? "Đặt tên, địa chỉ và vị trí cho trụ vừa thêm"
+    : isFormMode
+      ? "Địa chỉ và vị trí của trụ sạc tại nhà"
+      : "Trụ sạc tại nhà đã thêm vào tài khoản";
 
   return (
     <Modal
       visible={!!myDevicesModalVisible}
       animationType="slide"
       transparent={true}
-      onRequestClose={handleCloseModal}
+      onRequestClose={canDismiss ? handleCloseModal : () => {}}
     >
       <View style={styles.overlay}>
-        <Pressable style={styles.overlayBackdrop} onPress={handleCloseModal} />
+        <Pressable
+          style={styles.overlayBackdrop}
+          onPress={canDismiss ? handleCloseModal : undefined}
+          disabled={!canDismiss}
+        />
         <KeyboardAvoidingView
           style={styles.modalCard}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -374,17 +541,12 @@ const MyDevicesComponent = ({
               </View>
 
               <View style={styles.headerTextWrap}>
-                <Text style={styles.title}>
-                  {isFormMode ? "Sửa thông tin trụ" : "Thiết bị"}
-                </Text>
-                <Text style={styles.subtitle}>
-                  {isFormMode
-                    ? "Địa chỉ và vị trí của trụ sạc tại nhà"
-                    : "Trụ sạc tại nhà đã thêm vào tài khoản"}
-                </Text>
+                <Text style={styles.title}>{headerTitle}</Text>
+                <Text style={styles.subtitle}>{headerSubtitle}</Text>
               </View>
             </View>
 
+            {canDismiss ? (
             <TouchableOpacity
               onPress={handleCloseModal}
               style={styles.closeButton}
@@ -395,6 +557,7 @@ const MyDevicesComponent = ({
                 color={Colors.textSecondaryDark}
               />
             </TouchableOpacity>
+            ) : null}
           </View>
 
           <ScrollView
@@ -403,11 +566,12 @@ const MyDevicesComponent = ({
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
           >
-            {isFormMode ? renderForm() : renderList()}
+            {isFormMode ? renderForm() : renderSetupOrList()}
           </ScrollView>
 
           {isFormMode && (
             <View style={styles.footerActions}>
+              {canDismiss ? (
               <TouchableOpacity
                 style={[styles.actionButton, styles.backButton]}
                 onPress={backToList}
@@ -415,6 +579,7 @@ const MyDevicesComponent = ({
               >
                 <Text style={styles.backButtonText}>Quay lại</Text>
               </TouchableOpacity>
+              ) : null}
 
               <TouchableOpacity
                 style={[
@@ -426,7 +591,11 @@ const MyDevicesComponent = ({
                 disabled={updateMyDeviceMutation.isPending}
               >
                 <Text style={styles.saveButtonText}>
-                  {updateMyDeviceMutation.isPending ? "Đang lưu..." : "Lưu"}
+                  {updateMyDeviceMutation.isPending
+                    ? "Đang lưu..."
+                    : isSetupMode
+                      ? "Lưu và tiếp tục"
+                      : "Lưu"}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -523,6 +692,11 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: "center",
   },
+  stateBoxButton: {
+    flex: 0,
+    marginTop: 6,
+    paddingHorizontal: 28,
+  },
   deviceCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -537,10 +711,15 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingRight: 10,
   },
-  deviceCode: {
+  deviceName: {
     fontSize: 14,
     fontWeight: "700",
     color: Colors.textPrimaryDark,
+  },
+  deviceCode: {
+    marginTop: 2,
+    fontSize: 12,
+    color: Colors.textPlaceholder,
   },
   deviceAddress: {
     marginTop: 3,
@@ -598,6 +777,40 @@ const styles = StyleSheet.create({
   },
   inputMultiline: {
     minHeight: 76,
+  },
+  inputHint: {
+    marginTop: 6,
+    fontSize: 12,
+    color: Colors.textSecondary,
+  },
+  setupIntro: {
+    marginBottom: 14,
+    fontSize: 13,
+    lineHeight: 19,
+    color: Colors.textSecondary,
+  },
+  coordinateBox: {
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: Colors.borderMuted,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  coordinateRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 3,
+  },
+  coordinateLabel: {
+    fontSize: 13,
+    color: Colors.textSecondaryDark,
+  },
+  coordinateValue: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: Colors.textPrimaryDark,
   },
   locationHint: {
     fontSize: 12,

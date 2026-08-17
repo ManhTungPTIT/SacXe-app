@@ -3,6 +3,9 @@ import { StyleSheet, Text, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Colors } from "../../constants/color";
 import { vietnamDate, vietnamTime } from "../../utils/time";
+import deviceDisplayName from "../../utils/deviceDisplayName";
+
+const { getDeviceDisplayName, hasCustomDeviceName } = deviceDisplayName;
 
 const SessionInfoCard = ({ chargingStartTime, latestHistory, bike }) => {
   const outletIndex =
@@ -15,6 +18,13 @@ const SessionInfoCard = ({ chargingStartTime, latestHistory, bike }) => {
       icon: "clock-outline",
       label: "Bắt đầu",
       value: `${vietnamTime(chargingStartTime)} · ${vietnamDate(chargingStartTime)}`,
+    },
+    // Chỉ thêm dòng tên khi chủ trụ đã đặt tên — chưa đặt thì tên trùng mã trụ,
+    // in ra là lặp lại dòng "Mã trụ" ngay bên dưới.
+    hasCustomDeviceName(latestHistory?.deviceId) && {
+      icon: "tag-outline",
+      label: "Tên trụ",
+      value: getDeviceDisplayName(latestHistory.deviceId),
     },
     latestHistory?.deviceId?.address && {
       icon: "map-marker-outline",
