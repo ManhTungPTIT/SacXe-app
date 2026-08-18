@@ -17,8 +17,6 @@ import { useEChargeDeviceQuery } from "../queries/eChargeDevice.query";
 import eChargeDeviceApi from "../api/eChargeDevice.api";
 import claimScanDecision from "../utils/claimScanDecision";
 import proximity from "../utils/proximity";
-import reviewerAccount from "../utils/reviewerAccount";
-import { useAuthStore } from "../stores/auth.store";
 import {
   getCurrentPositionIfPermitted,
   prefetchCurrentPosition,
@@ -27,7 +25,6 @@ import {
 
 const { getClaimScanDecision, getClaimSuccessDecision } = claimScanDecision;
 const { getProximityDecision } = proximity;
-const { isReviewerAccount } = reviewerAccount;
 
 const cleanScannedValue = (candidate) => {
   if (candidate === undefined || candidate === null) return null;
@@ -101,8 +98,6 @@ const QrScanScreen = ({ navigation, route }) => {
   // Luồng nhà dân ("Sạc trụ sạc gia đình") là luồng duy nhất mở màn quét ở mode
   // claim — cả nút "Quét QR thiết bị" lẫn "Thêm thiết bị" đều đi qua đây.
   const isHomeFlow = mode === "claim";
-  const user = useAuthStore((state) => state.user);
-  const isReviewer = isReviewerAccount(user);
   const claimDeviceMutation = useEChargeDeviceQuery.useClaimDevice();
 
   // Dùng chung cho cả quyền camera và quyền vị trí — Linking.openSettings mở
@@ -255,26 +250,6 @@ const QrScanScreen = ({ navigation, route }) => {
           },
         },
       ],
-    );
-  }, []);
-
-  // Luồng nhà dân đã bỏ kiểm tra khoảng cách; riêng tài khoản duyệt ứng dụng vẫn
-  // nhận thông báo ở xa trụ. Giữ người dùng lại màn quét đúng như lời nhắn "lại
-  // gần trụ để quét mã" — bắt họ đi lại từ màn chọn loại trụ là thừa.
-  const showTooFarFromDeviceAlert = useCallback(() => {
-    Alert.alert(
-      "Thông báo",
-      "Bạn đang ở xa trụ sạc, vui lòng lại gần trụ để quét mã.",
-      [
-        {
-          text: "OK",
-          onPress: () => {
-            scannedRef.current = false;
-          },
-        },
-      ],
-      // Cùng lý do với alertAndLeave: onPress là chỗ duy nhất đặt lại scannedRef.
-      { cancelable: false },
     );
   }, []);
 
@@ -435,12 +410,10 @@ const QrScanScreen = ({ navigation, route }) => {
 
         // Luồng nhà dân: người dùng quét trụ của chính mình nên không còn kiểm
         // tra khoảng cách. Trụ công cộng vẫn phải đứng trong bán kính trụ.
-        if (isHomeFlow) {
-          if (isReviewer) {
-            showTooFarFromDeviceAlert();
-            return;
-          }
-        } else if (!(await passesProximityCheck(deviceResponse))) {
+        //
+        // Chốt chặn tài khoản duyệt ứng dụng nằm ở backend (getDevice trả 403
+        // kèm thông báo) — app không tự nhận diện tài khoản nữa.
+        if (!isHomeFlow && !(await passesProximityCheck(deviceResponse))) {
           return;
         }
 
@@ -499,13 +472,11 @@ const QrScanScreen = ({ navigation, route }) => {
     },
     [
       isHomeFlow,
-      isReviewer,
       claimDeviceMutation,
       navigateToDeviceSetup,
       navigateToScannedDevice,
       passesProximityCheck,
       showInvalidQrAlert,
-      showTooFarFromDeviceAlert,
     ],
   );
   if (!permission?.granted) {
