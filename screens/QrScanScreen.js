@@ -214,11 +214,14 @@ const QrScanScreen = ({ navigation, route }) => {
     }, [ensureCameraPermission, isHomeFlow, permission?.granted]),
   );
 
+  // alreadyOwned đi kèm để màn Charge chọn đúng câu thông báo: quét trụ nhà dân
+  // đã thuộc tài khoản thì không được báo "thành công" như một lần thêm mới.
   const navigateToScannedDevice = useCallback(
-    (scannedDeviceCode) => {
+    (scannedDeviceCode, { alreadyOwned = false } = {}) => {
       navigation.navigate("Charge", {
         scannedDeviceCode,
         scanToken: Date.now(),
+        scanAlreadyOwned: alreadyOwned,
       });
     },
     [navigation],
@@ -467,7 +470,9 @@ const QrScanScreen = ({ navigation, route }) => {
               if (
                 getClaimSuccessDecision(claimResponse).type === 'alreadyOwned'
               ) {
-                navigateToScannedDevice(scannedDeviceCode);
+                navigateToScannedDevice(scannedDeviceCode, {
+                  alreadyOwned: true,
+                });
                 return;
               }
 

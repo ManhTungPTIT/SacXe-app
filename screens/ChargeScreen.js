@@ -38,11 +38,13 @@ import MyDevicesComponent from "../components/settings/MyDevicesComponent";
 import deviceDisplayName from "../utils/deviceDisplayName";
 import sessionEnergySeed from "../utils/sessionEnergySeed";
 import activeSessionPick from "../utils/activeSessionPick";
+import claimScanDecision from "../utils/claimScanDecision";
 
 const { getDeviceDisplayName } = deviceDisplayName;
 
 const { resolveSessionSeedEnergyKwh, resolveSessionKey } = sessionEnergySeed;
 const { getActiveSessions, pickActiveSession } = activeSessionPick;
+const { getScanToastMessage } = claimScanDecision;
 
 // Phần cứng gửi telemetry mỗi ~5s (xem comment TELEMETRY_TIMEOUT_MS ở
 // backend/src/configs/mqtt.config.js) — backend tự cho phép trễ tới 15000ms
@@ -198,6 +200,7 @@ const ChargeScreen = ({ route, navigation }) => {
   useEffect(() => {
     const scannedDeviceCode = route?.params?.scannedDeviceCode;
     const scanToken = route?.params?.scanToken;
+    const scanAlreadyOwned = route?.params?.scanAlreadyOwned;
 
     if (!scanToken || !scannedDeviceCode) {
       return;
@@ -210,14 +213,22 @@ const ChargeScreen = ({ route, navigation }) => {
 
     // Show heads-up notification for successful QR scan
     setToastType("success");
-    setToastMessage("Quét mã QR tại trụ sạc thành công!");
+    setToastMessage(
+      getScanToastMessage({ alreadyOwned: scanAlreadyOwned === true }),
+    );
     setToastVisible(true);
 
     navigation.setParams({
       scannedDeviceCode: undefined,
       scanToken: undefined,
+      scanAlreadyOwned: undefined,
     });
-  }, [route?.params?.scanToken, route?.params?.scannedDeviceCode, navigation]);
+  }, [
+    route?.params?.scanToken,
+    route?.params?.scannedDeviceCode,
+    route?.params?.scanAlreadyOwned,
+    navigation,
+  ]);
 
   // Quét claim lần đầu xong thì QrScanScreen gửi kèm hai param này. Chuyển sang
   // state rồi xoá param ngay, cùng cách hiệu ứng quét ở trên làm: giữ lại param
@@ -256,6 +267,7 @@ const ChargeScreen = ({ route, navigation }) => {
       scannedDeviceCode: undefined,
       scanToken: undefined,
       openHomeDevicesToken: undefined,
+      scanAlreadyOwned: undefined,
       setupDeviceCode: undefined,
       setupToken: undefined,
       isUpdating: false,

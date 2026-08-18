@@ -31,6 +31,19 @@ const getClaimScanDecision = (response) => {
   };
 };
 
+const SCAN_SUCCESS_MESSAGE = 'Quét mã QR tại trụ sạc thành công!';
+
+// Quét lại trụ nhà dân đã thuộc tài khoản vẫn là một lần quét hợp lệ — app đi
+// thẳng vào danh sách ổ sạc. Nhưng báo "thành công" ở đây khiến người dùng vừa
+// bấm "Thêm thiết bị" hiểu là vừa thêm được một trụ nữa. Nói thẳng trụ đã có
+// sẵn thì họ biết vì sao không có gì mới xuất hiện trong danh sách.
+const ALREADY_OWNED_SCAN_MESSAGE = 'Trụ này đã có sẵn trong tài khoản của bạn.';
+
+const getScanToastMessage = (params) =>
+  params?.alreadyOwned === true
+    ? ALREADY_OWNED_SCAN_MESSAGE
+    : SCAN_SUCCESS_MESSAGE;
+
 const getClaimSuccessDecision = (response) => {
   const payload = response?.data || response;
 
@@ -41,6 +54,9 @@ const getClaimSuccessDecision = (response) => {
 
 module.exports = {
   PUBLIC_DEVICE_CLAIM_MESSAGE,
+  SCAN_SUCCESS_MESSAGE,
+  ALREADY_OWNED_SCAN_MESSAGE,
+  getScanToastMessage,
   getClaimScanDecision,
   getClaimSuccessDecision,
   getDeviceDocument,

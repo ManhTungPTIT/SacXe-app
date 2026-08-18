@@ -5,6 +5,9 @@ const {
   PUBLIC_DEVICE_CLAIM_MESSAGE,
   getClaimScanDecision,
   getClaimSuccessDecision,
+  getScanToastMessage,
+  SCAN_SUCCESS_MESSAGE,
+  ALREADY_OWNED_SCAN_MESSAGE,
 } = require("../claimScanDecision");
 
 test("claim scan decision allows claiming house devices from raw document responses", () => {
@@ -72,5 +75,31 @@ test('claim success decision supports an axios-style response wrapper', () => {
   assert.deepEqual(
     getClaimSuccessDecision({ data: { alreadyOwned: true } }),
     { type: 'alreadyOwned' },
+  );
+});
+
+test('scan toast keeps the generic success notice for a normal scan', () => {
+  assert.equal(
+    getScanToastMessage({ alreadyOwned: false }),
+    SCAN_SUCCESS_MESSAGE,
+  );
+});
+
+test('scan toast tells the user a home device is already in their account', () => {
+  assert.equal(
+    getScanToastMessage({ alreadyOwned: true }),
+    ALREADY_OWNED_SCAN_MESSAGE,
+  );
+});
+
+test('scan toast falls back to the success notice when the flag is missing', () => {
+  assert.equal(getScanToastMessage(), SCAN_SUCCESS_MESSAGE);
+  assert.equal(getScanToastMessage({}), SCAN_SUCCESS_MESSAGE);
+});
+
+test('scan toast ignores a non-boolean already-owned value', () => {
+  assert.equal(
+    getScanToastMessage({ alreadyOwned: 'true' }),
+    SCAN_SUCCESS_MESSAGE,
   );
 });

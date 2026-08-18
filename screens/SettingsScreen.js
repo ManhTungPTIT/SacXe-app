@@ -501,9 +501,9 @@ const SettingsScreen = ({ navigation, route }) => {
                           <Text style={styles.infoDescriptionTitle}>Tài khoản sạc SạcXeĐê</Text>
                         </View>
                         <Text style={styles.infoDescriptionText}>
-                          Tài khoản sạc là số dư trả trước được sử dụng để thanh toán các dịch vụ sạc xe điện do Enovo cung cấp.{"\n\n"}
+                          Tài khoản sạc là số dư trả trước được sử dụng để thanh toán các dịch vụ sạc xe điện do SạcXeĐê cung cấp.{"\n\n"}
                           <Text style={{ fontWeight: "700" }}>Lưu ý:</Text>{"\n"}
-                          • Số dư chỉ được sử dụng để thanh toán dịch vụ sạc của Enovo.{"\n"}
+                          • Số dư chỉ được sử dụng để thanh toán dịch vụ sạc của SạcXeĐê.{"\n"}
                           • Không thể chuyển cho người dùng khác.{"\n"}
                           • Số dư trong tài khoản sạc không thể chuyển lại về tài khoản ngân hàng của bạn.{"\n"}
                           • Không thể quy đổi hoặc rút thành tiền mặt.{"\n"}

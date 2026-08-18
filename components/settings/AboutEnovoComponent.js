@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Modal,
   ScrollView,
@@ -6,6 +6,7 @@ import {
   Text,
   TouchableOpacity,
   TouchableWithoutFeedback,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -23,6 +24,18 @@ const AboutEnovoComponent = ({
   aboutEnovoModalVisible,
   handleCloseAboutEnovoModal,
 }) => {
+  const { height: screenHeight } = useWindowDimensions();
+  const contentMaxHeight = Math.min(screenHeight * 0.5, 420);
+  const dynamicStyles = useMemo(
+    () =>
+      StyleSheet.create({
+        contentScrollHeight: {
+          maxHeight: contentMaxHeight,
+        },
+      }),
+    [contentMaxHeight],
+  );
+
   return (
     <Modal
       visible={!!aboutEnovoModalVisible}
@@ -50,11 +63,13 @@ const AboutEnovoComponent = ({
               </View>
 
               <ScrollView
-                style={styles.content}
+                style={[styles.content, dynamicStyles.contentScrollHeight]}
+                contentContainerStyle={styles.contentContainer}
                 showsVerticalScrollIndicator={false}
+                bounces={false}
               >
                 <Text style={styles.description}>
-                  Enovo là nền tảng hỗ trợ sạc xe điện an toàn và tiện lợi, được
+                  SạcXeĐê là nền tảng hỗ trợ sạc xe điện an toàn và tiện lợi, được
                   xây dựng để giúp bạn tìm trạm sạc, kích hoạt phiên sạc, theo
                   dõi quá trình sử dụng và quản lý tài khoản trên cùng một ứng
                   dụng.
@@ -110,6 +125,7 @@ const styles = StyleSheet.create({
   modalCard: {
     width: "100%",
     maxWidth: 440,
+    maxHeight: "88%",
     backgroundColor: Colors.white,
     borderRadius: 16,
     padding: 16,
@@ -152,7 +168,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgGrayLight,
   },
   content: {
-    maxHeight: 420,
+    flexGrow: 0,
+    flexShrink: 1,
+  },
+  contentContainer: {
+    paddingBottom: 4,
   },
   description: {
     fontSize: 14,
