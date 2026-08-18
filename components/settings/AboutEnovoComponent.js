@@ -1,11 +1,11 @@
 import React, { useMemo } from "react";
 import {
   Modal,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   useWindowDimensions,
   View,
 } from "react-native";
@@ -43,73 +43,79 @@ const AboutEnovoComponent = ({
       transparent={true}
       onRequestClose={handleCloseAboutEnovoModal}
     >
-      <TouchableWithoutFeedback onPress={handleCloseAboutEnovoModal}>
-        <View style={styles.overlay}>
-          <TouchableWithoutFeedback>
-            <View style={styles.modalCard}>
-              <View style={styles.headerRow}>
-                <View style={styles.headerLeft}>
-                  <View style={styles.logoBadge}>
-                    <Ionicons name="flash" size={20} color={Colors.white} />
-                  </View>
-                  <Text style={styles.title}>Về SạcXeĐê</Text>
-                </View>
-                <TouchableOpacity
-                  onPress={handleCloseAboutEnovoModal}
-                  style={styles.closeButton}
-                >
-                  <Ionicons name="close" size={20} color={Colors.textSecondaryDark} />
-                </TouchableOpacity>
+      <View style={styles.overlay}>
+        {/* Nền bấm-để-đóng là lớp RIÊNG nằm sau thẻ nội dung. Cách cũ bọc cả thẻ
+            trong TouchableWithoutFeedback khiến mỗi cú vuốt phải giành quyền
+            responder với hai lớp touchable trước khi ScrollView nhận được — đó
+            là cảm giác cuộn lúc được lúc không. Cùng cách
+            TransactionHistoryComponent và NotificationComponent đã làm. */}
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={handleCloseAboutEnovoModal}
+        />
+        <View style={styles.modalCard}>
+          <View style={styles.headerRow}>
+            <View style={styles.headerLeft}>
+              <View style={styles.logoBadge}>
+                <Ionicons name="flash" size={20} color={Colors.white} />
               </View>
-
-              <ScrollView
-                style={[styles.content, dynamicStyles.contentScrollHeight]}
-                contentContainerStyle={styles.contentContainer}
-                showsVerticalScrollIndicator={false}
-                bounces={false}
-              >
-                <Text style={styles.description}>
-                  SạcXeĐê là nền tảng hỗ trợ sạc xe điện an toàn và tiện lợi, được
-                  xây dựng để giúp bạn tìm trạm sạc, kích hoạt phiên sạc, theo
-                  dõi quá trình sử dụng và quản lý tài khoản trên cùng một ứng
-                  dụng.
-                </Text>
-
-                <Text style={styles.sectionTitle}>Điểm nổi bật</Text>
-                {HIGHLIGHTS.map((item, index) => (
-                  <View key={String(index)} style={styles.featureItem}>
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={18}
-                      color={Colors.primary}
-                    />
-                    <Text style={styles.featureText}>{item}</Text>
-                  </View>
-                ))}
-
-                <Text style={styles.sectionTitle}>Cam kết dịch vụ</Text>
-                <Text style={styles.description}>
-                  Chúng tôi liên tục cải tiến hệ thống để tăng độ ổn định, tối
-                  ưu trải nghiệm người dùng và nâng cao mức độ an toàn trong mỗi
-                  phiên sạc.
-                </Text>
-
-                <Text style={styles.supportText}>
-                  Cần hỗ trợ? Hay vào mục "Góp ý và thắc mắc" trong Settings để
-                  gửi thông tin cho đội vận hành.
-                </Text>
-              </ScrollView>
-
-              <TouchableOpacity
-                style={styles.doneButton}
-                onPress={handleCloseAboutEnovoModal}
-              >
-                <Text style={styles.doneButtonText}>Đóng</Text>
-              </TouchableOpacity>
+              <Text style={styles.title}>Về Sạc Xe Đê</Text>
             </View>
-          </TouchableWithoutFeedback>
+            <TouchableOpacity
+              onPress={handleCloseAboutEnovoModal}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={20} color={Colors.textSecondaryDark} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            style={[styles.content, dynamicStyles.contentScrollHeight]}
+            contentContainerStyle={styles.contentContainer}
+            showsVerticalScrollIndicator={true}
+            nestedScrollEnabled={true}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Text style={styles.description}>
+              Sạc Xe Đê là nền tảng hỗ trợ sạc xe điện an toàn và tiện lợi, được
+              xây dựng để giúp bạn tìm trạm sạc, kích hoạt phiên sạc, theo
+              dõi quá trình sử dụng và quản lý tài khoản trên cùng một ứng
+              dụng.
+            </Text>
+
+            <Text style={styles.sectionTitle}>Điểm nổi bật</Text>
+            {HIGHLIGHTS.map((item, index) => (
+              <View key={String(index)} style={styles.featureItem}>
+                <Ionicons
+                  name="checkmark-circle"
+                  size={18}
+                  color={Colors.primary}
+                />
+                <Text style={styles.featureText}>{item}</Text>
+              </View>
+            ))}
+
+            <Text style={styles.sectionTitle}>Cam kết dịch vụ</Text>
+            <Text style={styles.description}>
+              Chúng tôi liên tục cải tiến hệ thống để tăng độ ổn định, tối
+              ưu trải nghiệm người dùng và nâng cao mức độ an toàn trong mỗi
+              phiên sạc.
+            </Text>
+
+            <Text style={styles.supportText}>
+              Cần hỗ trợ? Hay vào mục "Góp ý và thắc mắc" trong Settings để
+              gửi thông tin cho đội vận hành.
+            </Text>
+          </ScrollView>
+
+          <TouchableOpacity
+            style={styles.doneButton}
+            onPress={handleCloseAboutEnovoModal}
+          >
+            <Text style={styles.doneButtonText}>Đóng</Text>
+          </TouchableOpacity>
         </View>
-      </TouchableWithoutFeedback>
+      </View>
     </Modal>
   );
 };

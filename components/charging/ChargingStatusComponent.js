@@ -64,7 +64,7 @@ const ChargingStatusComponent = ({
             color={Colors.primary}
           />
           <View style={styles.freeTextWrap}>
-            <Text style={styles.freeTitle}>Sạc tại nhà dân</Text>
+            <Text style={styles.freeTitle}>Phiên sạc tại nhà</Text>
             <Text style={styles.freeDescription}>
               Đang sạc tại thiết bị của bạn
             </Text>

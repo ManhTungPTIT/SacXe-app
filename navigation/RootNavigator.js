@@ -25,6 +25,7 @@ import {
 } from "../services/notification.service";
 import billingCachePatch from "../utils/billingCachePatch";
 import activeSessionPick from "../utils/activeSessionPick";
+import chargeDeviceStatusInvalidation from "../utils/chargeDeviceStatusInvalidation";
 
 const {
   patchLatestHistory,
@@ -33,6 +34,7 @@ const {
   isEnergyOnlyUpdate,
 } = billingCachePatch;
 const { getActiveSessions, pickActiveSession } = activeSessionPick;
+const { resolveDeviceQueryKey } = chargeDeviceStatusInvalidation;
 
 // Rung + phát local notification cho các cảnh báo CẦN người dùng xử lý ngay
 // (hết tiền, lỗi phần cứng, quên cắm sạc...) — khác với Toast/Alert thường
@@ -502,7 +504,15 @@ const RootNavigator = () => {
 
       // Ổ sạc đổi trạng thái khả dụng (mất/có lại bản tin) -> refetch danh sách
       // ổ để mọi màn hình đang xem cập nhật realtime.
-      queryClient.invalidateQueries({ queryKey: ["E_CHARGE_DEVICE"] });
+      //
+      // Gỡ đúng cache của TRỤ vừa đổi, không gỡ cả tiền tố ["E_CHARGE_DEVICE"]:
+      // tiền tố khớp luôn ["E_CHARGE_DEVICE", "ALL", lat, lng] là danh sách trụ
+      // của bản đồ Trang chủ, và mỗi lần nạp lại là toàn bộ marker native bị
+      // dựng lại giữa lúc người dùng đang kéo map. Xem
+      // utils/chargeDeviceStatusInvalidation.js.
+      queryClient.invalidateQueries({
+        queryKey: resolveDeviceQueryKey(data),
+      });
       queryClient.invalidateQueries({ queryKey: ["activeSessions"] });
       queryClient.invalidateQueries({ queryKey: ["latestHistory"] });
       // Phiên chạy ngầm ở trụ nhà dân ra đời qua chính sự kiện này

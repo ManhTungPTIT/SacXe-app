@@ -39,12 +39,18 @@ import deviceDisplayName from "../utils/deviceDisplayName";
 import sessionEnergySeed from "../utils/sessionEnergySeed";
 import activeSessionPick from "../utils/activeSessionPick";
 import claimScanDecision from "../utils/claimScanDecision";
+import chargeScreenTitle from "../utils/chargeScreenTitle";
+import publicChargeSteps from "../utils/publicChargeSteps";
+import ChargeStepper from "../components/charging/ChargeStepper";
 
 const { getDeviceDisplayName } = deviceDisplayName;
 
-const { resolveSessionSeedEnergyKwh, resolveSessionKey } = sessionEnergySeed;
+const { resolveSessionSeedEnergyKwh, resolveSessionStartTime, resolveSessionKey } =
+  sessionEnergySeed;
 const { getActiveSessions, pickActiveSession } = activeSessionPick;
 const { getScanToastMessage } = claimScanDecision;
+const { getChargeScreenTitle } = chargeScreenTitle;
+const { resolvePublicChargeStep } = publicChargeSteps;
 
 // Phần cứng gửi telemetry mỗi ~5s (xem comment TELEMETRY_TIMEOUT_MS ở
 // backend/src/configs/mqtt.config.js) — backend tự cho phép trễ tới 15000ms
@@ -70,8 +76,15 @@ const ChargeScreen = ({ route, navigation }) => {
   });
   const [powerId, setPowerId] = useState(null);
   const [chargeMode, setChargeMode] = useState(null);
+  // "Người này bước vào luồng công cộng khi chưa có giấy tờ xe" — chốt MỘT LẦN
+  // lúc họ chọn loại trụ, không đọc lại !bike ở mỗi lần render.
+  //
+  // Đọc lại mỗi render thì cờ tắt ngay khi giấy tờ đăng ký xong, tức đúng lúc
+  // người dùng sang bước 2: họ sẽ không bao giờ thấy hai bước "Quét mã trụ" và
+  // "Chọn ổ sạc" được đánh dấu, mà đó mới là phần hướng dẫn có ích.
+  const [isPublicOnboarding, setIsPublicOnboarding] = useState(false);
   // Mã trụ vừa claim đang chờ thiết lập (tên + địa chỉ + vị trí). Khác null là
-  // modal Thiết bị đang mở ở chế độ bắt buộc — xem MyDevicesComponent.
+  // modal Trụ sạc tại nhà đang mở ở chế độ bắt buộc — xem MyDevicesComponent.
   const [setupDeviceCode, setSetupDeviceCode] = useState(null);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -131,7 +144,12 @@ const ChargeScreen = ({ route, navigation }) => {
       deviceCode,
       powerId,
     }) || latestHistoryData;
-  const chargingStartTime = latestHistory?.startTime || latestHistory?.createdAt;
+  // KHÔNG đọc thẳng latestHistory?.createdAt: cùng lý do với initialEnergyKwh
+  // ngay dưới — đó là phiên GẦN NHẤT, không phải phiên đang chạy. Lúc phiên mới
+  // vừa mở, cache còn là phiên TRƯỚC (đã chốt) nên mốc đếm giờ lấy được là giờ
+  // bắt đầu của phiên cũ: đồng hồ ở màn phiên sạc "không reset về 0", vào màn đã
+  // hơn 1 phút. Xem utils/sessionEnergySeed.js: resolveSessionStartTime.
+  const chargingStartTime = resolveSessionStartTime(latestHistory);
   const displayedChargingStartTime =
     confirmedChargingStartTime || chargingStartTime;
   // KHÔNG đọc thẳng latestHistory: nó là phiên gần nhất, không phải phiên đang
@@ -260,6 +278,7 @@ const ChargeScreen = ({ route, navigation }) => {
     setdeviceCode(null);
     setPowerId(null);
     setChargeMode(null);
+    setIsPublicOnboarding(false);
     setDeviceCheck(null);
     noDeviceConfirmedRef.current = false;
     navigation.setParams({
@@ -714,11 +733,31 @@ const ChargeScreen = ({ route, navigation }) => {
     );
   };
 
+  // Đường DUY NHẤT người dùng tự chọn loại trụ (nút ở màn chọn, và hàng "Chọn
+  // loại trụ khác" của cả hai component con). Cờ onboarding được chốt ở đây chứ
+  // không ở effect tự suy loại trụ sau khi quét QR (:308) — effect đó cũng chạy
+  // khi khôi phục phiên sạc dở lúc mở lại app, lúc đó không có gì để hướng dẫn.
+  const handleSelectChargeMode = (nextMode) => {
+    setIsPublicOnboarding(nextMode === "public" && !bike?.bike);
+    setChargeMode(nextMode);
+  };
+
   const isUpdating = route?.params?.isUpdating;
   const requiresPublicBikeRegistration =
     !bike?.bike && chargeMode === "public";
   const showBikeRegistration =
     Boolean(isUpdating) || requiresPublicBikeRegistration;
+
+  // Thanh 3 bước chỉ đi kèm luồng công cộng, và chỉ khi cờ onboarding đang bật.
+  // Màn "Cập nhật giấy tờ xe" (isUpdating) mở từ Tài khoản, không thuộc luồng
+  // sạc nào -> không hiện.
+  const publicChargeStep = resolvePublicChargeStep({
+    hasBike: Boolean(bike?.bike),
+    deviceCode,
+    powerId,
+  });
+  const showPublicChargeSteps =
+    isPublicOnboarding && chargeMode === "public" && !isUpdating;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
@@ -734,7 +773,9 @@ const ChargeScreen = ({ route, navigation }) => {
           >
             <View style={styles.page}>
               <View style={styles.headerSection}>
-                <Text style={styles.screenTitle}>Phiên sạc</Text>
+                <Text style={styles.screenTitle}>
+                  {getChargeScreenTitle(chargeMode)}
+                </Text>
               </View>
 
               {deviceCheck ? (
@@ -807,7 +848,12 @@ const ChargeScreen = ({ route, navigation }) => {
                   setPowerId={setPowerId}
                   deviceId={deviceId}
                   mode={chargeMode}
-                  setMode={setChargeMode}
+                  setMode={handleSelectChargeMode}
+                  stepper={
+                    showPublicChargeSteps ? (
+                      <ChargeStepper currentStep={publicChargeStep} />
+                    ) : null
+                  }
                   openHomeDevicesToken={route?.params?.openHomeDevicesToken}
                   activeSessionsData={activeSessionsData}
                   onOpenActiveSession={handleOpenActiveSessionFromOutlet}
@@ -823,6 +869,12 @@ const ChargeScreen = ({ route, navigation }) => {
                     //  - code=1 (không có): finalize no_device ->
                     //    charge_billing_update -> màn tìm thiết bị thoát về màn
                     //    chọn ổ.
+                    // Hướng dẫn lần đầu đã xong nhiệm vụ: người dùng vừa đi
+                    // hết ba bước và bật được phiên sạc. Tắt tại đây chứ không
+                    // đợi phiên kết thúc — thanh bước không hiện lúc đang sạc
+                    // nên không ai thấy nó biến mất, và sạc xong quay lại màn
+                    // chọn ổ thì màn hình đã sạch.
+                    setIsPublicOnboarding(false);
                     noDeviceConfirmedRef.current = false;
                     setChargeDeviceCheckInProgress(true);
                     setConfirmedChargingStartTime(null);
@@ -857,13 +909,21 @@ const ChargeScreen = ({ route, navigation }) => {
         ) : (
           <BikeRegistration
             isUpdating={isUpdating}
+            headerTitle={
+              isUpdating ? undefined : getChargeScreenTitle(chargeMode)
+            }
             onCancel={() => {
               if (isUpdating) {
                 navigation.setParams({ isUpdating: false });
               } else {
-                setChargeMode(null);
+                handleSelectChargeMode(null);
               }
             }}
+            stepper={
+              showPublicChargeSteps ? (
+                <ChargeStepper currentStep={publicChargeStep} />
+              ) : null
+            }
             onSuccess={() => {
               setToastType("success");
               setToastMessage(isUpdating ? "Cập nhật giấy tờ xe thành công!" : "Đăng ký xe thành công!");

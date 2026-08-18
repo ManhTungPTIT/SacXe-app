@@ -35,6 +35,9 @@ const DevicesComponents = ({
   activeSessionsData,
   onChargeStarted,
   onOpenActiveSession,
+  // Thanh 3 bước của luồng công cộng (bước 3 = chọn ổ). null ở luồng trụ gia
+  // đình và với người dùng đã qua lần đầu.
+  stepper = null,
 }) => {
   const initiateChargeMutation = useChargeQuery.useInitiate();
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
@@ -207,6 +210,8 @@ const DevicesComponents = ({
           </Text>
         </View>
       </View>
+
+      {stepper}
 
       {noPowerOutlets > 0 && (
         <View

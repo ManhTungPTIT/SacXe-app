@@ -137,7 +137,16 @@ const WaveChart = ({ chargingStartTime, telemetry }) => {
   } = telemetry || {};
 
   useEffect(() => {
-    if (!chargingStartTime) return;
+    // Không có mốc = chưa có phiên đang chạy. Phải ĐƯA SỐ VỀ 00:00:00 chứ không
+    // được return thẳng: state này sống qua các lần đổi phiên (component không
+    // chắc chắn bị unmount giữa hai phiên), nên return sớm là giữ nguyên con số
+    // của phiên trước trên màn hình — đúng triệu chứng "đồng hồ không reset về 0
+    // sau mỗi phiên sạc". Cùng loại rò rỉ mà useChargingTelemetry phải nhận
+    // sessionKey để chặn cho phần năng lượng.
+    if (!chargingStartTime) {
+      setElapsedTime("00:00:00");
+      return;
+    }
 
     const updateTime = () => {
       const start = new Date(chargingStartTime).getTime();

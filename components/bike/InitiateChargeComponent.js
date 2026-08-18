@@ -39,6 +39,11 @@ const InitiateChargeComponent = ({
   onChargeStarted,
   onOpenActiveSession,
   onRequireDeviceSetup,
+  // Thanh 3 bước của luồng công cộng, dựng sẵn ở ChargeScreen (null khi không
+  // phải người dùng lần đầu, hoặc khi đang ở luồng trụ gia đình). Nhận nguyên
+  // khối thay vì cờ + số bước: component này là MỘT trong ba màn của luồng đó,
+  // nó không cần biết luồng có mấy bước.
+  stepper = null,
 }) => {
 
   const { data: myDevicesData, isLoading: isLoadingMyDevices } =
@@ -111,6 +116,7 @@ const InitiateChargeComponent = ({
   if (powerOutlets.length > 0) {
     return (
       <DevicesComponents
+        stepper={stepper}
         navigation={navigation}
         devices={powerOutlets}
         setDevices={setDevices}
@@ -195,6 +201,7 @@ const InitiateChargeComponent = ({
     return (
       <View style={styles.container}>
         {backButton}
+        {stepper}
         <Text style={styles.flowTitle}>Sạc trụ công cộng</Text>
         <Text style={styles.flowDescription}>
           Vui lòng quét mã QR gắn trên trụ sạc để kích hoạt phiên sạc cho xe của

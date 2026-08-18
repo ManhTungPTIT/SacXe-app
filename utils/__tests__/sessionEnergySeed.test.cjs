@@ -3,6 +3,7 @@ const test = require("node:test");
 
 const {
   resolveSessionSeedEnergyKwh,
+  resolveSessionStartTime,
   resolveSessionKey,
   isNewSession,
 } = require("../sessionEnergySeed");
@@ -80,4 +81,56 @@ test("từ không có phiên sang có phiên cũng tính là đổi phiên", () 
   assert.equal(isNewSession(null, "moi"), true);
   assert.equal(isNewSession("cu", null), true);
   assert.equal(isNewSession(null, null), false);
+});
+
+// --- mốc bắt đầu phiên --------------------------------------------------------
+
+// Cùng một lỗi với seed năng lượng, chỉ khác trường: đồng hồ đếm giờ ở màn phiên
+// sạc lấy mốc từ `latestHistory`, mà lúc vừa bấm sạc cache đó còn là phiên
+// TRƯỚC. Không chặn thì phiên mới đếm tiếp từ giờ bắt đầu của phiên cũ — người
+// dùng thấy đồng hồ "không reset về 0", vào màn đã hơn 1 phút.
+test("phiên đã chốt không được dùng làm mốc đếm giờ", () => {
+  assert.equal(
+    resolveSessionStartTime({
+      _id: "cu",
+      createdAt: "2026-08-18T03:00:00.000Z",
+      totalTime: { hours: 0, minutes: 1 },
+    }),
+    null,
+  );
+});
+
+test("phiên client tự đánh dấu đã dừng cũng không dùng làm mốc", () => {
+  assert.equal(
+    resolveSessionStartTime({
+      _id: "cu",
+      createdAt: "2026-08-18T03:00:00.000Z",
+      clientSessionStopped: true,
+    }),
+    null,
+  );
+});
+
+test("phiên đang chạy thì lấy createdAt làm mốc", () => {
+  assert.equal(
+    resolveSessionStartTime({ _id: "moi", createdAt: "2026-08-18T03:10:00.000Z" }),
+    "2026-08-18T03:10:00.000Z",
+  );
+});
+
+test("startTime (nếu backend có gửi) được ưu tiên hơn createdAt", () => {
+  assert.equal(
+    resolveSessionStartTime({
+      _id: "moi",
+      startTime: "2026-08-18T03:09:00.000Z",
+      createdAt: "2026-08-18T03:10:00.000Z",
+    }),
+    "2026-08-18T03:09:00.000Z",
+  );
+});
+
+test("không có phiên / thiếu mốc thì trả null, không trả undefined", () => {
+  assert.equal(resolveSessionStartTime(null), null);
+  assert.equal(resolveSessionStartTime(undefined), null);
+  assert.equal(resolveSessionStartTime({}), null);
 });

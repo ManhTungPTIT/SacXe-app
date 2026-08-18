@@ -35,6 +35,29 @@ const resolveSessionSeedEnergyKwh = (history) => {
   return Number.isFinite(energy) ? Math.max(0, energy) : 0;
 };
 
+// Mốc bắt đầu để đếm giờ ở màn phiên sạc.
+//
+// Y HỆT lỗi seed năng lượng ở trên, chỉ khác trường — và đã gặp thật: đồng hồ
+// đếm giờ "không reset về 0 sau mỗi phiên", vào màn phiên sạc mới đã hiện hơn
+// 1 phút. Nguyên nhân chung một chỗ: `latestHistory` là bản ghi phiên GẦN NHẤT,
+// và lúc phiên mới vừa mở thì cache đó còn là phiên TRƯỚC (đã chốt) vì refetch
+// chưa về. Lấy `createdAt` của nó làm mốc là đếm tiếp giờ của phiên cũ.
+//
+// Trả null (không phải undefined) cho phiên đã chốt: phía gọi dùng nó để dừng
+// đồng hồ và đưa số hiển thị về 00:00:00, thay vì giữ lại số của phiên trước.
+const resolveSessionStartTime = (history) => {
+  if (!history) {
+    return null;
+  }
+
+  const isFinalized = Boolean(history.totalTime || history.clientSessionStopped);
+  if (isFinalized) {
+    return null;
+  }
+
+  return history.startTime || history.createdAt || null;
+};
+
 // Khoá nhận dạng phiên. Đổi khoá = đã sang phiên khác = phải RESET giá trị đang
 // hiển thị, không được lấy max với giá trị cũ.
 //
@@ -49,6 +72,7 @@ const isNewSession = (previousKey, nextKey) => previousKey !== nextKey;
 
 module.exports = {
   resolveSessionSeedEnergyKwh,
+  resolveSessionStartTime,
   resolveSessionKey,
   isNewSession,
 };

@@ -38,7 +38,7 @@ const SETTINGS_ACTIONS = [
   },
   {
     key: "my-devices",
-    label: "THIẾT BỊ",
+    label: "TRỤ SẠC CỦA BẠN",
     icon: "hardware-chip-outline",
   },
   {
@@ -58,7 +58,7 @@ const SETTINGS_ACTIONS = [
   },
   {
     key: "about",
-    label: "VỀ SẠCXEĐÊ",
+    label: "VỀ SẠC XE ĐÊ",
     icon: "information-circle-outline",
   },
 ];
@@ -498,12 +498,12 @@ const SettingsScreen = ({ navigation, route }) => {
                             color={Colors.primary}
                             style={{ marginRight: 6 }}
                           />
-                          <Text style={styles.infoDescriptionTitle}>Tài khoản sạc SạcXeĐê</Text>
+                          <Text style={styles.infoDescriptionTitle}>Tài khoản sạc Sạc Xe Đê</Text>
                         </View>
                         <Text style={styles.infoDescriptionText}>
-                          Tài khoản sạc là số dư trả trước được sử dụng để thanh toán các dịch vụ sạc xe điện do SạcXeĐê cung cấp.{"\n\n"}
+                          Tài khoản sạc là số dư trả trước được sử dụng để thanh toán các dịch vụ sạc xe điện do Sạc Xe Đê cung cấp.{"\n\n"}
                           <Text style={{ fontWeight: "700" }}>Lưu ý:</Text>{"\n"}
-                          • Số dư chỉ được sử dụng để thanh toán dịch vụ sạc của SạcXeĐê.{"\n"}
+                          • Số dư chỉ được sử dụng để thanh toán dịch vụ sạc của Sạc Xe Đê.{"\n"}
                           • Không thể chuyển cho người dùng khác.{"\n"}
                           • Số dư trong tài khoản sạc không thể chuyển lại về tài khoản ngân hàng của bạn.{"\n"}
                           • Không thể quy đổi hoặc rút thành tiền mặt.{"\n"}

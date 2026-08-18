@@ -419,6 +419,16 @@ const MyDevicesComponent = ({
         />
       </View>
 
+      {/* TẠM ẨN theo yêu cầu: phần lấy vị trí trên bản đồ của trụ.
+
+          Bỏ hai dấu comment bao quanh khối này là bật lại được nguyên trạng —
+          handleGetCurrentLocation, pendingPosition và location.service vẫn còn
+          nguyên phía trên, không xoá gì.
+
+          Lưu vẫn chạy bình thường khi ẩn: chỉ địa chỉ là bắt buộc, còn
+          latitude/longitude gửi undefined nên backend giữ nguyên toạ độ đang
+          có của trụ (xem handleSave).
+
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Vị trí trên bản đồ</Text>
 
@@ -444,9 +454,9 @@ const MyDevicesComponent = ({
           </Text>
         </TouchableOpacity>
 
-        {/* Toạ độ sẽ được lưu: vừa đo xong thì lấy số vừa đo, chưa đo thì lấy số
+            Toạ độ sẽ được lưu: vừa đo xong thì lấy số vừa đo, chưa đo thì lấy số
             đang có của trụ. In ra để chủ trụ đối chiếu được — nút bấm một phát
-            là xong thì không có gì để họ kiểm tra. */}
+            là xong thì không có gì để họ kiểm tra. 
         {(() => {
           const savedCoordinates = getDeviceCoordinates(editingDevice);
           const shownCoordinates = pendingPosition || savedCoordinates;
@@ -459,19 +469,6 @@ const MyDevicesComponent = ({
 
           return (
             <View style={styles.coordinateBox}>
-              <View style={styles.coordinateRow}>
-                <Text style={styles.coordinateLabel}>Vĩ độ</Text>
-                <Text style={styles.coordinateValue}>
-                  {formatCoordinate(Number(shownCoordinates.latitude))}
-                </Text>
-              </View>
-              <View style={styles.coordinateRow}>
-                <Text style={styles.coordinateLabel}>Kinh độ</Text>
-                <Text style={styles.coordinateValue}>
-                  {formatCoordinate(Number(shownCoordinates.longitude))}
-                </Text>
-              </View>
-
               <Text
                 style={
                   pendingPosition
@@ -493,6 +490,7 @@ const MyDevicesComponent = ({
           );
         })()}
       </View>
+      */}
     </>
   );
 
@@ -506,12 +504,12 @@ const MyDevicesComponent = ({
     ? "Thiết lập trụ sạc"
     : isFormMode
       ? "Sửa thông tin trụ"
-      : "Thiết bị";
+      : "Trụ sạc của bạn";
   const headerSubtitle = isSetupMode
     ? "Đặt tên, địa chỉ và vị trí cho trụ vừa thêm"
     : isFormMode
       ? "Địa chỉ và vị trí của trụ sạc tại nhà"
-      : "Trụ sạc tại nhà đã thêm vào tài khoản";
+      : "Các trụ đã thêm vào tài khoản";
 
   return (
     <Modal

@@ -21,7 +21,19 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/color";
 import { useIdentity } from "../../queries/identity.query";
 import { useBike } from "../../queries/bike.query";
-const BikeRegistration = ({ isUpdating, onCancel, onSuccess }) => {
+const BikeRegistration = ({
+  isUpdating,
+  headerTitle,
+  onCancel,
+  onSuccess,
+  stepper = null,
+}) => {
+  // Luồng đăng ký lần đầu đi vào từ "Sạc trụ công cộng", nên nó vẫn là một bước
+  // của màn Phiên sạc: giữ nguyên banner tiêu đề của màn đó và dùng lại đúng
+  // hàng "Chọn loại trụ khác" như InitiateChargeComponent, thay vì đổi tiêu đề
+  // rồi nhét mũi tên vào banner. Luồng Cập nhật giấy tờ xe vào từ Cài đặt nên
+  // không thuộc màn Phiên sạc — nó giữ tiêu đề riêng và mũi tên trong banner.
+  const showChargeModeBackRow = !isUpdating && !!onCancel;
   const [type, setType] = useState("");
   const [licensePlate, setLicensePlate] = useState("");
   const [registrationImage, setRegistrationImage] = useState(null);
@@ -241,8 +253,13 @@ const BikeRegistration = ({ isUpdating, onCancel, onSuccess }) => {
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            <View style={styles.headerSection}>
-              {isUpdating && (
+            <View
+              style={[
+                styles.headerSection,
+                showChargeModeBackRow && styles.headerSectionWithBackRow,
+              ]}
+            >
+              {isUpdating && onCancel && (
                 <TouchableOpacity style={styles.backButton} onPress={onCancel}>
                   <Ionicons
                     name="arrow-back"
@@ -252,9 +269,27 @@ const BikeRegistration = ({ isUpdating, onCancel, onSuccess }) => {
                 </TouchableOpacity>
               )}
               <Text style={styles.title}>
-                {isUpdating ? "Cập nhật giấy tờ xe" : "Đăng ký sạc xe"}
+                {headerTitle ||
+                  (isUpdating ? "Cập nhật giấy tờ xe" : "Đăng ký sạc xe")}
               </Text>
             </View>
+
+            {showChargeModeBackRow && (
+              <TouchableOpacity
+                style={styles.backRow}
+                onPress={onCancel}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="arrow-back" size={18} color={Colors.primary} />
+                <Text style={styles.backText}>Chọn loại trụ khác</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Thanh 3 bước của luồng công cộng, nhận nguyên khối từ ChargeScreen.
+                Truyền phần tử thay vì cờ + số bước để component này không phải
+                biết luồng công cộng có mấy bước hay đang ở bước nào — nó chỉ là
+                một trong ba màn của luồng đó. */}
+            {stepper}
 
             <View style={styles.infoDescriptionBox}>
               <View style={styles.infoDescriptionHeader}>
@@ -482,6 +517,23 @@ const styles = StyleSheet.create({
     marginHorizontal: -24,
     marginBottom: 32,
     position: "relative",
+  },
+  // Banner nhường chỗ cho hàng "Chọn loại trụ khác" ngay dưới nó, nên khoảng hở
+  // 32 của bố cục cũ dồn xuống dưới hàng back thay vì nằm trên nó.
+  headerSectionWithBackRow: {
+    marginBottom: 16,
+  },
+  backRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-start",
+    marginBottom: 20,
+  },
+  backText: {
+    color: Colors.primary,
+    fontSize: 14,
+    fontWeight: "700",
   },
   backButton: {
     position: "absolute",
