@@ -1,5 +1,8 @@
 export const Colors = {
   primary: "#31C861",
+  // Điểm dừng đậm của gradient dựng trên primary. Chỉ dùng để tạo chiều sâu,
+  // KHÔNG dùng làm màu chữ hay nền lớn — độ tương phản chưa kiểm cho việc đó.
+  primaryDeep: "#1BA34C",
   secondary: "#FFFFFF",
   tertiary: "#C1F6BD",
   disable: "#C7C7CC",

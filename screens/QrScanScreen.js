@@ -505,8 +505,13 @@ const QrScanScreen = ({ navigation, route }) => {
     );
   }
 
+  // KHÔNG lấy cạnh "bottom": bottom-tabs đã cộng chiều cao thanh tab vào
+  // safe-area inset của màn, mà màn lại nằm TRÊN thanh tab chứ không nằm sau nó.
+  // Lấy cạnh này là chèn thêm một dải đệm cao đúng bằng thanh tab, để lộ nguyên
+  // màu nền xanh của safeArea thành một vệt giữa camera và thanh tab. Năm màn
+  // còn lại đều đang bỏ cạnh này.
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <View style={styles.container}>
         {/* Chỉ render camera khi tab này đang focus. Trước đây camera bị gỡ
             qua unmountOnBlur ở cấp Tab.Navigator (AppNavigator.js) — trên
@@ -536,7 +541,7 @@ const QrScanScreen = ({ navigation, route }) => {
                 </Text>
               </View>
             ) : (
-              <View style={styles.overlay} pointerEvents="none">
+              <View style={styles.overlay} >
                 <View style={styles.scanFrame} />
                 <Text style={styles.guideText}>Quét mã Qr trên trụ sạc</Text>
               </View>
@@ -596,7 +601,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: 20,
     textAlign: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
   },
   backButton: {
     position: "absolute",
