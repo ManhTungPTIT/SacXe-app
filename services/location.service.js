@@ -1,6 +1,7 @@
 import * as Location from "expo-location";
 import positionRequest from "../utils/positionRequest";
 import locationPermission from "../utils/locationPermission";
+import { primeAndRequest, PERMISSION_KEYS } from "./permissionPriming";
 
 const { createPositionRequest } = positionRequest;
 const {
@@ -93,7 +94,15 @@ export const requestLocationPermissionIfNeeded = async () => {
 
     if (decideNextAction(current) === "granted") return "granted";
 
-    const requested = await Location.requestForegroundPermissionsAsync();
+    // Mồi lời giải thích trước hộp thoại hệ điều hành. Đặt ở đây chứ không ở
+    // HomeScreen/MyDevicesComponent vì cả hai màn đều đi qua hàm này — một chỗ
+    // sửa là phủ hết caller.
+    const requested = await primeAndRequest({
+      key: PERMISSION_KEYS.LOCATION,
+      getStatus: () => current,
+      request: () => Location.requestForegroundPermissionsAsync(),
+    });
+
     return resolveStatusAfterAsk(requested);
   } catch (error) {
     return "denied";

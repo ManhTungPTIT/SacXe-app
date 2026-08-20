@@ -42,6 +42,11 @@ export const useNotifications = (enabled = false) => {
           }
         })
         .catch((error) => {
+          // Nuốt lỗi có chủ đích: không lấy được push token thì app vẫn chạy
+          // bình thường, chỉ là không nhận được thông báo đẩy. Trạng thái quyền
+          // được hiển thị và xử lý ở màn Cài đặt → Thông báo
+          // (components/settings/NotificationComponent.js), nên chỗ này không
+          // cần báo gì ra ngoài.
         });
     });
 

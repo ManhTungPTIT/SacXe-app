@@ -1,5 +1,7 @@
-import React, { useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  AppState,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -11,6 +13,13 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/color";
+import notificationPermission from "../../utils/notificationPermission";
+import {
+  getNotificationPermissionStatus,
+  requestNotificationPermission,
+} from "../../services/notification.service";
+
+const { resolveNotificationPrompt } = notificationPermission;
 
 const getNotificationText = (item) =>
   item?.body || item?.message || item?.content || "Không có nội dung";
@@ -86,6 +95,67 @@ const NotificationComponent = ({
 }) => {
   const { height: screenHeight } = useWindowDimensions();
 
+  // Mặc định "granted" để lời mời không nháy lên một nhịp trước khi đọc xong
+  // trạng thái thật — đa số người dùng đã cấp quyền, nháy lên rồi biến mất còn
+  // khó chịu hơn là hiện chậm.
+  const [permissionStatus, setPermissionStatus] = useState("granted");
+
+  const refreshPermissionStatus = useCallback(async () => {
+    const status = await getNotificationPermissionStatus();
+    setPermissionStatus(status);
+    return status;
+  }, []);
+
+  // Đọc lại mỗi lần mở modal. Đây là chỗ người dùng chủ động đi tìm thông báo,
+  // nên cũng là lúc duy nhất lời mời bật quyền không bị coi là làm phiền.
+  useEffect(() => {
+    if (!notificationsModalVisible) return undefined;
+
+    let isActive = true;
+
+    getNotificationPermissionStatus().then((status) => {
+      if (isActive) setPermissionStatus(status);
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [notificationsModalVisible]);
+
+  // Người dùng bật quyền bên trang Cài đặt rồi quay lại: phải đọc lại ngay,
+  // không bắt họ đóng mở modal mới thấy lời mời biến mất.
+  useEffect(() => {
+    if (!notificationsModalVisible) return undefined;
+
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        refreshPermissionStatus();
+      }
+    });
+
+    return () => subscription.remove();
+  }, [notificationsModalVisible, refreshPermissionStatus]);
+
+  const permissionPrompt = resolveNotificationPrompt(permissionStatus);
+
+  const handlePermissionAction = useCallback(async () => {
+    // Bị chặn thì hộp thoại hệ điều hành không hiện nữa, hỏi lại là vô ích —
+    // lối ra duy nhất là trang Cài đặt của ứng dụng. Cùng khuôn với quyền
+    // camera/vị trí (QrScanScreen.js:103-107).
+    if (permissionPrompt?.action === "settings") {
+      try {
+        await Linking.openSettings();
+      } catch (error) {
+        // Không mở được trang Cài đặt thì vẫn còn cửa hỏi thẳng: trên một số
+        // máy Android, Linking.openSettings ném lỗi nhưng quyền vẫn hỏi được.
+        setPermissionStatus(await requestNotificationPermission());
+      }
+      return;
+    }
+
+    setPermissionStatus(await requestNotificationPermission());
+  }, [permissionPrompt?.action]);
+
   const notificationItems = useMemo(() => {
     if (Array.isArray(notifications)) {
       return notifications;
@@ -140,6 +210,37 @@ const NotificationComponent = ({
               <Ionicons name="close" size={18} color="#1F2937" />
             </TouchableOpacity>
           </View>
+
+          {permissionPrompt ? (
+            <View style={styles.permissionBanner}>
+              <View style={styles.permissionIconWrapper}>
+                <Ionicons
+                  name="notifications-off"
+                  size={18}
+                  color={Colors.warningOrange}
+                />
+              </View>
+
+              <View style={styles.permissionContent}>
+                <Text style={styles.permissionTitle}>
+                  {permissionPrompt.title}
+                </Text>
+                <Text style={styles.permissionBody}>
+                  {permissionPrompt.body}
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.permissionButton}
+                  activeOpacity={0.85}
+                  onPress={handlePermissionAction}
+                >
+                  <Text style={styles.permissionButtonText}>
+                    {permissionPrompt.actionLabel}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : null}
 
           {notificationItems.length > 0 ? (
             <ScrollView
@@ -333,6 +434,52 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: Colors.bgLightMuted,
+  },
+  permissionBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: Colors.bgLightMuted,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.borderMuted,
+    padding: 11,
+    marginBottom: 10,
+  },
+  permissionIconWrapper: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.white,
+    marginRight: 10,
+  },
+  permissionContent: {
+    flex: 1,
+  },
+  permissionTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: Colors.textPrimaryDark,
+  },
+  permissionBody: {
+    marginTop: 5,
+    fontSize: 13,
+    lineHeight: 18,
+    color: Colors.textSecondaryDark,
+  },
+  permissionButton: {
+    alignSelf: "flex-start",
+    marginTop: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    backgroundColor: Colors.primary,
+  },
+  permissionButtonText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: Colors.white,
   },
   listScroll: {
     flexGrow: 0,

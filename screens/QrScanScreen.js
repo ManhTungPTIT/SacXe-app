@@ -22,6 +22,7 @@ import {
   prefetchCurrentPosition,
   resetScanPosition,
 } from "../services/location.service";
+import { primeAndRequest, PERMISSION_KEYS } from "../services/permissionPriming";
 
 const { getClaimScanDecision, getClaimSuccessDecision } = claimScanDecision;
 const { getProximityDecision } = proximity;
@@ -142,7 +143,11 @@ const QrScanScreen = ({ navigation, route }) => {
         return false;
       }
 
-      const result = await requestPermission();
+      const result = await primeAndRequest({
+        key: PERMISSION_KEYS.CAMERA,
+        getStatus: () => permission,
+        request: requestPermission,
+      });
       if (!result.granted) {
         if (result.canAskAgain === false) {
           if (showBlockedAlert) {

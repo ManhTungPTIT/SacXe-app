@@ -17,6 +17,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
 import { Colors } from "../constants/color";
 import { useFeedbackQuery } from "../queries/feedback.query";
+import { primeAndRequest, PERMISSION_KEYS } from "../services/permissionPriming";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const normalizeScannedCode = (rawData) => {
@@ -67,7 +68,11 @@ const FeedbackScreen = ({ navigation }) => {
 
   const openScanner = useCallback(async () => {
     if (!permission?.granted) {
-      const result = await requestPermission();
+      const result = await primeAndRequest({
+        key: PERMISSION_KEYS.CAMERA,
+        getStatus: () => permission,
+        request: requestPermission,
+      });
       if (!result.granted) {
         Alert.alert(
           "Thông báo",
@@ -103,7 +108,13 @@ const FeedbackScreen = ({ navigation }) => {
   }, []);
 
   const handleTakePhoto = useCallback(async () => {
-    const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+    // Cùng quyền camera với màn quét QR — cấp ở đó rồi thì getStatus trả
+    // granted và popup mồi không hiện lại.
+    const cameraPermission = await primeAndRequest({
+      key: PERMISSION_KEYS.CAMERA,
+      getStatus: ImagePicker.getCameraPermissionsAsync,
+      request: ImagePicker.requestCameraPermissionsAsync,
+    });
     if (!cameraPermission.granted) {
       Alert.alert(
         "Thông báo",

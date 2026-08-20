@@ -2,6 +2,14 @@ import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import { Platform } from "react-native";
 import Constants from "expo-constants";
+import notificationPermission from "../utils/notificationPermission";
+import { primeAndRequest, PERMISSION_KEYS } from "./permissionPriming";
+
+const {
+  decideNextAction,
+  resolveStatusAfterAsk,
+  resolveStatusWithoutAsking,
+} = notificationPermission;
 
 // Channel Android + pattern rung dùng riêng cho cảnh báo cần xử lý ngay (hết
 // tiền, lỗi phần cứng, quên cắm sạc...) — khác biệt với thông báo thường để
@@ -152,6 +160,55 @@ Notifications.setNotificationHandler({
   },
 });
 
+// Chỉ ĐỌC trạng thái quyền, không bao giờ hiện hộp thoại. Dùng cho màn Cài đặt
+// để biết có phải mời người dùng bật thông báo hay không.
+//
+// Trả "granted" | "denied" | "blocked". Máy ảo trả "blocked": không có cách nào
+// bật thông báo đẩy trên emulator, nên đừng mời người dùng bấm nút vô nghĩa.
+export async function getNotificationPermissionStatus() {
+  if (!Device.isDevice) {
+    return "blocked";
+  }
+
+  try {
+    const current = await Notifications.getPermissionsAsync();
+    return resolveStatusWithoutAsking(current);
+  } catch (error) {
+    return "denied";
+  }
+}
+
+// Xin quyền nếu chưa có. Xem utils/notificationPermission.js để biết vì sao
+// KHÔNG được dùng canAskAgain để bỏ qua lời hỏi.
+//
+// Trả "granted" | "denied" | "blocked" — "blocked" là tín hiệu cho giao diện
+// chuyển sang mời vào Cài đặt, vì hệ điều hành sẽ không hiện hộp thoại nữa.
+export async function requestNotificationPermission() {
+  if (!Device.isDevice) {
+    return "blocked";
+  }
+
+  try {
+    const current = await Notifications.getPermissionsAsync();
+
+    if (decideNextAction(current) === "granted") return "granted";
+
+    // Mồi lời giải thích, rồi mới gọi xuống hệ điều hành — kể cả khi
+    // `canAskAgain` là false. Nếu quyền đã bị khoá thật, Android trả về denied
+    // ngay mà không vẽ hộp thoại; còn nếu `canAskAgain` sai (xem
+    // utils/notificationPermission.js) thì đây là lời hỏi cứu được tình huống.
+    const requested = await primeAndRequest({
+      key: PERMISSION_KEYS.NOTIFICATIONS,
+      getStatus: () => current,
+      request: () => Notifications.requestPermissionsAsync(),
+    });
+
+    return resolveStatusAfterAsk(requested);
+  } catch (error) {
+    return "denied";
+  }
+}
+
 export async function registerForPushNotificationsAsync() {
   let token = null;
 
@@ -160,18 +217,17 @@ export async function registerForPushNotificationsAsync() {
     return null;
   }
 
-  // Bước 2: Kiểm tra quyền hiện tại
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
+  // Bước 2+3: Đọc quyền, hỏi nếu chưa có. Gộp vào requestNotificationPermission
+  // để màn Cài đặt và luồng đăng nhập đi đúng một đường — trước đây logic này
+  // nằm riêng ở đây và là chỗ duy nhất trong app xin quyền thông báo.
+  const permissionStatus = await requestNotificationPermission();
 
-  // Bước 3: Nếu chưa có quyền, yêu cầu quyền
-  if (existingStatus !== "granted") {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
-
-  // Bước 4: Nếu không được cấp quyền, thoát
-  if (finalStatus !== "granted") {
+  // Bước 4: Nếu không được cấp quyền, thoát. Không báo gì ở đây là CỐ Ý: đây là
+  // luồng chạy ngầm ngay sau khi đăng nhập, chặn ngang bằng một hộp thoại lúc
+  // này rất phiền. Lời mời bật quyền nằm ở màn Thông báo trong Cài đặt
+  // (components/settings/NotificationComponent.js), nơi người dùng đang chủ
+  // động tìm thông báo nên lời mời mới đúng lúc.
+  if (permissionStatus !== "granted") {
     return null;
   }
 

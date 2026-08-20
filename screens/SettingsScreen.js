@@ -26,6 +26,7 @@ import AboutEnovoComponent from "../components/settings/AboutEnovoComponent";
 import MyBikeComponent from "../components/bike/MyBikeComponent";
 import ProfileComponent from "../components/settings/ProfileComponent";
 import MyDevicesComponent from "../components/settings/MyDevicesComponent";
+import PermissionSettingsComponent from "../components/settings/PermissionSettingsComponent";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ToastNotification from "../components/ToastNotification";
 import { socket } from "../services/socket.service";
@@ -50,6 +51,11 @@ const SETTINGS_ACTIONS = [
     key: "notifications",
     label: "THÔNG BÁO",
     icon: "notifications-outline",
+  },
+  {
+    key: "permissions",
+    label: "CÀI ĐẶT",
+    icon: "settings-outline",
   },
   {
     key: "feedback",
@@ -99,6 +105,8 @@ const SettingsScreen = ({ navigation, route }) => {
     useState(false);
   const [notificationsPage, setNotificationsPage] = useState(1);
   const [aboutEnovoModalVisible, setAboutEnovoModalVisible] = useState(false);
+  const [permissionSettingsModalVisible, setPermissionSettingsModalVisible] =
+    useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState("success");
@@ -291,6 +299,11 @@ const SettingsScreen = ({ navigation, route }) => {
     if (actionKey === "notifications") {
       setNotificationsPage(1);
       setNotificationsModalVisible(true);
+      return;
+    }
+
+    if (actionKey === "permissions") {
+      setPermissionSettingsModalVisible(true);
       return;
     }
 
@@ -599,6 +612,11 @@ const SettingsScreen = ({ navigation, route }) => {
               handleCloseAboutEnovoModal={() =>
                 setAboutEnovoModalVisible(false)
               }
+            />
+
+            <PermissionSettingsComponent
+              visible={permissionSettingsModalVisible}
+              onClose={() => setPermissionSettingsModalVisible(false)}
             />
           </ScrollView>
         </KeyboardAvoidingView>

@@ -20,7 +20,7 @@
         "NSLocationWhenInUseUsageDescription": "Ứng dụng sử dụng vị trí của bạn để hiển thị các thiết bị sạc gần đó và hỗ trợ chức năng bản đồ.",
         "NSCameraUsageDescription": "Ứng dụng sử dụng camera để quét mã QR khi tương tác với trụ sạc và cung cấp thông tin phản ảnh sự cố sạc.",
         "NSPhotoLibraryUsageDescription": "Ứng dụng cần truy cập thư viện ảnh để bạn chọn và tải lên hình ảnh giấy phép lái xe khi thêm xe vào hệ thống.",
-        "NSUserNotificationUsageDescription": "Ứng dụng gửi thông báo về trạng thái thanh toán, thông báo trạng thái sạc xe và cảnh báo tài khoản.",
+        "NSUserNotificationUsageDescription": "Ứng dụng gửi thông báo về trạng thái thanh toán, thông báo trạng thái sạc xe và cảnh báo .",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -38,6 +38,9 @@
         "android.permission.CAMERA",
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.VIBRATE"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -62,8 +65,8 @@
       "eas": {
         "projectId": "ef5c7cdf-d7da-4c19-8fec-05391489c2f6"
       }
-      
+     
     }
-    
+   
   }
 }

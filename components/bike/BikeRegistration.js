@@ -21,6 +21,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/color";
 import { useIdentity } from "../../queries/identity.query";
 import { useBike } from "../../queries/bike.query";
+import {
+  primeAndRequest,
+  PERMISSION_KEYS,
+} from "../../services/permissionPriming";
 const BikeRegistration = ({
   isUpdating,
   headerTitle,
@@ -61,8 +65,11 @@ const BikeRegistration = ({
   };
 
   const pickImage = async () => {
-    const mediaLibraryPermission =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const mediaLibraryPermission = await primeAndRequest({
+      key: PERMISSION_KEYS.PHOTO_LIBRARY,
+      getStatus: ImagePicker.getMediaLibraryPermissionsAsync,
+      request: ImagePicker.requestMediaLibraryPermissionsAsync,
+    });
 
     if (!mediaLibraryPermission.granted) {
       if (mediaLibraryPermission.canAskAgain === false) {
@@ -111,7 +118,14 @@ const BikeRegistration = ({
   };
 
   const takePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    // Cùng quyền camera với màn quét QR (expo-camera và expo-image-picker khai
+    // chung android.permission.CAMERA / NSCameraUsageDescription), nên người đã
+    // quét trụ rồi sẽ không thấy popup mồi lần nữa.
+    const { status } = await primeAndRequest({
+      key: PERMISSION_KEYS.CAMERA,
+      getStatus: ImagePicker.getCameraPermissionsAsync,
+      request: ImagePicker.requestCameraPermissionsAsync,
+    });
     if (status !== "granted") {
       Alert.alert("Thông báo", "Cần quyền truy cập camera để chụp ảnh");
       return;
